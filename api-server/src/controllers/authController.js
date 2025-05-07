@@ -22,27 +22,40 @@ const loginUser = async (req, res) => {
     res.status(200).json({ user: data.user, session: data.session.access_token });
 }
 
-const registerUser = async (req, res) => {
-    const { email, password } = req.body;
+exports.registerUser = async (req, res) => {
+  const { email, password, name, username } = req.body;
 
-    // check if email and password are provided
-    if (!email || !password) {
-        return res.status(400).json({ error: "Email and password are required" });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name,
+        username
+      }
     }
+  });
 
-    // sign up with Supabase
-    const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-    })
+  if (error) return res.status(400).json({ error: 'Registration failed', details: error.message });
 
-    // checks if there was an error during sign up
-    if (error) {
-        return res.status(400).json({ error: "Error signing up" });
-    }
+  const user = data.user;
 
-    res.status(201).json({ user: data.user, token: data.session.access_token });
-}
+  // Insert into the `users` table to synchronize with auth.users
+  await db.from('users').upsert({
+    id: user.id, // same UUID as auth.users
+    email,
+    name,
+    username,
+    linkedin_handle: null,
+    profile_picture_url: null
+  }, { onConflict: 'id' });
+
+  // Gets the access_token
+  const token = data.session.access_token;
+	if (!token) return res.status(401).json({ error: 'Token generation failed' });
+
+  res.json({ token, user });
+};
 
 module.exports = {
     loginUser,

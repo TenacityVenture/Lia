@@ -8,7 +8,7 @@ const loginUser = async (req, res) => {
     }
 
     // sign in with Supabase
-    const { data, error } = await supabase.auth.loginUser({
+    const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
     });
@@ -22,7 +22,7 @@ const loginUser = async (req, res) => {
     res.status(200).json({ user: data.user, session: data.session.access_token });
 }
 
-const signUpNewUser = async (req, res) => {
+const registerUser = async (req, res) => {
     const { email, password } = req.body;
 
     // check if email and password are provided
@@ -46,5 +46,5 @@ const signUpNewUser = async (req, res) => {
 
 module.exports = {
     loginUser,
-    signUpNewUser,
+    registerUser,
 };

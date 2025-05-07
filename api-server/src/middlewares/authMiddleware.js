@@ -1,8 +1,6 @@
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 
-const supabase = rquire('../utils/supabaseClient');
-
 const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET || 'a_very_secure_jwt_secret';
 
 const authenticate = (req, res, next) => {
@@ -14,6 +12,7 @@ const authenticate = (req, res, next) => {
   try {
     const decoded = jwt.verify(token, SUPABASE_JWT_SECRET);
     req.user = decoded; // attach decoded payload to request
+    
     next();
   } catch (err) {
     return res.status(403).json({ error: 'Invalid or expired token' });

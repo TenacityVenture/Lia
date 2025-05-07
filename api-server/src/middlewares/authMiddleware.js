@@ -1,6 +1,7 @@
-// src/middlewares/authMiddleware.js
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
+
+const supabase = rquire('../utils/supabaseClient');
 
 const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET || 'a_very_secure_jwt_secret';
 

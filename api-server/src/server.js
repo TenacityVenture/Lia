@@ -13,6 +13,13 @@ app.use(express.json()); // To parse JSON requests
 const promptRoutes = require('./routes/promptRoutes');
 app.use('/api/prompt', promptRoutes);
 
+const userRoutes = require('./routes/userRoutes');
+app.use('/api/user', userRoutes);
+
+// sign-in with password route
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
+
 // Default route
 app.get('/', (req, res) => {
   res.send('LIA API is live 🔥');

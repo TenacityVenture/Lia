@@ -1,5 +1,6 @@
 // src/controllers/promptController.js
 const openaiService = require('../services/openaiService');
+const usageLogger = require('../services/usageLogger');
 
 exports.rewritePost = async (req, res) => {
   const { original_text, tone, length } = req.body;

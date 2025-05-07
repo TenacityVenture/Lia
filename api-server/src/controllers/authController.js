@@ -22,7 +22,7 @@ const loginUser = async (req, res) => {
     res.status(200).json({ user: data.user, session: data.session.access_token });
 }
 
-exports.registerUser = async (req, res) => {
+const registerUser = async (req, res) => {
   const { email, password, name, username } = req.body;
 
   const { data, error } = await supabase.auth.signUp({
@@ -41,7 +41,7 @@ exports.registerUser = async (req, res) => {
   const user = data.user;
 
   // Insert into the `users` table to synchronize with auth.users
-  await db.from('users').upsert({
+  await supabase.from('users').upsert({
     id: user.id, // same UUID as auth.users
     email,
     name,

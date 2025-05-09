@@ -18,3 +18,18 @@ exports.getCurrentUser = async (req, res) => {
 
   res.json(data);
 };
+
+
+exports.updateProfile = async (req, res) => {
+  const userId = req.user.sub;
+  const { username, linkedin_handle } = req.body;
+
+  const { error } = await supabase
+    .from('users')
+    .update({ username, linkedin_handle })
+    .eq('id', userId);
+
+  if (error) return res.status(400).json({ error: 'Update failed', details: error.message });
+
+  res.json({ message: 'Profile updated successfully.' });
+};

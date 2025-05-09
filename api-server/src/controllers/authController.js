@@ -40,12 +40,17 @@ const registerUser = async (req, res) => {
 
   const user = data.user;
 
+  let generatedUsername = null;
+  if (name) {
+    generatedUsername = username || name.toLowerCase().replace(/\s+/g, '-');
+  }
+
   // Insert into the `users` table to synchronize with auth.users
   await supabase.from('users').upsert({
     id: user.id, // same UUID as auth.users
     email,
     name,
-    username,
+    username: generatedUsername,
     linkedin_handle: null,
     profile_picture_url: null
   }, { onConflict: 'id' });

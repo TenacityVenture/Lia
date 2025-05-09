@@ -10,9 +10,12 @@ app.use(cors());
 app.use(express.json()); // To parse JSON requests
 
 // Routes
+
+// Prompt routes
 const promptRoutes = require('./routes/promptRoutes');
 app.use('/api/prompt', promptRoutes);
 
+// User routes
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/user', userRoutes);
 
@@ -23,6 +26,7 @@ app.use('/api/auth', authRoutes);
 // usage route
 const usageRoutes = require('./routes/usageRoutes');
 app.use('/api/usage', usageRoutes);
+
 
 // Default route
 app.get('/', (req, res) => {

@@ -20,6 +20,10 @@ app.use('/api/user', userRoutes);
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
 
+// usage route
+const usageRoutes = require('./routes/usageRoutes');
+app.use('/api/usage', usageRoutes);
+
 // Default route
 app.get('/', (req, res) => {
   res.send('LIA API is live 🔥');

@@ -12,5 +12,7 @@ exports.getCompletion = async (prompt) => {
     max_tokens: 100,
   });
 
-  return response.choices[0].message.content.trim();
+  const completions = response.choices[0].message.content.trim();
+ 
+  return {"Content": completions, "Usage": response.usage};
 };

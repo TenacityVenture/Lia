@@ -46,7 +46,33 @@ export function SignupForm() {
     console.log(values)
 
     // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    //await new Promise((resolve) => setTimeout(resolve, 1500))
+    fetch(process.env.apiUrl as string, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(values),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data)
+        // send token to the chrome extension
+        if (data.token) {
+          // Send token to the extension
+          window.postMessage({ type: "SEND_TOKEN", token: data.token }, "*") // * means all domains (shoule be restricted to lia extension id)
+        }
+        if (data.error) {
+          throw new Error(data.error)
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error)
+        alert("An error occurred. Please try again.")
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
 
     setIsLoading(false)
 

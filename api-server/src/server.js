@@ -13,6 +13,11 @@ const limiter = rateLimit({
 
 // Middlewares
 app.use(cors());
+// later on i when i go production i should change the app.use(cors()) to
+// app.use(cors({
+//   origin: ['https://your-production-domain.com', 'chrome-extension://<my-extension-id>],
+//   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+//   credentials: true}))
 app.use(express.json()); // To parse JSON requests
 app.use(limiter); // Apply rate limiting middleware
 

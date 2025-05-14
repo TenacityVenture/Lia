@@ -2,6 +2,7 @@
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 require('dotenv').config();
 
 const app = express();
@@ -20,7 +21,7 @@ app.use(cors());
 //   credentials: true}))
 app.use(express.json()); // To parse JSON requests
 app.use(limiter); // Apply rate limiting middleware
-
+app.use(helmet()); // Set security HTTP headers
 
 // Routes
 

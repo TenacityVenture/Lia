@@ -43,7 +43,28 @@ export function LoginForm() {
     console.log(values)
 
     // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    //await new Promise((resolve) => setTimeout(resolve, 1500))
+
+    fetch(process.env.apiUrl as string, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(values),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        // Handle successful login
+        console.log(data)
+        // send token to the chrome extension
+        if (data.token) {
+          window.postMessage({ type: "SEND_TOKEN", token: data.token }, "*") // * means all domains (shoule be restricted to lia extension id)
+        }
+        
+      })
+      .catch((error) => {
+        console.error("Error:", error)
+      })
 
     setIsLoading(false)
 

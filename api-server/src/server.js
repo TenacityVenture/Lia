@@ -47,6 +47,10 @@ app.get('/', (req, res) => {
   res.send('LIA API is live 🔥');
 });
 
+app.get('/health', (req, res) => {
+  res.send('LIA API is healthy ✅');
+});
+
 // Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

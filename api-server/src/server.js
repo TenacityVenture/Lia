@@ -1,13 +1,21 @@
 // src/server.js
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 
 const app = express();
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 20, // Limit each IP to 20 requests per minute
+  message: 'Too many requests, please try again later.',
+})
 
 // Middlewares
 app.use(cors());
 app.use(express.json()); // To parse JSON requests
+app.use(limiter); // Apply rate limiting middleware
+
 
 // Routes
 

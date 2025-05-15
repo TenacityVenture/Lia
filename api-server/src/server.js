@@ -10,6 +10,13 @@ const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 20, // Limit each IP to 20 requests per minute
   message: 'Too many requests, please try again later.',
+
+  handler: (req, res, next) => {
+    res.status(429).json({
+      status: 'error',
+      message: 'Too many requests, please try again later.',
+    });
+  },
 })
 
 // Middlewares

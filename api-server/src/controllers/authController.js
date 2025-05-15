@@ -1,5 +1,15 @@
 const supabase = require('../utils/supabaseClient');
 
+/**
+ * Log in a user to the Supabase instance. 
+ * Requires 'email' and 'password' fields in the request body.
+ * Returns a JSON response with the user and their session token.
+ * 
+ * Status Codes:
+ *  - 200: Successful login
+ *  - 400: Missing required fields
+ *  - 401: Invalid credentials
+ */
 const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
@@ -19,9 +29,19 @@ const loginUser = async (req, res) => {
     }
 
     // Send user and session in response
-    res.status(200).json({ user: data.user, session: data.session.access_token });
+    res.status(200).json({ user: data.user, token: data.session.access_token });
 }
 
+/**
+ * Registers a user with Supabase. 
+ * Requires 'email', 'password', 'name', and 'username' fields in the request body.
+ * Returns a JSON response with the user and their session token.
+ * 
+ * Status Codes:
+ *  - 200: Successful registration
+ *  - 400: Registration failed
+ *  - 401: Token generation failed
+ */
 const registerUser = async (req, res) => {
   const { email, password, name, username } = req.body;
 

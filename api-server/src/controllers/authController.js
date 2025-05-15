@@ -79,7 +79,7 @@ const registerUser = async (req, res) => {
   const token = data.session.access_token;
 	if (!token) return res.status(401).json({ error: 'Token generation failed' });
 
-  res.json({ token, user });
+  res.status(201).json({ token, user });
 };
 
 module.exports = {

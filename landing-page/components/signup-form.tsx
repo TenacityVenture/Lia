@@ -47,7 +47,8 @@ export function SignupForm() {
 
     // Simulate API call
     //await new Promise((resolve) => setTimeout(resolve, 1500))
-    fetch(process.env.apiUrl as string, {
+    const apiUrl:string = `http://192.168.223.220:4000/api/auth/register`
+    fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

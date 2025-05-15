@@ -1,0 +1,10 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Error</title>
+</head>
+<body>
+<pre>TypeError: Cannot destructure property &#39;email&#39; of &#39;req.body&#39; as it is undefined.<br> &nbsp; &nbsp;at registerUser (/home/init/Desktop/Lia/api-server/src/controllers/authController.js:26:11)<br> &nbsp; &nbsp;at Layer.handleRequest (/home/init/Desktop/Lia/api-server/node_modules/router/lib/layer.js:152:17)<br> &nbsp; &nbsp;at next (/home/init/Desktop/Lia/api-server/node_modules/router/lib/route.js:157:13)<br> &nbsp; &nbsp;at Route.dispatch (/home/init/Desktop/Lia/api-server/node_modules/router/lib/route.js:117:3)<br> &nbsp; &nbsp;at handle (/home/init/Desktop/Lia/api-server/node_modules/router/index.js:435:11)<br> &nbsp; &nbsp;at Layer.handleRequest (/home/init/Desktop/Lia/api-server/node_modules/router/lib/layer.js:152:17)<br> &nbsp; &nbsp;at /home/init/Desktop/Lia/api-server/node_modules/router/index.js:295:15<br> &nbsp; &nbsp;at processParams (/home/init/Desktop/Lia/api-server/node_modules/router/index.js:582:12)<br> &nbsp; &nbsp;at next (/home/init/Desktop/Lia/api-server/node_modules/router/index.js:291:5)<br> &nbsp; &nbsp;at Function.handle (/home/init/Desktop/Lia/api-server/node_modules/router/index.js:186:3)</pre>
+</body>
+</html>

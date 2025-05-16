@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { z } from "zod"
+import { date, z } from "zod"
 import { Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -45,7 +45,7 @@ export function LoginForm() {
     // Simulate API call
     //await new Promise((resolve) => setTimeout(resolve, 1500))
     const apiUrl:string = `http://192.168.223.220:4000/api/auth/sign-in`
-    fetch(apiUrl, {
+    await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -60,16 +60,22 @@ export function LoginForm() {
         if (data.token) {
           window.postMessage({ type: "SEND_TOKEN", token: data.token }, "*") // * means all domains (shoule be restricted to lia extension id)
         }
-        
+        if (data.error) {
+          throw new Error(data.error)
+        }
+        else {
+          // Redirect to the dashboard or another page
+          router.push("/dashboard")
+        }
       })
       .catch((error) => {
         console.error("Error:", error)
       })
+      .finally(() => {
+        setIsLoading(false)
+      })
 
     setIsLoading(false)
-
-    // Redirect to dashboard
-    router.push("/dashboard")
   }
 
   return (

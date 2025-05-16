@@ -48,14 +48,16 @@ export function SignupForm() {
     // Simulate API call
     //await new Promise((resolve) => setTimeout(resolve, 1500))
     const apiUrl:string = `http://192.168.223.220:4000/api/auth/register`
-    fetch(apiUrl, {
+    await fetch(apiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(values),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        console.log(res)
+        return res.json()})
       .then((data) => {
         console.log(data)
         // send token to the chrome extension
@@ -66,19 +68,20 @@ export function SignupForm() {
         if (data.error) {
           throw new Error(data.error)
         }
+        else {
+          // Redirect to dashboard or onboarding
+          router.push("/dashboard")
+        }
       })
       .catch((error) => {
         console.error("Error:", error)
-        alert("An error occurred. Please try again.")
+        form.setError("root", { message: error.message || "An error occurred. Please try again." })
       })
       .finally(() => {
         setIsLoading(false)
       })
 
     setIsLoading(false)
-
-    // Redirect to dashboard or onboarding
-    router.push("/dashboard")
   }
 
   return (

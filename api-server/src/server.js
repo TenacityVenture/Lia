@@ -40,7 +40,7 @@ app.use('/api/prompt', promptRoutes);
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/user', userRoutes);
 
-// sign-in with password route
+// auth route
 const authRoutes = require('./routes/authRoutes');
 app.use('/api/auth', authRoutes);
 

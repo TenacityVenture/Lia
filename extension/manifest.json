@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "LIA - LinkedIn Intelligent Assistant",
+  "version": "0.1",
+  "description": "Rewrite posts and reply to comments on LinkedIn using AI.",
+  "permissions": ["storage", "scripting", "identity", "activeTab"],
+  "host_permissions": ["https://www.linkedin.com/*"],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.linkedin.com/*"],
+      "js": ["content.js"]
+    }
+  ]
+}

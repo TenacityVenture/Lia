@@ -13,6 +13,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 
+import supabase from "@/lib/supabaseClient"
+require("dotenv").config()
+
 const formSchema = z.object({
   email: z.string().email({
     message: "Please enter a valid email address.",

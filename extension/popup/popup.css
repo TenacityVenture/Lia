@@ -38,7 +38,7 @@ select, input[type="checkbox"] {
 }
 
 .primary-button {
-  background: #004182;
+  background-color: #004182;
   color: white;
   padding: 10px;
   border-radius: 8px;

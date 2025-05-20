@@ -13,7 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 
-import supabase from "@/lib/supabaseClient"
+import { supabase } from "@/lib/supabaseClient"
 require("dotenv").config()
 
 const formSchema = z.object({
@@ -79,6 +79,21 @@ export function LoginForm() {
       })
 
     setIsLoading(false)
+  }
+
+  const handleSignInWithLinkedin = async () => {
+    setIsLoading(true)
+
+    // This would be where you'd call your API to sign in with LinkedIn
+    // const { data, error } = 
+
+    await supabase.auth.signInWithOAuth({
+      provider: 'linkedin_oidc',
+      options: {
+        redirectTo: 'https://lia.davidconteh.engineer/oauth/callback'
+      }
+    });
+
   }
 
   return (
@@ -156,7 +171,7 @@ export function LoginForm() {
           <Button variant="outline" type="button" disabled={isLoading}>
             Google
           </Button>
-          <Button variant="outline" type="button" disabled={isLoading}>
+          <Button onClick={handleSignInWithLinkedin} variant="outline" type="button" disabled={isLoading}>
             LinkedIn
           </Button>
         </div>

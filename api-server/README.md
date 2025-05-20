@@ -21,3 +21,112 @@ The following table outlines the core API endpoints available in the LIA API ser
 - **Usage Tracking**: The `/api/usage/stats` endpoint provides insights into user activity and time saved.
 
 For more details on how to use these endpoints, refer to the API documentation or contact the development team.
+
+
+# 🧠 How Each Endpoint Works
+
+
+## 🚀 /api/auth/register
+**Fields:** `{ name, email, password }`
+
+- Creates a user record.
+- Returns a JWT if successful.
+
+## 🚀 /api/auth/login
+**Fields:** `{ email, password }`
+
+- Verifies credentials.
+- Returns a JWT.
+
+✅ Supabase handles most of this which is what we will be using - Supabase Auth (But we can still customize the flow).
+
+## 🚀 /api/user/me
+**Header:** `Authorization: Bearer <JWT>`
+
+**Returns:** `{ id, name, username, linkedin_handle, profile_picture_url }`
+
+- For personalized extension view.
+
+## 🚀 /api/prompt/rewrite
+**Header:** `Authorization: Bearer <JWT>`
+
+**Body:**  
+```json
+{ "original_text": "Feeling happy to work here", "tone": "professional", "length": "short" }
+```
+
+**Server:**
+- Builds smart prompt.
+- Sends it to OpenAI.
+- Returns improved text.
+
+## 🚀 /api/prompt/suggest-reply
+**Header:** `Authorization: Bearer <JWT>`
+
+**Body:**  
+```json
+{ "comment_text": "Congratulations on your promotion!" }
+```
+
+**Server:**
+- Builds smart prompt.
+- Sends to OpenAI.
+- Returns reply suggestion.
+
+## 🚀 /api/usage/stats
+**Header:** `Authorization: Bearer <JWT>`
+
+**Returns:**  
+```json
+{
+  "posts_rewritten": 34,
+  "comments_suggested": 120,
+  "tokens_used": 50000
+}
+```
+
+✅ Extension can show "Look how much LIA helped you!" 🎉
+
+## 🚀 /api/billing/subscribe
+- Redirects to Stripe Checkout page (Pro Plan purchase).
+- Optional now, needed when you monetize.
+
+## 🚀 /api/billing/status
+**Header:** `Authorization: Bearer <JWT>`
+
+**Returns:**  
+```json
+{
+  "plan_type": "pro",
+  "subscription_end": "2024-09-01"
+}
+```
+
+✅ Needed to limit features for free users later.
+
+---
+
+# 📋 API Folder Structure (inside our Express server)
+
+```
+api-server/
+├── src/
+│   ├── controllers/
+│   │   ├── authController.js
+│   │   ├── promptController.js
+│   │   ├── usageController.js
+│   │   └── billingController.js
+│   ├── routes/
+│   │   ├── authRoutes.js
+│   │   ├── promptRoutes.js
+│   │   ├── usageRoutes.js
+│   │   └── billingRoutes.js
+│   └── server.js
+```
+
+- Each controller focuses only on its job (clean separation).
+- Each route just maps HTTP methods to controller functions.
+
+---
+
+

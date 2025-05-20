@@ -5,8 +5,11 @@ const router = express.Router();
 const {  
     loginUser, 
     registerUser, 
-    refreshAccessToken
+    refreshAccessToken,
+    syncOAuthUser
 } = require('../controllers/authController');
+
+const { authenticate } = require('../middleware/authMiddleware');
 
 // POST /api/auth/sign-in -> login and get access token
 router.post('/sign-in', loginUser);
@@ -25,5 +28,7 @@ router.post('/register', registerUser);
 
 // POST /auth/refresh-token → refresh access token using cookie-based refresh_token
 router.post('/refresh-token', refreshAccessToken);
+router.get('/oauth/linkedIn-sync', authenticate, syncOAuthUser);
+
 
 module.exports = router;

@@ -12,7 +12,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 
-import supabase from "@/lib/supabaseClient"
+import { supabase } from "@/lib/supabaseClient"
 require("dotenv").config()
 
 const formSchema = z.object({
@@ -94,7 +94,7 @@ export function SignupForm() {
     // const { data, error } = 
 
     await supabase.auth.signInWithOAuth({
-      provider: 'linkedin',
+      provider: 'linkedin_oidc',
       options: {
         redirectTo: 'https://lia.davidconteh.engineer/oauth/callback'
       }

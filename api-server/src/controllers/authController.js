@@ -236,12 +236,52 @@ const logoutUser = async (req, res) => {
   res.status(200).json({ message: 'Successfully logged out' });
 };
 
+/**
+ * Allows a logged-in user to change their password.
+ * Requires Authorization header (access_token).
+ *
+ * @param {Object} req - Express request (with req.user from middleware)
+ * @param {Object} res - Express response
+ */
+const changePassword = async (req, res) => {
+  // I won’t ask for their old password for now — Supabase
+  // will validates the current session. After password 
+  // change, Supabase will invalidate the refresh token
+  // automatically, so we'll log them out.
+
+
+  const { newPassword } = req.body;
+
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  }
+
+  // Supabase uses the current session to verify the user identity
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword
+  });
+
+  if (error) {
+    return res.status(500).json({ error: 'Failed to update password', details: error.message });
+  }
+
+  // Supabase will invalidate the refresh token after password change
+  res.clearCookie('refresh_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Strict'
+  });
+
+  return res.status(200).json({ message: 'Password updated. Please log in again.' });
+};
+
 
 module.exports = {
     loginUser,
     registerUser,
     refreshAccessToken,
     syncOAuthUser,
-    logoutUser
+    logoutUser,
+    changePassword
 };
 

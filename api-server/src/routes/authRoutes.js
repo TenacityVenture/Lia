@@ -6,7 +6,8 @@ const {
     loginUser, 
     registerUser, 
     refreshAccessToken,
-    syncOAuthUser
+    syncOAuthUser,
+    logoutUser
 } = require('../controllers/authController');
 
 const { authenticate } = require('../middlewares/authMiddleware');
@@ -17,14 +18,15 @@ router.post('/sign-in', loginUser);
 // POST /api/auth/register -> create new user and receive access token
 router.post('/register', registerUser);
 
+// POST /api/auth/logout -> logout user and clear refresh token
+router.post('/logout', logoutUser);
+
 /**
  * Since we are managing authentication server-side, the refresh-token endpoint
  * must be part of the same auth router. This keeps all related logic together.
  * It eliminates duplication, and lets the middleware and error handling stay 
  * clean and organized.
  */
-
-
 
 // POST /auth/refresh-token → refresh access token using cookie-based refresh_token
 router.post('/refresh-token', refreshAccessToken);

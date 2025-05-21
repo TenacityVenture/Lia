@@ -164,11 +164,6 @@ const refreshAccessToken = async (req, res) => {
   res.json({ token: newAccessToken });
 };
 
-module.exports = {
-    loginUser,
-    registerUser,
-    refreshAccessToken
-};
 
 
 /**
@@ -180,7 +175,7 @@ module.exports = {
  *  - 200: Successful sync
  *  - 400: Sync failed
  */
-exports.syncOAuthUser = async (req, res) => {
+const syncOAuthUser = async (req, res) => {
   const supabaseUser = req.user; // this comes from the JWT decoded by our middleware
 
   // optional: check if already exists
@@ -213,3 +208,40 @@ exports.syncOAuthUser = async (req, res) => {
     }
   });
 };
+
+/**
+ * Logs out the user by clearing the refresh token cookie and
+ * revoking the Supabase session.
+ * 
+ * @param {Object} req - The request object
+ * @param {Object} res - The response object
+ */
+const logoutUser = async (req, res) => {
+  const refreshToken = req.cookies.refresh_token;
+
+  // Clear the refresh_token cookie
+  res.clearCookie('refresh_token', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Strict'
+  });
+
+  // Revoke the session with Supabase. This will revoke the
+  // token server-side. It is optional but I think it's a
+  // good practice to do so.
+  if (refreshToken) {
+    await supabase.auth.signOut(); 
+  }
+
+  res.status(200).json({ message: 'Successfully logged out' });
+};
+
+
+module.exports = {
+    loginUser,
+    registerUser,
+    refreshAccessToken,
+    syncOAuthUser,
+    logoutUser
+};
+

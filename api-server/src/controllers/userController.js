@@ -24,6 +24,32 @@ exports.updateProfile = async (req, res) => {
   const userId = req.user.sub;
   const { username, linkedin_handle } = req.body;
 
+  const linkedinRegex = "/^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9-_]{3,}$/;"
+
+
+  // Ensuring the username is not empty
+  if (!username || username.length < 3) {
+    return res.status(400).json({ error: 'Username must be at least 3 characters' });
+  }
+
+  // Making sure users are not passing malicious
+  // or broken links
+  if (linkedin_handle && !linkedinRegex.test(linkedin_handle)) {
+    return res.status(400).json({ error: 'Invalid LinkedIn URL format' });
+  }
+
+  // Two users cannot have the same username
+  const { data: existingUser } = await supabase
+    .from('users')
+    .select('id')
+    .eq('username', username)
+    .neq('id', userId)
+    .single();
+
+    if (existingUser) {
+      return res.status(409).json({ error: 'Username already taken' });
+  }
+
   const { error } = await supabase
     .from('users')
     .update({ username, linkedin_handle })

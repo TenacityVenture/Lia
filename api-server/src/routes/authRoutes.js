@@ -7,7 +7,8 @@ const {
     registerUser, 
     refreshAccessToken,
     syncOAuthUser,
-    logoutUser
+    logoutUser,
+    changePassword
 } = require('../controllers/authController');
 
 const { authenticate } = require('../middlewares/authMiddleware');
@@ -21,6 +22,9 @@ router.post('/register', registerUser);
 // POST /api/auth/logout -> logout user and clear refresh token
 router.post('/logout', logoutUser);
 
+// POST /api/auth/change-password -> change user password
+router.put('/change-password', authenticate, changePassword);
+
 /**
  * Since we are managing authentication server-side, the refresh-token endpoint
  * must be part of the same auth router. This keeps all related logic together.
@@ -30,6 +34,7 @@ router.post('/logout', logoutUser);
 
 // POST /auth/refresh-token → refresh access token using cookie-based refresh_token
 router.post('/refresh-token', refreshAccessToken);
+
 router.get('/oauth/linkedIn-sync', authenticate, syncOAuthUser);
 
 

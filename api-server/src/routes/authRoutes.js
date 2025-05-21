@@ -9,7 +9,7 @@ const {
     syncOAuthUser
 } = require('../controllers/authController');
 
-const { authenticate } = require('../middleware/authMiddleware');
+const { authenticate } = require('../middlewares/authMiddleware');
 
 // POST /api/auth/sign-in -> login and get access token
 router.post('/sign-in', loginUser);

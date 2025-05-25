@@ -7,6 +7,7 @@ const {
     registerUser, 
     refreshAccessToken,
     syncOAuthUser,
+    syncGoogleOAuthUser,
     logoutUser,
     changePassword
 } = require('../controllers/authController');
@@ -35,7 +36,10 @@ router.put('/change-password', authenticate, changePassword);
 // POST /auth/refresh-token → refresh access token using cookie-based refresh_token
 router.post('/refresh-token', refreshAccessToken);
 
+// sync auth.users table with our custom users table after user signup with linkedin
 router.get('/oauth/linkedIn-sync', authenticate, syncOAuthUser);
 
+// sync auth.users table with our custom users table after user signup with linkedin
+router.get('/oauth/google-sync', authenticate, syncGoogleOAuthUser);
 
 module.exports = router;

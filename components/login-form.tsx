@@ -95,6 +95,21 @@ export function LoginForm() {
 
   }
 
+  const handleSignInWithGoogle = async () => {
+    setIsLoading(true)
+
+    // This would be where you'd call your API to sign in with LinkedIn
+    // const { data, error } = 
+
+    supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'https://lia.davidconteh.engineer/oauth/callback'
+      }
+    });
+
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
@@ -167,7 +182,7 @@ export function LoginForm() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <Button variant="outline" type="button" disabled={isLoading}>
+          <Button onClick={handleSignInWithGoogle} variant="outline" type="button" disabled={isLoading}>
             Google
           </Button>
           <Button onClick={handleSignInWithLinkedin} variant="outline" type="button" disabled={isLoading}>

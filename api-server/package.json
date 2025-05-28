@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "nodemon src/server.js"
+    "start": "nodemon src/server.js",
+    "lint": "eslint"
   },
   "keywords": [],
   "author": "",
@@ -21,5 +22,10 @@
     "jsonwebtoken": "^9.0.2",
     "nodemon": "^3.1.10",
     "openai": "^4.96.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.27.0",
+    "eslint": "^9.27.0",
+    "globals": "^16.2.0"
   }
 }

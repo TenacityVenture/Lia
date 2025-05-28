@@ -7,6 +7,7 @@ const {
     registerUser, 
     refreshAccessToken,
     syncOAuthUser,
+    syncGoogleOAuthUser,
     logoutUser,
     changePassword
 } = require('../controllers/authController');
@@ -57,7 +58,10 @@ router.post('/refresh-token', refreshAccessToken);
 
     Lastly, we sync the user with the LinkedIn profile.
  */
+// sync auth.users table with our custom users table after user signup with linkedin
 router.get('/oauth/linkedIn-sync', authenticate, syncOAuthUser);
 
+// sync auth.users table with our custom users table after user signup with linkedin
+router.get('/oauth/google-sync', authenticate, syncGoogleOAuthUser);
 
 module.exports = router;

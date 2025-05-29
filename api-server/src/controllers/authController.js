@@ -323,6 +323,7 @@ module.exports = {
     registerUser,
     refreshAccessToken,
     syncOAuthUser,
+    syncGoogleOAuthUser,
     logoutUser,
     changePassword
 };

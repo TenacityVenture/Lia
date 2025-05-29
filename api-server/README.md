@@ -7,7 +7,10 @@ The following table outlines the core API endpoints available in the LIA API ser
 | **Method** | **URL**                     | **Purpose**                     | **Auth Needed?** | **Notes**                                                                 |
 |------------|-----------------------------|---------------------------------|------------------|---------------------------------------------------------------------------|
 | POST       | `/api/auth/register`        | Create new user                 | No (first time)  | For email/password signup (optional if using Supabase auth)              |
-| POST       | `/api/auth/login`           | Login user, issue JWT           | No               | Extension stores JWT                                                     |
+| POST       | `/api/auth/login`           | Login user, issue JWT           | No               | Extension or website stores JWT                                                     |
+| GET       | `/api/auth/oauth/linkedIn-sync`           | Sync linkedin oauth user with our users table, issue JWT           | Yes               | Extension or website gets notified that the user has been synced                                                    |
+| POST       | `/api/auth/refresh-token`   | Refresh user session, issue JWT | ✅ Yes - Refresh token needed also | Extension or website stores JWT                                                     |
+| POST       | `/api/auth/logout`          | logout user and clear refresh token | ✅ Yes Refresh token needed also | Extension or website needs to login again and gets a new access_token and refresh token                                                     |
 | GET        | `/api/user/me`              | Get my user profile             | ✅ Yes           | Useful for extension                                                     |
 | POST       | `/api/prompt/rewrite`       | Rewrite LinkedIn post           | ✅ Yes           | Send text, tone, length                                                  |
 | POST       | `/api/prompt/suggest-reply` | Suggest a reply to a comment    | ✅ Yes           | Send comment text                                                        |
@@ -106,7 +109,7 @@ For more details on how to use these endpoints, refer to the API documentation o
 
 ---
 
-# 📋 API Folder Structure (inside our Express server)
+## 📋 API Folder Structure (inside our Express server)
 
 ```
 api-server/

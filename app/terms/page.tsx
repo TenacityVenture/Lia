@@ -21,9 +21,9 @@ export default function TermsPage() {
         <section className="mb-8">
           <h2 className="text-2xl font-semibold text-foreground mb-4">1. Introduction</h2>
           <p>
-            Welcome to LIA - LinkedIn Intelligent Assistant. These Terms of Service ("Terms") govern your use of our
-            website, Chrome extension, and services (collectively, the "Services") operated by LIA ("we," "us," or
-            "our").
+            Welcome to LIA - LinkedIn Intelligent Assistant. These Terms of Service (&quot;Terms&quot;) govern your use of our
+            website, Chrome extension, and services (collectively, the &quot;Services&quot;) operated by LIA (&quot;we,&quot; &quot;us,&quot; or
+            &quot;our&quot;).
           </p>
           <p className="mt-4">
             By accessing or using our Services, you agree to be bound by these Terms. If you disagree with any part of
@@ -48,7 +48,7 @@ export default function TermsPage() {
         <section className="mb-8">
           <h2 className="text-2xl font-semibold text-foreground mb-4">3. User Content</h2>
           <p>
-            Our Services may allow you to generate, post, send, receive, and store content ("User Content"). By
+            Our Services may allow you to generate, post, send, receive, and store content (&quot;User Content&quot;). By
             providing User Content through our Services, you grant us a worldwide, non-exclusive, royalty-free license
             to use, copy, modify, create derivative works based on, distribute, publicly display, and publicly perform
             your User Content for the purposes of operating and providing our Services.
@@ -122,7 +122,7 @@ export default function TermsPage() {
         <section className="mb-8">
           <h2 className="text-2xl font-semibold text-foreground mb-4">8. Disclaimer</h2>
           <p>
-            Your use of the Services is at your sole risk. The Services are provided on an "AS IS" and "AS AVAILABLE"
+            Your use of the Services is at your sole risk. The Services are provided on an &quot;AS IS&quot; and &quot;AS AVAILABLE&quot;
             basis. The Services are provided without warranties of any kind, whether express or implied, including, but
             not limited to, implied warranties of merchantability, fitness for a particular purpose, non-infringement,
             or course of performance.

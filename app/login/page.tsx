@@ -41,8 +41,8 @@ export default function LoginPage() {
                     className="absolute bottom-8 right-8 p-4 shadow-lg dark:bg-slate-800">
                     <blockquote className="space-y-2">
                         <p className="text-lg">
-                        "LIA has completely transformed how I engage on LinkedIn. The AI-powered suggestions have helped me create
-                        more engaging content and grow my professional network."
+                        LIA has completely transformed how I engage on LinkedIn. The AI-powered suggestions have helped me create
+                        more engaging content and grow my professional network.
                         </p>
                         <footer className="text-sm">Jennifer Lee, Content Strategist</footer>
                     </blockquote>
@@ -73,7 +73,7 @@ export default function LoginPage() {
           </p>
 
           <div className="text-center text-sm">
-            Don't have an account?{" "}
+            Don&quot;t have an account?{" "}
             <Link href="/signup" className="text-primary hover:underline">
               Sign up
             </Link>

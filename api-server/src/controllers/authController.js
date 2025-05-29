@@ -176,6 +176,7 @@ const refreshAccessToken = async (req, res) => {
  */
 const syncOAuthUser = async (req, res) => {
   const supabaseUser = req.user; // this comes from the JWT decoded by our middleware
+  let db;
 
   // optional: check if already exists
   const { data: existingUser } = await db
@@ -219,6 +220,7 @@ const syncOAuthUser = async (req, res) => {
  */
 const syncGoogleOAuthUser = async (req, res) => {
   const supabaseUser = req.user; // this comes from the JWT decoded by our middleware
+  let db;
 
   // optional: check if already exists
   const { data: existingUser } = await db
@@ -299,7 +301,7 @@ const changePassword = async (req, res) => {
   }
 
   // Supabase uses the current session to verify the user identity
-  const { data, error } = await supabase.auth.updateUser({
+  const { error } = await supabase.auth.updateUser({
     password: newPassword
   });
 
@@ -325,6 +327,7 @@ module.exports = {
     syncOAuthUser,
     syncGoogleOAuthUser,
     logoutUser,
-    changePassword
+    changePassword,
+    syncGoogleOAuthUser
 };
 

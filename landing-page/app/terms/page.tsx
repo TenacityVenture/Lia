@@ -91,7 +91,7 @@ export default function TermsPage() {
           <h2 className="text-2xl font-semibold text-foreground mb-4">6. OpenAI API Usage</h2>
           <p>
             Our Services utilize the OpenAI API to generate content. By using our Services, you acknowledge that content
-            generated through the OpenAI API is subject to OpenAI's terms of service and usage policies.
+            generated through the OpenAI API is subject to OpenAI&apos;s terms of service and usage policies.
           </p>
           <p className="mt-4">
             You are responsible for providing your own OpenAI API key and for any charges incurred through your use of
@@ -138,7 +138,7 @@ export default function TermsPage() {
           <h2 className="text-2xl font-semibold text-foreground mb-4">9. Changes to Terms</h2>
           <p>
             We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is
-            material, we will try to provide at least 30 days' notice prior to any new terms taking effect. What
+            material, we will try to provide at least 30 days&apos; notice prior to any new terms taking effect. What
             constitutes a material change will be determined at our sole discretion.
           </p>
           <p className="mt-4">

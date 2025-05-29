@@ -13,7 +13,6 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 
 import { supabase } from "@/lib/supabaseClient"
-require("dotenv").config()
 
 const formSchema = z.object({
   name: z.string().min(2, {

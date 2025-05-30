@@ -49,7 +49,7 @@ export function SignupForm() {
 
     // Simulate API call
     //await new Promise((resolve) => setTimeout(resolve, 1500))
-    const apiUrl:string = `http://192.168.223.220:4000/api/auth/register`
+    const apiUrl:string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/register`
     await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -63,16 +63,19 @@ export function SignupForm() {
       .then((data) => {
         console.log(data)
         // send token to the chrome extension
-        if (data.token) {
+        if (data.access_token && data.refresh_token) {
+          // Save tokens to localStorage
           // Send token to the extension
-          window.postMessage({ type: "SEND_TOKEN", token: data.token }, "*") // * means all domains (shoule be restricted to lia extension id)
+          window.postMessage({ type: "SEND_TOKEN", 
+            access_token: data.access_token, 
+            refresh_token: data.refresh_token }, 'https://www.getlia.live')
         }
         if (data.error) {
           throw new Error(data.error)
         }
         else {
           // Redirect to dashboard or onboarding
-          router.push("/dashboard")
+          router.push("/login?success=account_created")
         }
       })
       .catch((error) => {
@@ -95,12 +98,12 @@ export function SignupForm() {
     await supabase.auth.signInWithOAuth({
       provider: 'linkedin_oidc',
       options: {
-        redirectTo: 'https://lia.davidconteh.engineer/oauth/callback'
+        redirectTo: 'https://www.getlia.live/oauth/callback?provider=linkedin_oidc'
       }
     });
 
   }
-
+  ///oauth/linkedIn-sync
   const handleSignInWithGoogle = async () => {
     setIsLoading(true)
 
@@ -110,7 +113,7 @@ export function SignupForm() {
     supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'https://lia.davidconteh.engineer/oauth/callback'
+        redirectTo: 'https://www.getlia.live/oauth/callback?provider=google'
       }
     });
 

@@ -21,12 +21,12 @@ const limiter = rateLimit({
 })
 
 // Middlewares
-app.use(cors());
-// later on i when i go production i should change the app.use(cors()) to
-// app.use(cors({
-//   origin: ['https://your-production-domain.com', 'chrome-extension://<my-extension-id>],
-//   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-//   credentials: true}))
+//app.use(cors());
+// Enable CORS for specific origins
+app.use(cors({
+  origin: ['https://getlia.live', process.env.EXTENSION_ID,], // production domain and extension ID
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true}))
 app.use(cookieParser()); // To parse cookies
 app.use(express.json()); // To parse JSON requests
 app.use(limiter); // Apply rate limiting middleware

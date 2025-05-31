@@ -60,6 +60,7 @@ export function LoginForm() {
         console.log(data)
         // send token to the chrome extension
         if (data.access_token && data.refresh_token) {
+          
           window.postMessage({ type: "SEND_TOKEN", 
             access_token: data.access_token, 
             refresh_token: data.refresh_token}, "*") // * means all domains (shoule be restricted to lia extension id)
@@ -69,7 +70,7 @@ export function LoginForm() {
         }
         else {
           // Redirect to the dashboard or another page
-          router.push("//login?success=account_created")
+          router.push("/dashboard")
         }
       })
       .catch((error) => {

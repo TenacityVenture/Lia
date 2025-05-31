@@ -36,9 +36,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   chrome.storage.sync.get(['tone', 'industry', 'rewrite_enabled', 'reply_enabled', 'improve_enabled'], (data) => {
     if (data.tone) document.getElementById('tone').value = data.tone;
     if (data.industry) document.getElementById('industry').value = data.industry;
-    document.getElementById('rewrite-enabled').checked = data.rewrite_enabled !== false;
-    document.getElementById('reply-enabled').checked = data.reply_enabled !== false;
-    document.getElementById('improve-enabled').checked = data.improve_enabled !== false;
+
+    if (data.rewrite_enabled !== undefined) {
+      document.getElementById('rewrite-enabled').checked = data.rewrite_enabled !== false;
+    }
+
+    if (data.reply_enabled !== undefined) {
+      document.getElementById('reply-enabled').checked = data.reply_enabled !== false;
+    }
+
+    if (data.improve_enabled !== undefined) {
+      document.getElementById('improve-enabled').checked = data.improve_enabled !== false;
+    }
   });
 
   // Save settings
@@ -49,8 +58,29 @@ document.addEventListener('DOMContentLoaded', async () => {
     const reply_enabled = document.getElementById('reply-enabled').checked;
     const improve_enabled = document.getElementById('improve-enabled').checked;
 
-    chrome.storage.sync.set({ tone, industry, rewrite_enabled, reply_enabled, improve_enabled }, () => {
-      alert('✅ Settings saved!');
+    chrome.storage.sync.set(
+      {
+        tone, 
+        industry, 
+        rewrite_enabled, 
+        reply_enabled, 
+        improve_enabled 
+      }, () => {
+        // Show success message
+        const button = document.getElementById('save-btn');
+        const originalText = button.textContent
+        button.textContent = '✅ Settings saved!';
+
+        setTimeout(() => {
+          button.textContent = originalText;
+        }, 1500);
+
+        // Notify content script that settings have changed
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          chrome.tabs.sendMessage(tabs[0].id, { action: "settingsUpdated" })
+        })
+
+        alert('✅ Settings saved!');
     });
   });
 });

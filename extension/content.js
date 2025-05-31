@@ -1113,10 +1113,14 @@ async function generatePostSuggestions(postContent, context) {
 }
 
 async function generateCommentSuggestions(context) {
-  // Check if API key is available
-  if (!settings.apiKey) {
-    throw new Error("Please add your OpenAI API key in the extension settings")
-  }
+  // check if comment suggestions enabled by user
+  if (!settings.reply_enabled) return;
+
+  // check if acces_token is available
+  const { access_token, refresh_token } = await chrome.storage.local.get(['access_token', 'refresh_token']);
+  if (access_token == null || refresh_token == null) {
+    throw new Error("Please Sign in to continue")
+  };
 
   // Prepare the prompt
   let prompt = `Generate 3 professional LinkedIn comment replies`
@@ -1134,35 +1138,41 @@ async function generateCommentSuggestions(context) {
     prompt += `. Consider these previous comments: ${context.previousComments.join(" | ")}`
   }
 
-  prompt += `. The tone should be ${settings.tone}.`
+  prompt += `. The tone should be ${settings.tone}. And industry should b ${settings.industry}`
   prompt += ` Each reply should be concise (under 100 words), thoughtful, and add value to the conversation. With no hastags.`
 
-  // Call the OpenAI API
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${settings.apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: `You are a professional LinkedIn comment assistant. You help create thoughtful, engaging replies for the ${settings.industry} industry in a ${settings.tone} tone.`,
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-    }),
-  })
+  async function generate() {
+    const { access_token } = await chrome.storage.local.get(['access_token']);
+    const response = await fetch ("https://my_apiurl/api/prompt/suggest-reply", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${access_token}`,
+      },
+      body: JSON.stringify({
+        comment_text: prompt
+      })
+    })
 
-  const data = await response.json()
+    
 
-  if (!response.ok) {
+    return await response.json()
+  }
+
+  let data = await generate()
+
+  if (data.error && data.message === 'Invalid Token') {
+    // refresh the token
+    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
+    await refreshToken(refresh_token);
+
+    // retry again
+    const new_data = await generate();
+    data = new_data
+
+  }
+
+  if (data.error) {
     throw new Error(data.error?.message || "Failed to generate suggestions")
   }
 
@@ -1297,6 +1307,30 @@ function insertTextIntoEditor(editor, text) {
     editor.dispatchEvent(inputEvent)
   } else {
     editor.textContent = text
+  }
+}
+
+// helper functions
+const refreshToken = async (refresh_token) => {
+  try {
+    const response = await fetch('https://your-api.com/api/auth/refresh-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+    
+      },
+      body: JSON.stringify({ refresh_token }),
+      credentials: 'include'
+    });
+
+    const data = await response.json();
+
+    chrome.storage.local.set({ access_token: data.access_token, refresh_token: data.refresh_token });
+    return data.access_token;
+
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    return null;
   }
 }
 })()

@@ -6,13 +6,14 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <div class="container" id="unauthenticated" style="display: none;">
+  <div class="container" id="unauthenticated" style="display: flex;">
     <h1>Welcome to LIA ✨</h1>
     <p>Your intelligent LinkedIn assistant</p>
     <button id="signin-btn" class="primary-button">Sign in with LinkedIn</button>
+    <span style="text-align: center">or <a href="https://getlia.live/signup" target="_blank">Create ACcount</a></span>
   </div>
 
-  <div class="container" id="authenticated" style="display: flex;">
+  <div class="container" id="authenticated" style="display: none;">
     <header>
       <h2>Hello 👋 <span id="username">...</span></h2>
       <p class="highlight">You've enhanced <strong id="rewrite-count">0</strong> posts with LIA</p>

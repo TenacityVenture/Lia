@@ -6,19 +6,19 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <div class="container" id="unauthenticated">
+  <div class="container" id="unauthenticated" style="display: none;">
     <h1>Welcome to LIA ✨</h1>
     <p>Your intelligent LinkedIn assistant</p>
     <button id="signin-btn" class="primary-button">Sign in with LinkedIn</button>
   </div>
 
-  <div class="container" id="authenticated" style="display: none;">
+  <div class="container" id="authenticated" style="display: flex;">
     <header>
       <h2>Hello 👋 <span id="username">...</span></h2>
       <p class="highlight">You've enhanced <strong id="rewrite-count">0</strong> posts with LIA</p>
     </header>
 
-    <div class="settings">
+    <div class="settings container">
       <label>Writing Tone:</label>
       <select id="tone">
         <option value="professional">Professional</option>
@@ -36,12 +36,13 @@
       </select>
     </div>
 
-    <div class="features">
+    <div class="features container">
       <label><input type="checkbox" id="rewrite-enabled" checked /> Enable Rewrite</label>
       <label><input type="checkbox" id="reply-enabled" checked /> Enable Comment Replies</label>
+      <label><input type="checkbox" id="improve-enabled" checked /> Enable Improve Post</label>
     </div>
 
-    <button id="save-btn" class="primary-button">Save Settings</button>
+    <button id="save-btn" class="primary-button" style="margin-top: 5px;">Save Settings</button>
 
     <footer>
       <p>LIA v0.1 by Tenacity</p>

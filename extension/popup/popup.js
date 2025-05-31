@@ -33,11 +33,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('rewrite-count').innerText = usageData.post_rewrites || 0;
 
   // Load saved settings
-  chrome.storage.sync.get(['tone', 'industry', 'rewrite_enabled', 'reply_enabled'], (data) => {
+  chrome.storage.sync.get(['tone', 'industry', 'rewrite_enabled', 'reply_enabled', 'improve_enabled'], (data) => {
     if (data.tone) document.getElementById('tone').value = data.tone;
     if (data.industry) document.getElementById('industry').value = data.industry;
     document.getElementById('rewrite-enabled').checked = data.rewrite_enabled !== false;
     document.getElementById('reply-enabled').checked = data.reply_enabled !== false;
+    document.getElementById('improve-enabled').checked = data.improve_enabled !== false;
   });
 
   // Save settings
@@ -46,8 +47,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const industry = document.getElementById('industry').value;
     const rewrite_enabled = document.getElementById('rewrite-enabled').checked;
     const reply_enabled = document.getElementById('reply-enabled').checked;
+    const improve_enabled = document.getElementById('improve-enabled').checked;
 
-    chrome.storage.sync.set({ tone, industry, rewrite_enabled, reply_enabled }, () => {
+    chrome.storage.sync.set({ tone, industry, rewrite_enabled, reply_enabled, improve_enabled }, () => {
       alert('✅ Settings saved!');
     });
   });

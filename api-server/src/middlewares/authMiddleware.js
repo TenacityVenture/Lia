@@ -7,7 +7,7 @@ const authenticate = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
 
-  if (!token) return res.status(401).json({ error: 'No token provided' });
+  if (!token) return res.status(401).json({ error: 'No token provided', message: 'No Token' });
 
   try {
     const decoded = jwt.verify(token, SUPABASE_JWT_SECRET);
@@ -16,7 +16,7 @@ const authenticate = (req, res, next) => {
     next();
   } catch (err) {
     console.error('Authentication error:', err); // Log the error for debugging
-    return res.status(403).json({ error: 'Invalid or expired token' });
+    return res.status(403).json({ error: 'Invalid or expired token', message: 'Invalid Token' });
   }
 };
 

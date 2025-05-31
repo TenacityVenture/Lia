@@ -16,7 +16,7 @@ exports.getUsageStats = async (req, res) => {
     const stats = {
       post_rewrites: data.filter(entry => entry.type === 'post_rewrite').length,
       comment_suggestions: data.filter(entry => entry.type === 'comment_suggestion').length,
-      reply_suggestions: data.filter(entry => entry.type === 'reply_suggestion').length,
+      post_suggestions: data.filter(entry => entry.type === 'post_suggestion').length,
       total_tokens_used: data.reduce((acc, entry) => acc + (entry.token_used || 0), 0),
       total_usage: data.length,
     };

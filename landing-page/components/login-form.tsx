@@ -72,6 +72,8 @@ export function LoginForm() {
 
           // Save tokens to localStorage
           localStorage.setItem("lia_access_token", data.access_token)
+
+          router.push("/dashboard")
         }
 
         else {

@@ -75,6 +75,8 @@ export function SignupForm() {
 
           // Save tokens to localStorage
           localStorage.setItem("lia_access_token", data.access_token)
+
+          router.push("/login?success=account_created")
         }
 
         else {

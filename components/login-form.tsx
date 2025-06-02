@@ -72,10 +72,13 @@ export function LoginForm() {
 
           // Save tokens to localStorage
           localStorage.setItem("lia_access_token", data.access_token)
+          
+          // Redirect to the dashboard
+          router.push("/dashboard")
         }
 
         else {
-          // Redirect to the dashboard or another page
+          // Redirect to the dashboard
           router.push("/dashboard")
         }
       })

@@ -63,7 +63,7 @@ export default function ResetPasswordPage() {
       //await new Promise((resolve) => setTimeout(resolve, 1500))
 
       // call an api to reset the password
-      const apiUrl: string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/change-password`
+      //const apiUrl: string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/change-password`
 
       /*const response = await fetch(apiUrl, {
         method: "PUT",

@@ -24,7 +24,6 @@ export default function OAuthCallback() {
 
     // 1. Save to localStorage
     localStorage.setItem('lia_access_token', access_token);
-    localStorage.setItem('lia_refresh_token', refresh_token);
 
     // 2. Sync user to DB (optional if you're using SQL trigger)
     fetch(`${process.env.NEXT_PUBLIC_API_HOST}${syncEndpoint}`, {
@@ -35,12 +34,13 @@ export default function OAuthCallback() {
         // 3. Send JWT to the website
       try {
 
-        if (typeof window !== 'undefined') {
-            window.postMessage({
-                type: 'SEND_JWTs',
-                access_token,
-                refresh_token
-            }, 'https://www.getlia.live');
+        if (access_token && refresh_token) {
+          // Send tokens to the extension
+          window.postMessage({
+              type: 'SEND_JWTs',
+              access_token,
+              refresh_token
+          }, 'https://www.getlia.live');
         }
       } catch (err) {
         console.warn('Error sending JWT to Website:', err);

@@ -78,7 +78,7 @@ export default function ForgotPasswordPage() {
             transition={{ delay: 0.3 }}
             className="text-gray-600 mt-2"
           >
-            Enter your email and we'll send you a link to reset your password
+            Enter your email and we&apos;ll send you a link to reset your password
           </motion.p>
         </div>
 
@@ -93,13 +93,13 @@ export default function ForgotPasswordPage() {
             </div>
             <h2 className="text-xl font-semibold mb-2">Check your email</h2>
             <p className="text-gray-600 mb-6">
-              We've sent a password reset link to <span className="font-medium">{email}</span>
+              We&apos;ve sent a password reset link to <span className="font-medium">{email}</span>
             </p>
             <Button onClick={() => router.push("/login")} className="w-full">
               Return to login
             </Button>
             <p className="mt-4 text-sm text-gray-500">
-              Didn't receive an email? Check your spam folder or{" "}
+              Didn&apos;t receive an email? Check your spam folder or{" "}
               <button onClick={() => setStatus("idle")} className="text-primary hover:underline">
                 try again
               </button>

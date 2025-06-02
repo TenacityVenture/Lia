@@ -24,19 +24,15 @@ export default function ResetPasswordPage() {
   const [token, setToken] = useState<string | null>(null)
   const [isValidToken, setIsValidToken] = useState(true)
 
-  const accessToken = localStorage.getItem("lia_access_token")
-  
-  const resetToken = searchParams.get("token")
-
-  if (!resetToken || resetToken.length < 10) {
-    setIsValidToken(false)
-  }
   useEffect(() => {
-    if (resetToken) {
-      setToken(resetToken)
+    const tokenParam = searchParams.get("token")
+    setToken(tokenParam)
+
+    // Validate token (in a real app, you'd verify this with your backend)
+    if (!tokenParam || tokenParam.length < 10) {
+      setIsValidToken(false)
     }
-  }, [resetToken])
-  setToken(resetToken)
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,7 +59,7 @@ export default function ResetPasswordPage() {
           method: "PUT",
           headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${accessToken}`,
+          "Authorization": `Bearer ${token}`,
           },
           body: JSON.stringify({ token, password }),
       })

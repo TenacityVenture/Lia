@@ -26,7 +26,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Listen for auth tokens after sign-in or signup on the website
 window.addEventListener('message', (event) => {
-  if (event.origin !== 'https://getlia.live') return;
+  if (event.origin !== 'https://www.getlia.live') return;
+  if (event.source !== window) return;
 
   if (event.data.type === 'SEND_JWTs') {
     chrome.runtime.sendMessage({

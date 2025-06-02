@@ -26,23 +26,23 @@ export default function ResetPasswordPage() {
   const [isValidToken, setIsValidToken] = useState(true)
 
   useEffect(() => {
-      const hash = window.location.hash // "#error=access_denied&error_code=otp_expired&error_description=..."
-      const params = new URLSearchParams(hash.slice(1)) // Remove the "#" and parse it
-  
-      if (hash.includes("error=access_denied")) {
-        const errorCode = params.get("error_code")
-        const errorDescription = params.get("error_description")
-  
-        console.log(errorCode, errorDescription)
-        setIsValidToken(false)
-        // Optionally store the error message for display
-      } else {
-        const tokenParam = params.get("access_token")
-        setToken(tokenParam)
-        console.log("Token:", token)
-        setIsValidToken(true)
-      }
-    }, [])
+    const hash = window.location.hash // "#error=access_denied&error_code=otp_expired&error_description=..."
+    const params = new URLSearchParams(hash.slice(1)) // Remove the "#" and parse it
+
+    if (hash.includes("error=access_denied")) {
+      const errorCode = params.get("error_code")
+      const errorDescription = params.get("error_description")
+
+      console.log(errorCode, errorDescription)
+      setIsValidToken(false)
+      // Optionally store the error message for display
+    } else {
+      const tokenParam = params.get("access_token")
+      setToken(tokenParam)
+      console.log("Token:", token)
+      setIsValidToken(true)
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -63,7 +63,7 @@ export default function ResetPasswordPage() {
       //await new Promise((resolve) => setTimeout(resolve, 1500))
 
       // call an api to reset the password
-      const apiUrl: string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/change-password`
+      //const apiUrl: string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/change-password`
 
       /*const response = await fetch(apiUrl, {
         method: "PUT",

@@ -28,7 +28,7 @@ export default function ProfilePage() {
     apiKey: "sk-•••••••••••••••••••••••••••••••",
   })
 
-  const handleChange = (e: { target: { name: any; value: any } }) => {
+  const handleChange = (e: { target: { name: string; value: string } }) => {
     const { name, value } = e.target
     setFormData((prev: ProfileFormData) => ({ ...prev, [name]: value }))
   }

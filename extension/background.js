@@ -25,4 +25,13 @@ chrome.runtime.onInstalled.addListener(() => {
     return true // Keep the message channel open for async responses
   })
   
-  
+// Listen for auth tokens from content script after sign-in or signup on the website
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.type === 'STORE_JWTs') {
+    // Store securely in Chrome storage
+    chrome.storage.local.set({ access_token: message.access_token, refresh_token: message.refresh_token }, () => {
+      console.log('Access token and refresh token saved in storage.');
+    });
+    sendResponse({ status: 'ok' });
+  }
+});

@@ -27,9 +27,11 @@ export default function OAuthCallback() {
 
     // 2. Sync user to DB (optional if you're using SQL trigger)
     fetch(`${process.env.NEXT_PUBLIC_API_HOST}${syncEndpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ access_token })
+      method: 'GET',
+      headers: { 
+        'Authorization': `Bearer ${access_token}`
+      },
+      credentials: 'include'
     }).finally(() => {
         // 3. Send JWT to the website
       try {

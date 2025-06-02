@@ -3,14 +3,14 @@
 import type React from "react"
 
 import Link from "next/link"
-import { motion } from "framer-motion"
+import { motion, Variants } from "framer-motion"
 import { Button } from "@/components/ui/button"
 
 interface DashboardActionButtonProps {
   icon: React.ReactNode
   text: string
   href: string
-  variants?: motion.variants
+  variants?: Variants
 }
 
 export default function DashboardActionButton({ icon, text, href, variants }: DashboardActionButtonProps) {

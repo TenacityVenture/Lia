@@ -20,7 +20,7 @@ export default function OAuthCallback() {
     }
 
     const provider = new URLSearchParams(window.location.search).get('provider');
-    const syncEndpoint = provider === 'google' ? '/api/auth/google-sync' : '/api/auth/linkedin-sync'; 
+    const syncEndpoint = provider === 'google' ? '/api/auth/oauth/google-sync' : '/api/auth/oauth/linkedIn-sync';
 
     // 1. Save to localStorage
     localStorage.setItem('lia_access_token', access_token);

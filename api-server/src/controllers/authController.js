@@ -176,10 +176,9 @@ const refreshAccessToken = async (req, res) => {
  */
 const syncOAuthUser = async (req, res) => {
   const supabaseUser = req.user; // this comes from the JWT decoded by our middleware
-  let db;
 
   // optional: check if already exists
-  const { data: existingUser } = await db
+  const { data: existingUser } = await supabase
     .from('users')
     .select('id')
     .eq('id', supabaseUser.sub)
@@ -188,7 +187,7 @@ const syncOAuthUser = async (req, res) => {
   if (!existingUser) {
     const { email, name, picture } = supabaseUser;
     
-    await db.from('users').insert({
+    await supabase.from('users').insert({
       id: supabaseUser.sub,
       email,
       name: name || '',
@@ -220,10 +219,9 @@ const syncOAuthUser = async (req, res) => {
  */
 const syncGoogleOAuthUser = async (req, res) => {
   const supabaseUser = req.user; // this comes from the JWT decoded by our middleware
-  let db;
 
   // optional: check if already exists
-  const { data: existingUser } = await db
+  const { data: existingUser } = await supabase
     .from('users')
     .select('id')
     .eq('id', supabaseUser.sub)
@@ -232,7 +230,7 @@ const syncGoogleOAuthUser = async (req, res) => {
   if (!existingUser) {
     const { email, name, picture } = supabaseUser;
     
-    await db.from('users').insert({
+    await supabase.from('users').insert({
       id: supabaseUser.sub,
       email,
       name: name || '',

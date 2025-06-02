@@ -62,17 +62,21 @@ export function SignupForm() {
         return res.json()})
       .then((data) => {
         console.log(data)
-        // send token to the chrome extension
-        if (data.access_token && data.refresh_token) {
-          // Save tokens to localStorage
-          // Send token to the extension
-          window.postMessage({ type: "SEND_TOKEN", 
-            access_token: data.access_token, 
-            refresh_token: data.refresh_token }, 'https://www.getlia.live')
-        }
         if (data.error) {
           throw new Error(data.error)
         }
+
+        // send token to the chrome extension
+        if (data.access_token && data.refresh_token) {
+          
+          window.postMessage({ type: "SEND_JWTs", 
+            access_token: data.access_token, 
+            refresh_token: data.refresh_token}, "*") // * means all domains (shoule be restricted to lia extension id)
+
+          // Save tokens to localStorage
+          localStorage.setItem("lia_access_token", data.access_token)
+        }
+
         else {
           // Redirect to dashboard or onboarding
           router.push("/login?success=account_created")

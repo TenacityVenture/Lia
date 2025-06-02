@@ -13,7 +13,6 @@ import { Label } from "@/components/ui/label"
 
 export default function ResetPasswordPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -25,14 +24,22 @@ export default function ResetPasswordPage() {
   const [isValidToken, setIsValidToken] = useState(true)
 
   useEffect(() => {
-    const tokenParam = searchParams.get("access_token")
-    setToken(tokenParam)
-
-    // Validate token (in a real app, you'd verify this with your backend)
-    if (!tokenParam || tokenParam.length < 10) {
-      setIsValidToken(false)
-    }
-  }, [searchParams])
+      const hash = window.location.hash // "#error=access_denied&error_code=otp_expired&error_description=..."
+      const params = new URLSearchParams(hash.slice(1)) // Remove the "#" and parse it
+  
+      if (hash.includes("error=access_denied")) {
+        const errorCode = params.get("error_code")
+        const errorDescription = params.get("error_description")
+  
+        console.log(errorCode, errorDescription)
+        setIsValidToken(false)
+        // Optionally store the error message for display
+      } else {
+        const tokenParam = params.get("access_token")
+        setToken(tokenParam)
+        setIsValidToken(true)
+      }
+    }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

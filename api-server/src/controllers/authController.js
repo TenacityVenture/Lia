@@ -41,7 +41,7 @@ const loginUser = async (req, res) => {
     });
 
     // The frontend or extension will store this access token in memory or local storage
-    res.status(200).json({ user: data.user, token: accessToken });
+    res.status(200).json({ user: data.user, access_token: accessToken, refresh_token: refreshToken });
 }
 
 
@@ -114,7 +114,7 @@ const registerUser = async (req, res) => {
   });
 
   // We return the access token so the frontend can start authenticated requests
-  res.status(201).json({ token: accessToken, user });
+  res.status(201).json({ access_token: accessToken, refresh_token: refreshToken, user });
 };
 
 
@@ -161,7 +161,7 @@ const refreshAccessToken = async (req, res) => {
   });
 
   // Give the client a new access token so they can retry failed requests
-  res.json({ token: newAccessToken });
+  res.json({ access_token: newAccessToken, refresh_token: newRefreshToken });
 };
 
 

@@ -39,7 +39,7 @@ export default function DashboardPage() {
     total_usage: 100,
   }
 
-  const getUsageStats = () => {
+  /*const getUsageStats = () => {
     fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/usage`, {
       method: "GET",
       headers: {
@@ -61,7 +61,7 @@ export default function DashboardPage() {
       return match ? decodeURIComponent(match[1]) : ""
     }
 
-  }
+  }*/
 
   return (
     <div className="flex min-h-screen flex-col">

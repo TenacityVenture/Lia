@@ -10,6 +10,14 @@ import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Loader2, Save } from "lucide-react"
 
+type ProfileFormData = {
+  name: string
+  email: string
+  company: string
+  title: string
+  apiKey: string
+}
+
 export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState({
@@ -22,7 +30,7 @@ export default function ProfilePage() {
 
   const handleChange = (e: { target: { name: any; value: any } }) => {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev: ProfileFormData) => ({ ...prev, [name]: value }))
   }
 
   const handleSave = () => {

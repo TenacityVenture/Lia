@@ -10,7 +10,7 @@ interface DashboardActionButtonProps {
   icon: React.ReactNode
   text: string
   href: string
-  variants?: any
+  variants?: motion.variants
 }
 
 export default function DashboardActionButton({ icon, text, href, variants }: DashboardActionButtonProps) {

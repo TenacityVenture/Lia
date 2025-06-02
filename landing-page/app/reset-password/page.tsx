@@ -24,15 +24,19 @@ export default function ResetPasswordPage() {
   const [token, setToken] = useState<string | null>(null)
   const [isValidToken, setIsValidToken] = useState(true)
 
-  useEffect(() => {
-    const tokenParam = searchParams.get("token")
-    setToken(tokenParam)
+  const accessToken = localStorage.getItem("lia_access_token")
+  
+  const resetToken = searchParams.get("token")
 
-    // Validate token (in a real app, you'd verify this with your backend)
-    if (!tokenParam || tokenParam.length < 10) {
-      setIsValidToken(false)
+  if (!resetToken || resetToken.length < 10) {
+    setIsValidToken(false)
+  }
+  useEffect(() => {
+    if (resetToken) {
+      setToken(resetToken)
     }
-  }, [searchParams])
+  }, [resetToken])
+  setToken(resetToken)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,7 +54,25 @@ export default function ResetPasswordPage() {
       }
 
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      //await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      // call an api to reset the password
+      const apiUrl: string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/reset-password`
+
+      const response = await fetch(apiUrl, {
+          method: "PUT",
+          headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({ token, password }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        setStatus("error")
+        throw new Error(errorData.error || "Failed to reset password")
+      }
 
       setStatus("success")
     } catch (err) {

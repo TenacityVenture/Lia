@@ -292,15 +292,15 @@ const changePassword = async (req, res) => {
   // automatically, so we'll log them out.
 
 
-  const { newPassword } = req.body;
+  const { password } = req.body;
 
-  if (!newPassword || newPassword.length < 6) {
+  if (!password || password.length < 6) {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
   }
 
   // Supabase uses the current session to verify the user identity
   const { error } = await supabase.auth.updateUser({
-    password: newPassword
+    password
   });
 
   if (error) {

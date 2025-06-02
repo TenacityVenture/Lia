@@ -25,7 +25,7 @@ export default function ResetPasswordPage() {
   const [isValidToken, setIsValidToken] = useState(true)
 
   useEffect(() => {
-    const tokenParam = searchParams.get("token")
+    const tokenParam = searchParams.get("access_token")
     setToken(tokenParam)
 
     // Validate token (in a real app, you'd verify this with your backend)

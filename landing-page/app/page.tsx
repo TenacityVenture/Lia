@@ -42,12 +42,12 @@ export default function Home() {
             </Link>
           </nav>
           <div className="flex items-center gap-4">
-            <Button asChild variant="outline" size="sm" className="hidden md:flex">
+            <Button asChild variant="outline" size="sm">
               <Link href="/signup">
                 Get Started
               </Link>
             </Button>
-            <Button asChild size="sm">
+            <Button asChild size="sm" className="hidden sm:flex">
               <Link href="https://chrome.google.com/webstore" target="_blank">
                 Download
               </Link>

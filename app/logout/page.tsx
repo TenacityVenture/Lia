@@ -15,6 +15,7 @@ export default function LogoutPage() {
       localStorage.removeItem("user")
       localStorage.removeItem("refresh_token")
       localStorage.removeItem("access_token")
+      localStorage.removeItem("lia_access_token")
       //localStorage.removeItem("userPreferences")
       sessionStorage.clear()
 

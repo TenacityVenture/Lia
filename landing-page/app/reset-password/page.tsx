@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
+import { supabase } from "@/lib/supabaseClient"
+
 export default function ResetPasswordPage() {
   const router = useRouter()
   const [password, setPassword] = useState("")
@@ -37,6 +39,7 @@ export default function ResetPasswordPage() {
       } else {
         const tokenParam = params.get("access_token")
         setToken(tokenParam)
+        console.log("Token:", token)
         setIsValidToken(true)
       }
     }, [])
@@ -62,20 +65,30 @@ export default function ResetPasswordPage() {
       // call an api to reset the password
       const apiUrl: string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/change-password`
 
-      const response = await fetch(apiUrl, {
-          method: "PUT",
-          headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-          },
-          body: JSON.stringify({ token, password }),
+      /*const response = await fetch(apiUrl, {
+        method: "PUT",
+        headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+        },
+        credentials: "include", // Include cookies if needed
+        body: JSON.stringify({ token, password }),
       })
-
+        
       if (!response.ok) {
         const errorData = await response.json()
         setStatus("error")
         throw new Error(errorData.error || "Failed to reset password")
-      }
+      }*/
+
+      supabase.auth.updateUser({
+        password: password,
+      }).then(({ data, error }) => {
+        if (error) {
+          throw new Error(error.message)
+        }
+        console.log("Password updated successfully", data)
+      })
 
       setStatus("success")
     } catch (err) {

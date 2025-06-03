@@ -26,13 +26,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 // Listen for auth tokens after sign-in or signup on the website
 window.addEventListener('message', (event) => {
-  if (event.origin !== 'https://getlia.live') return;
+  if (event.origin !== 'https://www.getlia.live') return;
 
   if (event.data.type === 'SEND_JWTs') {
     chrome.runtime.sendMessage({
       type: 'STORE_JWTs',
       access_token: event.data.access_token,
       refresh_token: event.data.refresh_token
+    });
+  }
+
+  if (event.data.type === 'CLEAR_JWTs') {
+    chrome.storage.local.remove(['access_token', 'refresh_token'], () => {
+      console.log('Access token and refresh token cleared from storage.');
     });
   }
 });

@@ -1197,13 +1197,15 @@ async function generateCommentSuggestions(context) {
   }
 
   // Parse the response to extract the suggestions
-  const content = data.choices[0].message.content
+  /*const content = data.choices[0].message.content
 
   // Split the content into separate suggestions
   const suggestions = content
     .split(/\d+\.\s+/)
     .filter(Boolean)
-    .map((s) => s.trim())
+    .map((s) => s.trim())*/
+
+  const suggestions = data.suggestions;
 
   return suggestions
 }

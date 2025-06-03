@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     headers: { Authorization: `Bearer ${access_token}` }
   });
 
+  console.log(userData)
+
   const usageData = await usage.json();
   try {
     document.getElementById('username').innerText = userData.name.split(' ')[0];
@@ -91,5 +93,5 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Sign-in button redirect
 document.getElementById('signin-btn')?.addEventListener('click', () => {
-  chrome.tabs.create({ url: 'https://www.getlia.live/signup' });
+  chrome.tabs.create({ url: 'https://www.getlia.live/login' });
 });

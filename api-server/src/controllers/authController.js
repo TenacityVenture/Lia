@@ -132,7 +132,19 @@ const refreshAccessToken = async (req, res) => {
  // The client won't touch the refresh token directly - it's in a cookie.
  // We just want to give them a new access token silently if the old one is expires.
 
-  const refreshToken = req.cookies.refresh_token;
+  let refreshToken = req.cookies.refresh_token;
+
+  // fallback for extension if the refresh_token is not in cookies
+  if (!refreshToken) {
+    // If the refresh token is not in cookies, we can check the body for the refresh_token
+    const { refresh_token: bodyRefreshToken } = req.body;
+    if (bodyRefreshToken) {
+      // If we got it from the body, we can use it
+      refreshToken = bodyRefreshToken;
+    }
+
+  }
+
 
   // If there's no cookie, the client isn't allowed to refresh — simple as that
   if (!refreshToken) {

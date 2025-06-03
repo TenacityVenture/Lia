@@ -1162,7 +1162,7 @@ async function generateCommentSuggestions(context) {
 
   async function generate() {
     const { access_token } = await chrome.storage.local.get(['access_token']);
-    const response = await fetch ("https://my_apiurl/api/prompt/suggest-reply", {
+    const response = await fetch ("http://localhost:4000/api/prompt/suggest-reply", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1332,14 +1332,15 @@ function insertTextIntoEditor(editor, text) {
 // helper functions
 const refreshToken = async (refresh_token) => {
   try {
-    const response = await fetch('https://your-api.com/api/auth/refresh-token', {
+    const response = await fetch('http://localhost:4000/api/auth/refresh-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
     
       },
+      // include credentials to allow cookies to be sent
+      credentials: 'include',
       body: JSON.stringify({ refresh_token }),
-      credentials: 'include'
     });
 
     const data = await response.json();

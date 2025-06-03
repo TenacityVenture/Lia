@@ -36,6 +36,12 @@ window.addEventListener('message', (event) => {
       refresh_token: event.data.refresh_token
     });
   }
+
+  if (event.data.type === 'CLEAR_JWTs') {
+    chrome.storage.local.remove(['access_token', 'refresh_token'], () => {
+      console.log('Access token and refresh token cleared from storage.');
+    });
+  }
 });
 
 function initializeExtension() {

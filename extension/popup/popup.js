@@ -9,8 +9,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
+  console.log(access_token, refresh_token);
+
   // check if access_token is still valid
-  const me = await fetch('https://your-api.com/api/user/me', {
+  const me = await fetch('http://localhost:4000/api/user/me', {
     headers: { Authorization: `Bearer ${access_token}` }
   });
 

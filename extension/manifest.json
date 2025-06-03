@@ -4,7 +4,7 @@
   "version": "0.1",
   "description": "Rewrite posts and reply to comments on LinkedIn using AI.",
   "permissions": ["storage", "scripting", "identity", "activeTab"],
-  "host_permissions": ["https://www.linkedin.com/*"],
+  "host_permissions": ["https://www.linkedin.com/*", "https://www.getlia.live/*", "http://localhost:4000/*", "https://api.openai.com/*", "https://generativelanguage.googleapis.com/*"],
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {

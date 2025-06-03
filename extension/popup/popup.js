@@ -26,12 +26,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   unauth.style.display = 'none';
 
   // Show usage count
-  const usage = await fetch('https://your-api.com/api/usage/stats', {
+  const usage = await fetch('http://localhost:4000/api/usage/stats', {
     headers: { Authorization: `Bearer ${access_token}` }
   });
 
   const usageData = await usage.json();
-  document.getElementById('username').innerText = userData.name.split(' ')[0];
+  try {
+    document.getElementById('username').innerText = userData.name.split(' ')[0];
+  } catch (e) {
+    document.getElementById('username').innerText = userData.email.split('@')[0];
+  }
   document.getElementById('rewrite-count').innerText = usageData.post_rewrites || 0;
 
   // Load saved settings
@@ -81,13 +85,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
           chrome.tabs.sendMessage(tabs[0].id, { action: "settingsUpdated" })
         })
-
-        alert('✅ Settings saved!');
     });
   });
 });
 
 // Sign-in button redirect
 document.getElementById('signin-btn')?.addEventListener('click', () => {
-  chrome.tabs.create({ url: 'https://lia.davidconteh.engineer' });
+  chrome.tabs.create({ url: 'https://www.getlia.live/signup' });
 });

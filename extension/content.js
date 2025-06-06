@@ -1356,4 +1356,1273 @@ const refreshToken = async (refresh_token) => {
     return null;
   }
 }
+  // ===== CHATBOT SYSTEM =====
+  const chatbotState = {
+    isOpen: false,
+    isMinimized: false,
+    sidebarCollapsed: false,
+    conversations: [],
+    currentConversationId: null,
+    position: { x: window.innerWidth - 80, y: window.innerHeight - 80 },
+  }
+
+  function initializeChatbot() {
+    createChatbotButton()
+    createChatbotInterface()
+    loadChatHistory()
+    makeChatbotDraggable()
+  }
+
+  function createChatbotButton() {
+    // Remove existing button if it exists
+    const existingButton = document.getElementById("lia-chatbot-button")
+    if (existingButton) existingButton.remove()
+
+    const chatbotButton = document.createElement("div")
+    chatbotButton.id = "lia-chatbot-button"
+    chatbotButton.innerHTML = `
+    <div class="lia-logo-container">
+      <svg class="lia-logo" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+        <rect x="2" y="9" width="4" height="12"/>
+        <circle cx="4" cy="4" r="2"/>
+        <circle cx="16" cy="4" r="2" fill="#ffffff"/>
+        <path d="M12 8a4 4 0 0 1 4-4" stroke="#ffffff"/>
+      </svg>
+      <div class="lia-pulse-ring"></div>
+      <div class="lia-pulse-ring-2"></div>
+      <div class="lia-notification-dot"></div>
+    </div>
+  `
+
+    chatbotButton.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #0a66c2, #004182);
+    border-radius: 50%;
+    cursor: pointer;
+    z-index: 10000;
+    box-shadow: 0 4px 20px rgba(10, 102, 194, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    overflow: hidden;
+  `
+
+    // Add hover effects
+    chatbotButton.addEventListener("mouseenter", () => {
+      chatbotButton.style.transform = "scale(1.1) rotate(5deg)"
+      chatbotButton.style.boxShadow = "0 6px 25px rgba(10, 102, 194, 0.4)"
+    })
+
+    chatbotButton.addEventListener("mouseleave", () => {
+      chatbotButton.style.transform = "scale(1) rotate(0deg)"
+      chatbotButton.style.boxShadow = "0 4px 20px rgba(10, 102, 194, 0.3)"
+    })
+
+    chatbotButton.addEventListener("click", toggleChatbot)
+
+    document.body.appendChild(chatbotButton)
+
+    // Add CSS animations
+    addChatbotStyles()
+  }
+
+  function addChatbotStyles() {
+    if (document.getElementById("lia-chatbot-styles")) return
+
+    const styles = document.createElement("style")
+    styles.id = "lia-chatbot-styles"
+    styles.textContent = `
+    .lia-logo-container {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lia-logo {
+      animation: liaFloat 4s ease-in-out infinite;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+      transform-origin: center;
+    }
+
+    .lia-pulse-ring {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      animation: liaPulse 3s ease-out infinite;
+    }
+
+    .lia-pulse-ring-2 {
+      position: absolute;
+      width: 80px;
+      height: 80px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      animation: liaPulse 3s ease-out infinite 1.5s;
+    }
+
+    .lia-notification-dot {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 12px;
+      height: 12px;
+      background: #ff4757;
+      border-radius: 50%;
+      border: 2px solid white;
+      animation: liaNotificationPulse 2s ease-in-out infinite;
+      opacity: 0;
+    }
+
+    .lia-notification-dot.show {
+      opacity: 1;
+    }
+
+    @keyframes liaFloat {
+      0%, 100% { 
+        transform: translateY(0px) rotate(0deg) scale(1); 
+      }
+      25% { 
+        transform: translateY(-4px) rotate(2deg) scale(1.05); 
+      }
+      50% { 
+        transform: translateY(-8px) rotate(0deg) scale(1.1); 
+      }
+      75% { 
+        transform: translateY(-4px) rotate(-2deg) scale(1.05); 
+      }
+    }
+
+    @keyframes liaPulse {
+      0% {
+        transform: scale(0.8);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1.4);
+        opacity: 0;
+      }
+    }
+
+    @keyframes liaNotificationPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2); }
+    }
+
+    .lia-chatbot-interface {
+      position: fixed;
+      bottom: 100px;
+      right: 20px;
+      width: 420px;
+      height: 500px;
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.15);
+      z-index: 100000;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transform: scale(0) translateY(20px);
+      opacity: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      backdrop-filter: blur(20px);
+
+      border-bottom-right-radius: 0;
+    }
+
+    .lia-chatbot-interface.right-radius-bottom-and-width {
+      border-bottom-right-radius: 20px;
+      bottom: 20px;
+      width: calc(420px/2)
+    }
+
+    .lia-chatbot-interface.open {
+      transform: scale(1) translateY(0);
+      opacity: 1;
+    }
+
+    .lia-chatbot-interface.minimized {
+      height: 60px;
+      overflow: hidden;
+    }
+
+    .lia-chatbot-header {
+      background: linear-gradient(135deg, #0a66c2, #004182);
+      color: white;
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-radius: 20px 20px 0 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lia-chatbot-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+      transform: translateX(-100%);
+      animation: headerShine 3s ease-in-out infinite;
+    }
+
+    .lia-chatbot-header:hover {
+      cursor: grab;
+    }
+
+    @keyframes headerShine {
+      0% { transform: translateX(-100%); }
+      50% { transform: translateX(100%); }
+      100% { transform: translateX(100%); }
+    }
+
+    .lia-chatbot-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+      font-size: 16px;
+      z-index: 1;
+      cursor: pointer;
+    }
+
+    .lia-chatbot-title svg {
+      /* animation: titleLogoSpin 6s linear infinite; */
+    }
+
+    @keyframes titleLogoSpin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .lia-chatbot-controls {
+      display: flex;
+      gap: 8px;
+      z-index: 1;
+    }
+
+    .lia-control-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: rgba(255, 255, 255, 0.15);
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      backdrop-filter: blur(10px);
+    }
+
+    .lia-control-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: scale(1.1);
+    }
+
+    .lia-control-btn:active {
+      transform: scale(0.95);
+    }
+
+    .lia-chatbot-body {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .lia-chat-sidebar {
+      width: 140px;
+      background: linear-gradient(180deg, #f8f9fa, #e9ecef);
+      border-right: 1px solid #dee2e6;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .lia-chat-sidebar.collapsed {
+      width: 0;
+      border-right: none;
+      overflow: hidden;
+    }
+
+    .lia-sidebar-toggle {
+      position: absolute;
+      right: -12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 40px;
+      background: #0a66c2;
+      border: none;
+      border-radius: 0 8px 8px 0;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      transition: all 0.3s ease;
+      box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+    }
+
+    .lia-sidebar-toggle:hover {
+      background: #004182;
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .lia-sidebar-toggle svg {
+      transition: transform 0.3s ease;
+    }
+
+    .lia-chat-sidebar.collapsed .lia-sidebar-toggle svg {
+      transform: rotate(180deg);
+    }
+
+    .lia-sidebar-header {
+      padding: 16px 12px 12px;
+      border-bottom: 1px solid #dee2e6;
+      font-size: 11px;
+      font-weight: 700;
+      color: #6c757d;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      background: linear-gradient(135deg, #ffffff, #f8f9fa);
+    }
+
+    .lia-conversation-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      scrollbar-width: thin;
+      scrollbar-color: #dee2e6 transparent;
+    }
+
+    .lia-conversation-list::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .lia-conversation-list::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .lia-conversation-list::-webkit-scrollbar-thumb {
+      background: #dee2e6;
+      border-radius: 2px;
+    }
+
+    .lia-conversation-item {
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 12px;
+      color: #495057;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lia-conversation-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(10, 102, 194, 0.1), transparent);
+      transition: left 0.5s;
+    }
+
+    .lia-conversation-item:hover::before {
+      left: 100%;
+    }
+
+    .lia-conversation-item:hover {
+      background: #e9ecef;
+      transform: translateX(4px);
+      border-color: #0a66c2;
+    }
+
+    .lia-conversation-item.active {
+      background: linear-gradient(135deg, #0a66c2, #004182);
+      color: white;
+      transform: translateX(4px);
+      box-shadow: 0 4px 12px rgba(10, 102, 194, 0.3);
+    }
+
+    .lia-new-chat-btn {
+      margin: 8px;
+      padding: 12px;
+      background: linear-gradient(135deg, #0a66c2, #004182);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lia-new-chat-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .lia-new-chat-btn:hover::before {
+      left: 100%;
+    }
+
+    .lia-new-chat-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(10, 102, 194, 0.4);
+    }
+
+    .lia-chat-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .lia-messages-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scrollbar-width: thin;
+      scrollbar-color: #dee2e6 transparent;
+    }
+
+    .lia-messages-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .lia-messages-container::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .lia-messages-container::-webkit-scrollbar-thumb {
+      background: #dee2e6;
+      border-radius: 3px;
+    }
+
+    .lia-message {
+      display: flex;
+      gap: 12px;
+      animation: messageSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 0;
+      animation-fill-mode: forwards;
+    }
+
+    .lia-message.user {
+      flex-direction: row-reverse;
+    }
+
+    .lia-message-avatar {
+      width: 26px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lia-message.user .lia-message-avatar {
+      color: white;
+    }
+
+    .lia-message.assistant .lia-message-avatar {
+      color: #0a66c2;
+      animation: avatarPulse 2s ease-in-out infinite;
+    }
+
+    @keyframes avatarPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+
+    .lia-message-content {
+      max-width: 75%;
+      padding: 14px 18px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.5;
+      position: relative;
+      word-wrap: break-word;
+    }
+
+    .lia-message.user .lia-message-content {
+      background: linear-gradient(135deg, #0a66c2, #004182);
+      color: white;
+      border-bottom-right-radius: 6px;
+      box-shadow: 0 4px 12px rgba(10, 102, 194, 0.2);
+    }
+
+    .lia-message.assistant .lia-message-content {
+      background: linear-gradient(135deg, #f8f9fa, #ffffff);
+      color: #333;
+      border-bottom-left-radius: 6px;
+      border: 1px solid #e9ecef;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    }
+
+    .lia-input-container {
+      padding: 20px;
+      border-top: 1px solid #e9ecef;
+      background: linear-gradient(180deg, #ffffff, #f8f9fa);
+    }
+
+    .lia-input-wrapper {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+      background: white;
+      border-radius: 25px;
+      padding: 8px;
+      border: 2px solid #e9ecef;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .lia-input-wrapper:focus-within {
+      border-color: #0a66c2;
+      box-shadow: 0 4px 20px rgba(10, 102, 194, 0.15);
+    }
+
+    .lia-message-input {
+      flex: 1;
+      border: none;
+      border-radius: 20px;
+      padding: 12px 16px;
+      font-size: 14px;
+      resize: none;
+      max-height: 120px;
+      min-height: 20px;
+      outline: none;
+      background: transparent;
+      font-family: inherit;
+
+      scrollbar-width: thin;
+      scrollbar-color: #0a66c2 #e9ecef;
+
+      &::-webkit-scrollbar {
+        width: 2px;
+        height: 2px;
+      }
+    }
+
+    .lia-send-btn {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, #0a66c2, #004182);
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.3s;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lia-send-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+      transition: left 0.5s;
+    }
+
+    .lia-send-btn:hover::before {
+      left: 100%;
+    }
+
+    .lia-send-btn:hover {
+      transform: scale(1.1) rotate(15deg);
+      box-shadow: 0 6px 20px rgba(10, 102, 194, 0.4);
+    }
+
+    .lia-send-btn:active {
+      transform: scale(0.95) rotate(15deg);
+    }
+
+    .lia-send-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .lia-send-btn:disabled::before {
+      display: none;
+    }
+
+    .lia-typing-indicator {
+      display: flex;
+      gap: 6px;
+      padding: 14px 18px;
+    }
+
+    .lia-typing-dot {
+      width: 8px;
+      height: 8px;
+      background: #0a66c2;
+      border-radius: 50%;
+      animation: typingBounce 1.4s ease-in-out infinite both;
+    }
+
+    .lia-typing-dot:nth-child(1) { animation-delay: -0.32s; }
+    .lia-typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes messageSlideIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.9);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes typingBounce {
+      0%, 80%, 100% {
+        transform: scale(0);
+      }
+      40% {
+        transform: scale(1);
+      }
+    }
+
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+      .lia-chatbot-interface {
+        width: calc(100vw - 40px);
+        height: 70vh;
+        right: 20px;
+        left: 20px;
+        bottom: 100px;
+      }
+      
+      .lia-chat-sidebar {
+        width: 0;
+        border-right: none;
+      }
+
+      .lia-chat-sidebar.collapsed {
+        width: 0;
+      }
+
+      .lia-sidebar-toggle {
+        display: none;
+      }
+    }
+  `
+
+    document.head.appendChild(styles)
+  }
+
+  function createChatbotInterface() {
+    // Remove existing interface if it exists
+    const existingInterface = document.getElementById("lia-chatbot-interface")
+    if (existingInterface) existingInterface.remove()
+
+    const chatbotInterface = document.createElement("div")
+    chatbotInterface.id = "lia-chatbot-interface"
+    chatbotInterface.className = "lia-chatbot-interface"
+
+    chatbotInterface.innerHTML = `
+    <div class="lia-chatbot-header">
+      <div class="lia-chatbot-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+          <rect x="2" y="9" width="4" height="12"/>
+          <circle cx="4" cy="4" r="2"/>
+          <circle cx="16" cy="4" r="2" fill="currentColor"/>
+          <path d="M12 8a4 4 0 0 1 4-4" stroke="currentColor"/>
+        </svg>
+        LIA
+      </div>
+      <div class="lia-chatbot-controls">
+        <button class="lia-control-btn" id="lia-minimize-btn" title="Minimize">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+        <button class="lia-control-btn" id="lia-close-btn" title="Close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+    
+    <div class="lia-chatbot-body">
+      <div class="lia-chat-sidebar" id="lia-chat-sidebar">
+        <button class="lia-sidebar-toggle" id="lia-sidebar-toggle" title="Toggle Sidebar">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15,18 9,12 15,6"></polyline>
+          </svg>
+        </button>
+        <div class="lia-sidebar-header">Recent Chats</div>
+        <div class="lia-conversation-list" id="lia-conversation-list">
+          <!-- Conversations will be populated here -->
+        </div>
+        <button class="lia-new-chat-btn" id="lia-new-chat-btn">+ New Chat</button>
+      </div>
+      
+      <div class="lia-chat-main">
+        <div class="lia-messages-container" id="lia-messages-container">
+          <div class="lia-message assistant">
+            <div class="lia-message-avatar">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+                <rect x="2" y="9" width="4" height="12"/>
+                <circle cx="4" cy="4" r="2"/>
+                <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
+                <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
+              </svg>
+            </div>
+            <div class="lia-message-content">
+              Hi! I'm Lia, your LinkedIn Intelligence Assistant. <br/><br/> I'm here to help you write posts, polish comments, and improve your content. <br/><br/>What can I assist you with today?
+            </div>
+          </div>
+        </div>
+        
+        <div class="lia-input-container">
+          <div class="lia-input-wrapper">
+            <textarea 
+              class="lia-message-input" 
+              id="lia-message-input"
+              placeholder="What do you want to post?"
+              rows="1"
+            ></textarea>
+            <button class="lia-send-btn" id="lia-send-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22,2 15,22 11,13 2,9"></polygon>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+
+    document.body.appendChild(chatbotInterface)
+
+    // Setup event listeners
+    setupChatbotEventListeners()
+  }
+
+  function setupChatbotEventListeners() {
+    const messageInput = document.getElementById("lia-message-input")
+    const sendBtn = document.getElementById("lia-send-btn")
+    const minimizeBtn = document.getElementById("lia-minimize-btn")
+    const closeBtn = document.getElementById("lia-close-btn")
+    const sidebarToggle = document.getElementById("lia-sidebar-toggle")
+    const sidebar = document.getElementById("lia-chat-sidebar")
+    const newChatBtn = document.getElementById("lia-new-chat-btn")
+    const liaChatbotTitle = document.querySelector(".lia-chatbot-title")
+
+    // set default to collapsed
+    sidebar.classList.add("collapsed")
+
+    // Auto-resize textarea
+    messageInput.addEventListener("input", function () {
+      this.style.height = "auto"
+      this.style.height = Math.min(this.scrollHeight, 120) + "px"
+    })
+
+    // Send message on Enter (but not Shift+Enter)
+    messageInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault()
+        sendMessage()
+      }
+    })
+
+    // Enable/disable send button based on input
+    messageInput.addEventListener("input", function () {
+      sendBtn.disabled = !this.value.trim()
+    })
+
+    // Control buttons
+    minimizeBtn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      minimizeChatbot()
+    })
+
+    closeBtn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      closeChatbot()
+    })
+
+    // Sidebar toggle
+    sidebarToggle.addEventListener("click", (e) => {
+      e.stopPropagation()
+      toggleSidebar()
+    })
+
+    // show sidebar when chatbot title is hovered upon
+    liaChatbotTitle.addEventListener("mouseover", (e) => {
+      e.stopPropagation()
+
+      // toggle sidebar
+      toggleSidebar()
+    })
+
+    // hide side bar on mouseout
+    liaChatbotTitle.addEventListener("mouseout", (e) => {
+      e.stopPropagation()
+      // toggle sidebar
+      toggleSidebar()
+    })
+
+    // continue showing sidebar if mouse is on it
+    sidebar.addEventListener("mouseover", (e) => {
+      e.stopPropagation()
+      // toggle sidebar
+      showSidebar()
+    })
+
+
+    // New chat button
+    newChatBtn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      startNewConversation()
+    })
+
+    // Send button
+    sendBtn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      sendMessage()
+    })
+  }
+
+  function toggleChatbot() {
+    const chatbotInterface = document.getElementById("lia-chatbot-interface")
+
+    if (chatbotState.isOpen) {
+      closeChatbot()
+    } else {
+      openChatbot()
+    }
+  }
+
+  function openChatbot() {
+    const chatbotInterface = document.getElementById("lia-chatbot-interface")
+    chatbotInterface.classList.add("open")
+    chatbotInterface.classList.remove("minimized")
+    chatbotState.isOpen = true
+    chatbotState.isMinimized = false
+
+    // Focus on input
+    setTimeout(() => {
+      document.getElementById("lia-message-input").focus()
+    }, 400)
+
+    // Show notification dot briefly
+    showNotificationDot()
+  }
+
+  function closeChatbot() {
+    const chatbotInterface = document.getElementById("lia-chatbot-interface")
+    chatbotInterface.classList.remove("open")
+    chatbotInterface.classList.remove("minimized")
+    chatbotState.isOpen = false
+    chatbotState.isMinimized = false
+
+    // set the radius again
+    chatbotInterface.classList.remove('right-radius-bottom-and-width')
+
+  }
+
+  function minimizeChatbot() {
+    const chatbotInterface = document.getElementById("lia-chatbot-interface")
+    chatbotInterface.classList.toggle("minimized")
+    chatbotState.isMinimized = true
+
+    // set the radius again
+    chatbotInterface.classList.toggle('right-radius-bottom-and-width')
+
+    // Auto-restore after 3 seconds
+    /*setTimeout(() => {
+      if (chatbotState.isMinimized && chatbotState.isOpen) {
+        chatbotInterface.classList.remove("minimized")
+        chatbotState.isMinimized = false
+
+        // set the radius again
+        chatbotInterface.classList.toggle('right-radius-bottom-and-width')
+      }
+    }, 60000)*/
+    
+  }
+
+  function showSidebar() {
+    const sidebar = document.getElementById("lia-chat-sidebar")
+    sidebar.classList.remove("collapsed")
+  }
+
+  function toggleSidebar() {
+    const sidebar = document.getElementById("lia-chat-sidebar")
+    sidebar.classList.toggle("collapsed")
+    chatbotState.sidebarCollapsed = !chatbotState.sidebarCollapsed
+  }
+
+  function showNotificationDot() {
+    const notificationDot = document.querySelector(".lia-notification-dot")
+    if (notificationDot) {
+      notificationDot.classList.add("show")
+      setTimeout(() => {
+        notificationDot.classList.remove("show")
+      }, 2000)
+    }
+  }
+
+  async function sendMessage() {
+    const messageInput = document.getElementById("lia-message-input")
+    const message = messageInput.value.trim()
+
+    if (!message) return
+
+    // Clear input
+    messageInput.value = ""
+    messageInput.style.height = "auto"
+    document.getElementById("lia-send-btn").disabled = true
+
+    // Add user message to chat
+    addMessageToChat("user", message)
+
+    // Show typing indicator
+    showTypingIndicator()
+
+    try {
+      // Generate AI response
+      const response = await generateChatResponse(message)
+
+      // Remove typing indicator
+      hideTypingIndicator()
+
+      // Add AI response to chat
+      addMessageToChat("assistant", response)
+
+      // Save conversation
+      saveCurrentConversation()
+    } catch (error) {
+      hideTypingIndicator()
+      addMessageToChat("assistant", "Sorry, I encountered an error. Please try again. 😔")
+      console.error("Chat error:", error)
+    }
+  }
+
+  function addMessageToChat(role, content) {
+    const messagesContainer = document.getElementById("lia-messages-container")
+
+    const messageDiv = document.createElement("div")
+    messageDiv.className = `lia-message ${role}`
+
+    messageDiv.innerHTML = `
+    <div class="lia-message-avatar">${role === "user" ? "U" : `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+      <rect x="2" y="9" width="4" height="12"/>
+      <circle cx="4" cy="4" r="2"/>
+      <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
+      <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
+    </svg>
+    `}</div>
+    <div class="lia-message-content">${content}</div>
+  `
+
+    messagesContainer.appendChild(messageDiv)
+    messagesContainer.scrollTop = messagesContainer.scrollHeight
+
+    // Trigger animation
+    setTimeout(() => {
+      messageDiv.style.opacity = "1"
+    }, 50)
+  }
+
+  function showTypingIndicator() {
+    const messagesContainer = document.getElementById("lia-messages-container")
+
+    const typingDiv = document.createElement("div")
+    typingDiv.className = "lia-message assistant"
+    typingDiv.id = "lia-typing-indicator"
+
+    typingDiv.innerHTML = `
+    <div class="lia-message-avatar">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+        <rect x="2" y="9" width="4" height="12"/>
+        <circle cx="4" cy="4" r="2"/>
+        <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
+        <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
+      </svg>
+    </div>
+    <div class="lia-message-content">
+      <div class="lia-typing-indicator">
+        <div class="lia-typing-dot"></div>
+        <div class="lia-typing-dot"></div>
+        <div class="lia-typing-dot"></div>
+      </div>
+    </div>
+  `
+
+    messagesContainer.appendChild(typingDiv)
+    messagesContainer.scrollTop = messagesContainer.scrollHeight
+  }
+
+  function hideTypingIndicator() {
+    const typingIndicator = document.getElementById("lia-typing-indicator")
+    if (typingIndicator) {
+      typingIndicator.remove()
+    }
+  }
+
+  async function generateChatResponse(message) {
+    // check if post suggestion enabled
+    if (!settings.post_enabled) return
+
+    // Check if API key is available
+    if (!settings.apiKey) {
+      return "Please add your OpenAI API key in the extension settings to use the chat feature. 🔑"
+    }
+
+    const prompt = `You are Lia, a helpful LinkedIn AI assistant. You help users create engaging LinkedIn posts, write professional comments, and improve their content. 
+
+User message: "${message}"
+
+Respond helpfully and professionally. If they're asking for LinkedIn content help, provide specific suggestions. Keep responses concise but helpful. Use emojis sparingly but appropriately.`
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${settings.apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: `You are Lia, a professional LinkedIn AI assistant. You help users with LinkedIn content creation, engagement, and professional communication. Be helpful, concise, and professional. Use emojis sparingly.`,
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 500,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || "Failed to generate response")
+    }
+
+    return data.choices[0].message.content.trim()
+  }
+
+  function startNewConversation() {
+    // Clear current chat
+    const messagesContainer = document.getElementById("lia-messages-container")
+    messagesContainer.innerHTML = `
+    <div class="lia-message assistant">
+      <div class="lia-message-avatar">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+          <rect x="2" y="9" width="4" height="12"/>
+          <circle cx="4" cy="4" r="2"/>
+          <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
+          <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
+        </svg>
+      </div>
+      <div class="lia-message-content">
+      Hi! I'm Lia, your LinkedIn Intelligence Assistant. <br/><br/> I'm here to help you write posts, polish comments, and improve your content. <br/><br/>What can I assist you with today?
+      </div>
+    </div>
+  `
+
+    // Create new conversation ID
+    chatbotState.currentConversationId = Date.now().toString()
+
+    // Update conversation list
+    updateConversationList()
+
+    // Focus on input
+    document.getElementById("lia-message-input").focus()
+  }
+
+  function saveCurrentConversation() {
+    // Save conversation to localStorage
+    const conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
+
+    const messagesContainer = document.getElementById("lia-messages-container")
+    const messages = Array.from(messagesContainer.children)
+      .filter((msg) => !msg.id || msg.id !== "lia-typing-indicator")
+      .map((msg) => ({
+        role: msg.classList.contains("user") ? "user" : "assistant",
+        content: msg.querySelector(".lia-message-content").textContent,
+      }))
+
+    const conversation = {
+      id: chatbotState.currentConversationId || Date.now().toString(),
+      title: messages.find((m) => m.role === "user")?.content.substring(0, 25) + "..." || "New Chat",
+      messages: messages,
+      timestamp: Date.now(),
+    }
+
+    const existingIndex = conversations.findIndex((c) => c.id === conversation.id)
+    if (existingIndex >= 0) {
+      conversations[existingIndex] = conversation
+    } else {
+      conversations.unshift(conversation)
+    }
+
+    // Keep only last 15 conversations
+    conversations.splice(15)
+
+    localStorage.setItem("lia-conversations", JSON.stringify(conversations))
+    updateConversationList()
+  }
+
+  function loadChatHistory() {
+    const conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
+    chatbotState.conversations = conversations
+    updateConversationList()
+
+    if (conversations.length > 0) {
+      chatbotState.currentConversationId = conversations[0].id
+    }
+  }
+
+  function updateConversationList() {
+    const conversationList = document.getElementById("lia-conversation-list")
+    const conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
+  
+    conversationList.innerHTML = conversations
+      .map(
+        (conv) => `
+          <div class="lia-conversation-item ${conv.id === chatbotState.currentConversationId ? "active" : ""}" 
+               data-id="${conv.id}">
+            ${conv.title}
+          </div>
+        `,
+      )
+      .join("")
+  
+    // Add event listeners
+    document.querySelectorAll(".lia-conversation-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        loadConversation(item.dataset.id)
+      })
+    })
+  }
+  
+
+  function loadConversation(conversationId) {
+    const conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
+    const conversation = conversations.find((c) => c.id === conversationId)
+
+    if (!conversation) return
+
+    chatbotState.currentConversationId = conversationId
+
+    const messagesContainer = document.getElementById("lia-messages-container")
+    messagesContainer.innerHTML = conversation.messages
+      .map(
+        (msg) => `
+    <div class="lia-message ${msg.role}">
+      <div class="lia-message-avatar">${msg.role === "user" ? "U" : `
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+          <rect x="2" y="9" width="4" height="12"/>
+          <circle cx="4" cy="4" r="2"/>
+          <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
+          <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
+        </svg>
+      `}</div>
+      <div class="lia-message-content">${msg.content}</div>
+    </div>
+  `,
+      )
+      .join("")
+
+    messagesContainer.scrollTop = messagesContainer.scrollHeight
+    updateConversationList()
+  }
+
+  // Make functions globally available for onclick handlers
+  window.loadConversation = loadConversation
+
+  // Make the chatbot interface draggable
+  function makeChatbotDraggable() {
+    const chatbotInterface = document.getElementById('lia-chatbot-interface');
+    let offsetX, offsetY;
+
+    chatbotInterface.addEventListener('mousedown', (e) => {
+      offsetX = e.clientX - chatbotInterface.getBoundingClientRect().left;
+      offsetY = e.clientY - chatbotInterface.getBoundingClientRect().top;
+
+      function onMouseMove(e) {
+        chatbotInterface.style.left = `${e.clientX - offsetX}px`;
+        chatbotInterface.style.top = `${e.clientY - offsetY}px`;
+      }
+
+      function onMouseUp() {
+        document.removeEventListener('mousemove', onMouseMove);
+        document.removeEventListener('mouseup', onMouseUp);
+      }
+
+      document.addEventListener('mousemove', onMouseMove);
+      document.addEventListener('mouseup', onMouseUp);
+
+      e.preventDefault();
+    });
+  }
+
+  // Initialize chatbot when extension loads
+  initializeChatbot()
 })()

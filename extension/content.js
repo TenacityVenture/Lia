@@ -64,6 +64,10 @@ function initializeExtension() {
               setupCommentReplyAssistant()
               setuprewrite_enabledment()
               //setupTextSelectionToolbar()
+
+              if (chatbotState.referenceMode) {
+                addReferenceListeners()
+              }
           } catch (error) {
               console.error("MutationObserver Error:", error);
           }
@@ -1364,6 +1368,8 @@ const refreshToken = async (refresh_token) => {
     conversations: [],
     currentConversationId: null,
     position: { x: window.innerWidth - 80, y: window.innerHeight - 80 },
+    referenceMode: false,
+    referencedContent: null,
   }
 
   function initializeChatbot() {
@@ -2053,6 +2059,98 @@ const refreshToken = async (refresh_token) => {
         display: none;
       }
     }
+
+    .lia-control-btn.reference-active {
+      background: rgba(16, 185, 129, 0.2);
+      color: #10b981;
+    }
+
+    .lia-reference-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, rgba(10, 102, 194, 0.1), rgba(16, 185, 129, 0.1));
+      border: 2px solid #0a66c2;
+      border-radius: 8px;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(1px);
+    }
+
+    .lia-reference-overlay.show {
+      opacity: 1;
+    }
+
+    .lia-reference-overlay::before {
+      content: '📎 Click to Reference';
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: #0a66c2;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .linkedin-post-hoverable {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .linkedin-post-hoverable:hover .lia-reference-overlay {
+      opacity: 1;
+    }
+
+    .lia-referenced-content {
+      background: linear-gradient(135deg, #e7f3ff, #f0f9ff);
+      border: 1px solid #0a66c2;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 8px 0;
+      font-size: 12px;
+    }
+
+    .lia-referenced-content-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #0a66c2;
+    }
+
+    .lia-referenced-content-preview {
+      color: #666;
+      font-style: italic;
+      max-height: 60px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .lia-referenced-content-preview::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 20px;
+      background: linear-gradient(transparent, #f0f9ff);
+    }
+
+    .lia-clear-reference {
+      background: none;
+      border: none;
+      color: #ef4444;
+      cursor: pointer;
+      font-size: 12px;
+      margin-left: auto;
+    }
   `
 
     document.head.appendChild(styles)
@@ -2080,6 +2178,14 @@ const refreshToken = async (refresh_token) => {
         LIA
       </div>
       <div class="lia-chatbot-controls">
+        <div class="lia-reference-toggle" id="lia-reference-toggle" style="display: flex; justify-content: center; align-items: center;">
+          <button class="lia-reference-toggle-btn" id="lia-reference-toggle-btn" title="Toggle Reference">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M8 12l2 2 4-4"></path>
+            </svg>
+          </button>
+        </div>
         <button class="lia-control-btn" id="lia-minimize-btn" title="Minimize">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="5" y1="12" x2="19" y2="12"></line>
@@ -2162,6 +2268,8 @@ const refreshToken = async (refresh_token) => {
     const newChatBtn = document.getElementById("lia-new-chat-btn")
     const liaChatbotTitle = document.querySelector(".lia-chatbot-title")
 
+    const referenceToggle = document.getElementById("lia-reference-toggle")
+
     // set default to collapsed
     sidebar.classList.add("collapsed")
 
@@ -2234,6 +2342,12 @@ const refreshToken = async (refresh_token) => {
     sendBtn.addEventListener("click", (e) => {
       e.stopPropagation()
       sendMessage()
+    })
+
+    // Reference mode toggle
+    referenceToggle.addEventListener("click", (e) => {
+      e.stopPropagation()
+      toggleReferenceMode()
     })
   }
 
@@ -2423,21 +2537,36 @@ const refreshToken = async (refresh_token) => {
     if (!settings.post_enabled) return
 
     // Check if API key is available
-    if (!settings.apiKey) {
-      return "Please add your OpenAI API key in the extension settings to use the chat feature. 🔑"
-    }
+    //if (!settings.apiKey) {
+    //  return "Please add your OpenAI API key in the extension settings to use the chat feature. 🔑"
+    //}
 
-    const prompt = `You are Lia, a helpful LinkedIn AI assistant. You help users create engaging LinkedIn posts, write professional comments, and improve their content. 
+    let prompt = `You are Lia, a helpful LinkedIn AI assistant. You help users create engaging LinkedIn posts, write professional comments, and improve their content. 
 
 User message: "${message}"
 
 Respond helpfully and professionally. If they're asking for LinkedIn content help, provide specific suggestions. Keep responses concise but helpful. Use emojis sparingly but appropriately.`
 
+    // Include referenced content if available
+    if (chatbotState.referencedContent) {
+      prompt += `\n\nREFERENCED CONTENT:
+Type: ${chatbotState.referencedContent.type}
+Author: ${chatbotState.referencedContent.author}
+Content: "${chatbotState.referencedContent.text}"
+${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chatbotState.referencedContent.engagement)}` : ""}
+
+The user is asking about this referenced content. Provide specific insights, analysis, or help related to this content.`
+    }
+
+    prompt += `\n\nUser message: "${message}"`
+
+    prompt += `\n\nRespond helpfully and professionally. If they're asking about the referenced content, provide specific analysis. If they're asking for LinkedIn content help, provide specific suggestions. Keep responses concise but helpful. Use emojis sparingly but appropriately.`
+
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${settings.apiKey}`,
+        Authorization: `Bearer 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`,
       },
       body: JSON.stringify({
         model: "gpt-3.5-turbo",
@@ -2502,7 +2631,9 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
     const messagesContainer = document.getElementById("lia-messages-container")
     const messages = Array.from(messagesContainer.children)
       .filter((msg) => !msg.id || msg.id !== "lia-typing-indicator")
-      .map((msg) => ({
+      .map((msg) => (
+        console.log(msg, 'this is the message'),
+        {
         role: msg.classList.contains("user") ? "user" : "assistant",
         content: msg.querySelector(".lia-message-content").textContent,
       }))
@@ -2622,6 +2753,347 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
       e.preventDefault();
     });
   }
+
+  // ===== REFERENCE MODE SYSTEM =====
+  function toggleReferenceMode() {
+    // Check if user has pro access
+    if (!checkProAccess()) {
+      showProUpgradeModal()
+      return
+    }
+
+    chatbotState.referenceMode = !chatbotState.referenceMode
+    const toggleBtn = document.getElementById("lia-reference-toggle")
+
+    if (chatbotState.referenceMode) {
+      toggleBtn.classList.add("reference-active")
+      toggleBtn.title = "Reference Mode: ON (Click posts to reference)"
+      initializeReferenceMode()
+      showTemporaryNotification("📎 Reference Mode ON - Click any post to reference it", "success")
+    } else {
+      toggleBtn.classList.remove("reference-active")
+      toggleBtn.title = "Reference Mode (Pro)"
+      disableReferenceMode()
+      showTemporaryNotification("Reference Mode OFF", "info")
+    }
+  }
+
+  function checkProAccess() {
+    // For now, return true for demo. In production, check user's subscription status
+    return true
+
+    // Production implementation:
+    // const { access_token } = await chrome.storage.local.get(['access_token'])
+    // if (!access_token) return false
+    //
+    // const response = await fetch('http://localhost:4000/api/user/subscription', {
+    //   headers: { Authorization: `Bearer ${access_token}` }
+    // })
+    // const data = await response.json()
+    // return data.isPro
+  }
+
+  function showProUpgradeModal() {
+    const modal = document.createElement("div")
+    modal.style.cssText = `
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100001;
+  `
+
+    modal.innerHTML = `
+    <div style="
+      background: white;
+      padding: 32px;
+      border-radius: 16px;
+      max-width: 400px;
+      text-align: center;
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
+    ">
+      <div style="font-size: 48px; margin-bottom: 16px;">🚀</div>
+      <h2 style="margin: 0 0 16px 0; color: #0a66c2;">Upgrade to Pro</h2>
+      <p style="margin: 0 0 24px 0; color: #666;">
+        Reference Mode lets you click any LinkedIn post to analyze it with AI. 
+        Get insights, summaries, and contextual responses!
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button onclick="this.closest('div').parentElement.remove()" style="
+          padding: 12px 24px;
+          border: 1px solid #ddd;
+          background: white;
+          border-radius: 8px;
+          cursor: pointer;
+        ">Maybe Later</button>
+        <button onclick="window.open('https://www.getlia.live/pricing', '_blank')" style="
+          padding: 12px 24px;
+          background: linear-gradient(135deg, #0a66c2, #004182);
+          color: white;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+        ">Upgrade Now</button>
+      </div>
+    </div>
+  `
+
+    document.body.appendChild(modal)
+
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        modal.remove()
+      }
+    })
+  }
+
+  function initializeReferenceMode() {
+    // Add hover listeners to LinkedIn posts
+    addReferenceListeners()
+
+    // Add reference mode indicator
+    showReferenceIndicator()
+  }
+
+  function disableReferenceMode() {
+    // Remove all reference overlays and listeners
+    document.querySelectorAll(".lia-reference-overlay").forEach((el) => el.remove())
+    document.querySelectorAll(".linkedin-post-hoverable").forEach((el) => {
+      el.classList.remove("linkedin-post-hoverable")
+    })
+
+    hideReferenceIndicator()
+  }
+
+  function addReferenceListeners() {
+    // LinkedIn post selectors
+    const postSelectors = [
+      ".feed-shared-update-v2",
+      ".feed-shared-update-detail-viewer__content",
+      ".reader-article-content",
+      ".comments-comment-item",
+    ]
+
+    postSelectors.forEach((selector) => {
+      document.querySelectorAll(selector).forEach((post) => {
+        if (post.classList.contains("linkedin-post-hoverable")) return
+
+        post.classList.add("linkedin-post-hoverable")
+
+        // Create overlay
+        const overlay = document.createElement("div")
+        overlay.className = "lia-reference-overlay"
+        post.style.position = "relative"
+        post.appendChild(overlay)
+
+        // Add click listener
+        post.addEventListener("click", (e) => {
+          if (chatbotState.referenceMode) {
+            e.preventDefault()
+            e.stopPropagation()
+            capturePostReference(post)
+          }
+        })
+      })
+    })
+  }
+
+  function capturePostReference(postElement) {
+    const content = extractPostContent(postElement)
+
+    if (content) {
+      chatbotState.referencedContent = content
+      showReferencedContent()
+      showTemporaryNotification("✅ Content Referenced! Ask me about it.", "success")
+
+      // Auto-focus chat input
+      const chatInput = document.getElementById("lia-message-input")
+      if (chatInput) {
+        chatInput.focus()
+        chatInput.placeholder = "Ask me about the referenced content..."
+      }
+    }
+  }
+
+  function extractPostContent(element) {
+    try {
+      const content = {
+        type: "unknown",
+        author: "",
+        text: "",
+        engagement: {},
+        timestamp: "",
+        url: window.location.href,
+      }
+
+      // Detect content type and extract accordingly
+      if (element.classList.contains("feed-shared-update-v2")) {
+        // Regular LinkedIn post
+        content.type = "post"
+
+        // Extract author
+        const authorElement = element.querySelector(".update-components-actor__title")
+        if (authorElement) {
+          content.author = authorElement.textContent.trim()
+        }
+
+        // Extract post text
+        const textElement = element.querySelector(".feed-shared-update-v2__description")
+        if (textElement) {
+          content.text = textElement.textContent.trim()
+        }
+
+        // Extract engagement
+        const likeElement = element.querySelector(".social-counts-reactions__count")
+        if (likeElement) {
+          content.engagement.likes = likeElement.textContent.trim()
+        }
+
+        const commentElement = element.querySelector(".social-counts-comments__count")
+        if (commentElement) {
+          content.engagement.comments = commentElement.textContent.trim()
+        }
+      } else if (element.classList.contains("reader-article-content")) {
+        // LinkedIn article
+        content.type = "article"
+
+        const titleElement = document.querySelector(".reader-article-header__title")
+        if (titleElement) {
+          content.title = titleElement.textContent.trim()
+        }
+
+        const authorElement = document.querySelector(".reader-author-info__content")
+        if (authorElement) {
+          content.author = authorElement.textContent.trim()
+        }
+
+        content.text = element.textContent.trim().substring(0, 1000) + "..."
+      } else if (element.classList.contains("comments-comment-item")) {
+        // Comment
+        content.type = "comment"
+
+        const authorElement = element.querySelector(".comments-comment-meta__description-title")
+        if (authorElement) {
+          content.author = authorElement.textContent.trim()
+        }
+
+        const textElement = element.querySelector(".comments-comment-item__main-content")
+        if (textElement) {
+          content.text = textElement.textContent.trim()
+        }
+      }
+
+      return content
+    } catch (error) {
+      console.error("Error extracting post content:", error)
+      return null
+    }
+  }
+
+  function showReferencedContent() {
+    const messagesContainer = document.getElementById("lia-messages-container")
+    if (!messagesContainer || !chatbotState.referencedContent) return
+
+    // Remove existing reference display
+    const existingRef = messagesContainer.querySelector(".lia-referenced-content")
+    if (existingRef) existingRef.remove()
+
+    const refDiv = document.createElement("div")
+    refDiv.className = "lia-referenced-content"
+    refDiv.innerHTML = `
+    <div class="lia-referenced-content-header">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+      </svg>
+      Referenced ${chatbotState.referencedContent.type}
+      ${chatbotState.referencedContent.author ? `by ${chatbotState.referencedContent.author}` : ""}
+      <button class="lia-clear-reference" onclick="clearReferencedContent()">×</button>
+    </div>
+    <div class="lia-referenced-content-preview">
+      ${chatbotState.referencedContent.text.substring(0, 150)}${chatbotState.referencedContent.text.length > 150 ? "..." : ""}
+    </div>
+  `
+
+    messagesContainer.appendChild(refDiv)
+    messagesContainer.scrollTop = messagesContainer.scrollHeight
+  }
+
+  function clearReferencedContent() {
+    chatbotState.referencedContent = null
+    const refDiv = document.querySelector(".lia-referenced-content")
+    if (refDiv) refDiv.remove()
+
+    const chatInput = document.getElementById("lia-message-input")
+    if (chatInput) {
+      chatInput.placeholder = "What do you want to post?"
+    }
+  }
+
+  function showReferenceIndicator() {
+    const indicator = document.createElement("div")
+    indicator.id = "lia-reference-indicator"
+    indicator.style.cssText = `
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, #0a66c2, #004182);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    z-index: 10001;
+    box-shadow: 0 4px 12px rgba(10, 102, 194, 0.3);
+    animation: slideInDown 0.3s ease;
+  `
+    indicator.textContent = "📎 Reference Mode Active - Click any post to analyze it"
+
+    document.body.appendChild(indicator)
+  }
+
+  function hideReferenceIndicator() {
+    const indicator = document.getElementById("lia-reference-indicator")
+    if (indicator) indicator.remove()
+  }
+
+  function showTemporaryNotification(message, type = "info") {
+    const notification = document.createElement("div")
+    notification.style.cssText = `
+    position: fixed;
+    top: 80px;
+    right: 20px;
+    background: ${type === "success" ? "#10b981" : type === "error" ? "#ef4444" : "#0a66c2"};
+    color: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    z-index: 10002;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    animation: slideInRight 0.3s ease;
+    max-width: 300px;
+  `
+    notification.textContent = message
+
+    document.body.appendChild(notification)
+
+    setTimeout(() => {
+      notification.style.animation = "slideOutRight 0.3s ease"
+      setTimeout(() => notification.remove(), 300)
+    }, 3000)
+  }
+
+  // Make function globally available
+  window.clearReferencedContent = clearReferencedContent
+
+  // Update the generateChatResponse function to include referenced content
+  // Find the existing generateChatResponse function and modify the prompt to include reference context
 
   // Initialize chatbot when extension loads
   initializeChatbot()

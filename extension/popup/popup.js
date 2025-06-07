@@ -9,16 +9,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     return;
   }
 
-  console.log(access_token, refresh_token);
-
   // check if access_token is still valid
-  const me = await fetch('http://localhost:4000/api/user/me', {
-    headers: { Authorization: `Bearer ${access_token}` }
-  });
+  async function getMe(token) {
+    const me = await fetch('http://localhost:4000/api/user/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+
+    return me;
+  }
+  let me = await getMe(access_token);
 
   if (!me.ok) {
-    unauth.style.display = 'flex';
-    return;
+    // try refreshing the token
+    const newToken = await refreshToken(refresh_token);
+    // get me again
+    me = await getMe(newToken);
+
+    if (!newToken) {
+      unauth.style.display = 'flex';
+      return;
+    }
   }
 
   const userData = await me.json();
@@ -95,3 +105,28 @@ document.addEventListener('DOMContentLoaded', async () => {
 document.getElementById('signin-btn')?.addEventListener('click', () => {
   chrome.tabs.create({ url: 'https://www.getlia.live/login' });
 });
+
+// refreshToken function
+const refreshToken = async (refresh_token) => {
+  try {
+    const response = await fetch('http://localhost:4000/api/auth/refresh-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+    
+      },
+      // include credentials to allow cookies to be sent
+      credentials: 'include',
+      body: JSON.stringify({ refresh_token }),
+    });
+
+    const data = await response.json();
+
+    chrome.storage.local.set({ access_token: data.access_token, refresh_token: data.refresh_token });
+    return data.access_token;
+
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    return null;
+  }
+}

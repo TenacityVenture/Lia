@@ -40,7 +40,8 @@ exports.suggestReply = async (req, res) => {
   }
 
   try {
-    const prompt = `Suggest a professional, thoughtful reply to this LinkedIn comment:\n\n"${comment_text}"`;
+    //const prompt = `Suggest a professional, thoughtful reply to this LinkedIn comment:\n\n"${comment_text}"`;
+    const prompt = comment_text; // the comment text itself is the prompt -- structured in the extension
     const {Content: suggestion, Usage: usage} = (await openaiService.getCompletion(prompt));
 
     // Log usage
@@ -52,7 +53,13 @@ exports.suggestReply = async (req, res) => {
       token_used: usage.total_tokens || 0 // Fallback to 0 if not available
     });
 
-    res.json({ suggestion });
+    const suggestions = suggestion
+      .split(/\d+\.\s+/) // Split by numbered list (e.g., "1. ", "2. ")
+      .filter(s => s.trim()) // Remove empty entries
+      .map(s => s.trim());
+
+    // if suggestions are structured as a numbered list, return all suggestions in a list
+    res.json({ suggestions });
   } catch (error) {
     console.error('Suggest reply failed:', error.message);
     res.status(500).json({ error: 'AI reply suggestion failed' });

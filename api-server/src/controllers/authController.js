@@ -132,7 +132,19 @@ const refreshAccessToken = async (req, res) => {
  // The client won't touch the refresh token directly - it's in a cookie.
  // We just want to give them a new access token silently if the old one is expires.
 
-  const refreshToken = req.cookies.refresh_token;
+  let refreshToken = req.cookies.refresh_token;
+
+  // fallback for extension if the refresh_token is not in cookies
+  if (!refreshToken) {
+    // If the refresh token is not in cookies, we can check the body for the refresh_token
+    const { refresh_token: bodyRefreshToken } = req.body;
+    if (bodyRefreshToken) {
+      // If we got it from the body, we can use it
+      refreshToken = bodyRefreshToken;
+    }
+
+  }
+
 
   // If there's no cookie, the client isn't allowed to refresh — simple as that
   if (!refreshToken) {
@@ -292,15 +304,15 @@ const changePassword = async (req, res) => {
   // automatically, so we'll log them out.
 
 
-  const { newPassword } = req.body;
+  const { password } = req.body;
 
-  if (!newPassword || newPassword.length < 6) {
+  if (!password || password.length < 6) {
     return res.status(400).json({ error: 'Password must be at least 6 characters' });
   }
 
   // Supabase uses the current session to verify the user identity
   const { error } = await supabase.auth.updateUser({
-    password: newPassword
+    password
   });
 
   if (error) {

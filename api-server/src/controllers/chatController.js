@@ -1,5 +1,5 @@
 const supabase = require('../utils/supabaseClient');
-
+const { openai } = require('../services/openaiService');
 
 /** Create a new chat
 * @param {Object} req - Express request object
@@ -113,6 +113,11 @@ exports.message = async (req, res) => {
       .concat([{ role: 'user', content: message }]);
       
     // 2. GET AI response
+    //first lets insert a key role to start of the messages array
+    messages.unshift(
+      { role: 'system', 
+        content: 'You are Lia, a helpful LinkedIn AI assistant. You help users create engaging LinkedIn posts, write professional comments, and improve their content. Respond helpfully and professionally. If they\'re asking for LinkedIn content help, provide specific suggestions. Keep responses concise but helpful. Use emojis sparingly but appropriately.' 
+      });
     const openaiRes = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: messages,
@@ -124,7 +129,7 @@ exports.message = async (req, res) => {
     // 3. Save user + assistant messages
     await supabase.from('chat_messages').insert([
       { chat_id: chatId, user_id: userId, role: 'user', content: message },
-      { chat_id: chatId, user_id: 'ai', role: 'assistant', content: aiResponse, tokens: usage }
+      { chat_id: chatId, user_id: userId, role: 'assistant', content: aiResponse, tokens: usage }
     ]);
 
     // 4. Update last used
@@ -186,4 +191,94 @@ exports.deleteChat = async (req, res) => {
     res.status(500).json({ error: 'Failed to delete chat' });
   }
 
+}
+
+/** Update chat title
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.chatId - ID of the chat to update
+ * @param {string} req.body.title - New title for the chat
+ */
+exports.updateChatTitle = async (req, res) => {
+  const userId = req.user.sub;
+  const chatId = req.params.chatId;
+  const { title } = req.body;
+
+  if (!title) {
+    return res.status(400).json({ error: 'Title is required' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('chats')
+      .update({ title })
+      .eq('id', chatId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ error: 'Chat not found or does not belong to user' });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error('Error updating chat title:', err);
+    res.status(500).json({ error: 'Failed to update chat title' });
+  }
+}
+
+/** Get chat by ID
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.chatId - ID of the chat to fetch
+ */
+exports.getChatById = async (req, res) => {
+  const userId = req.user.sub;
+  const chatId = req.params.chatId;
+
+  try {
+    const { data, error } = await supabase
+      .from('chats')
+      .select('*')
+      .eq('id', chatId)
+      .eq('user_id', userId)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ error: 'Chat not found or does not belong to user' });
+    }
+
+    res.json(data);
+  } catch (err) {
+    console.error('Error fetching chat by ID:', err);
+    res.status(500).json({ error: 'Failed to fetch chat' });
+  }
+}
+
+/** update chat last used
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {string} req.params.chatId - ID of the chat to update
+ */
+exports.updateChatLastUsed = async (req, res) => {
+  const userId = req.user.sub;
+  const chatId = req.params.chatId;
+
+  try {
+    const { error } = await supabase
+      .from('chats')
+      .update({ updated_at: new Date() })
+      .eq('id', chatId)
+      .eq('user_id', userId);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    res.json({ message: 'Chat last used updated successfully' });
+  } catch (err) {
+    console.error('Error updating chat last used:', err);
+    res.status(500).json({ error: 'Failed to update chat last used' });
+  }
 }

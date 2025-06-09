@@ -29,7 +29,11 @@ export default function RefreshTokenPage() {
           access_token: data.access_token, 
           refresh_token: data.refresh_token}, "*") // * means all domains (shoule be restricted to lia extension id)
         
-        window.location.href = '/dashboard'; // Redirect to dashboard after refreshing token
+        // Redirect to the previous page or default to dashboard
+        const previousPage = document.referrer && new URL(document.referrer).origin === window.location.origin
+          ? new URL(document.referrer).pathname
+          : '/dashboard';
+        window.location.href = previousPage;
     } catch (error) {
       console.error('Error refreshing token:', error);
     }

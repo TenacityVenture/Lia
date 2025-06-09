@@ -16,8 +16,49 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Home, User, LogOut } from "lucide-react"
 
+import { useEffect, useState } from "react"
+
 export default function DashboardHeader() {
+  const [user, setUser] = useState({
+    id: "",
+    name: "",
+    username: "",
+    email: "",
+    linkedin_handle: "",
+    profile_picture_url: ""
+  })
+
+  // Get the current pathname to highlight the active link
   const pathname = usePathname()
+
+  function getUser () {
+    // this function would typically fetch user data from the api-server
+
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/user/me`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("lia_access_token")}`,
+      },
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Fetched user data:", data)
+        if (data.error) {
+          console.error("Invalid token, redirecting to refresh token page")
+          // Redirect to refresh token page if the token is invalid
+          window.location.href = '/refresh-token'
+        } else {
+          console.log("User data:", data)
+          setUser(data)
+        }
+      })
+  }
+
+  useEffect(() => {
+    getUser()
+  }, [])
 
   return (
     <motion.header
@@ -59,15 +100,15 @@ export default function DashboardHeader() {
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
                   <AvatarImage src="/testimonials/avatar1.jpg" alt="User" />
-                  <AvatarFallback>SJ</AvatarFallback>
+                  <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">Sarah Johnson</p>
-                  <p className="text-xs leading-none text-muted-foreground">sarah.johnson@example.com</p>
+                  <p className="text-sm font-medium leading-none">{user.name}</p>
+                  <p className="text-xs leading-none text-muted-foreground">{user ? user.email : ''}</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />

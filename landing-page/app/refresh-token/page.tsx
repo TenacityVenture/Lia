@@ -1,3 +1,4 @@
+'use client';
 import { useEffect } from 'react';
 
 export default function RefreshTokenPage() {
@@ -6,7 +7,7 @@ export default function RefreshTokenPage() {
   // This is a placeholder function, you can implement your own logic here
   const refreshToken = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/auth/refresh`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/auth/refresh-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -27,7 +28,8 @@ export default function RefreshTokenPage() {
         window.postMessage({ type: "SEND_JWTs", 
           access_token: data.access_token, 
           refresh_token: data.refresh_token}, "*") // * means all domains (shoule be restricted to lia extension id)
-
+        
+        window.location.href = '/dashboard'; // Redirect to dashboard after refreshing token
     } catch (error) {
       console.error('Error refreshing token:', error);
     }

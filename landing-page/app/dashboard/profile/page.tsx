@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import DashboardHeader from "@/components/dashboard/dashboard-header"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,19 +13,34 @@ import { Loader2, Save } from "lucide-react"
 type ProfileFormData = {
   name: string
   email: string
+  linkedin_handle: string
+  username: string
   company: string
   title: string
-  apiKey: string
 }
 
 export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: "Sarah Johnson",
     email: "sarah.johnson@example.com",
+    linkedin_handle: "sarahjohnson",
+    username: "sarahjohnson123",
     company: "TechCorp",
     title: "Marketing Director",
-    apiKey: "sk-•••••••••••••••••••••••••••••••",
+  })
+
+  const [user, setUser] = useState({
+    id: "",
+    name: "",
+    username: "",
+    email: "",
+    linkedin_handle: "",
+    profile_picture_url: "",
+    company: "",
+    jobTitle: "",
   })
 
   const handleChange = (e: { target: { name: string; value: string } }) => {
@@ -35,11 +50,77 @@ export default function ProfilePage() {
 
   const handleSave = () => {
     setIsSaving(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsSaving(false)
-    }, 1500)
+
+    // update user data on the server
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/user/update-profile`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("lia_access_token")}`,
+      },
+      body: JSON.stringify({
+        name: formData.name,
+        email: formData.email,
+        company: formData.company,
+        jobTitle: formData.title,
+        username: formData.username,
+        linkedin_handle: user.linkedin_handle,
+      }),
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Profile updated:", data)
+        if (data.error) {
+          console.error("Error updating profile:", data.error)
+          // Handle error (e.g., show notification)
+          setIsSaving(false)
+          setSaveError(data.error)
+        } else {
+          // Update user state with new data
+          setUser((prev) => ({
+            ...prev,
+            name: formData.name,
+            email: formData.email,
+            company: formData.company,
+            jobTitle: formData.title,
+          }))
+          console.log("Profile updated successfully")
+          setIsSaving(false)
+          setSaveError(null)
+          setSaveSuccess("Profile updated successfully!")
+        }
+      })
   }
+
+  function getUser () {
+    // this function would typically fetch user data from the api-server
+
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/user/me`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("lia_access_token")}`,
+      },
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("Fetched user data:", data)
+        if (data.error) {
+          console.error("Invalid token, redirecting to refresh token page")
+          // Redirect to refresh token page if the token is invalid
+          window.location.href = '/refresh-token'
+        } else {
+          console.log("User data:", data)
+          setUser(data)
+        }
+      })
+    }
+  
+    useEffect(() => {
+      getUser()
+    }, [])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -71,7 +152,7 @@ export default function ProfilePage() {
                   <div className="flex flex-col items-center space-y-2">
                     <Avatar className="h-24 w-24">
                       <AvatarImage src="/testimonials/avatar1.jpg" alt="Profile picture" />
-                      <AvatarFallback>SJ</AvatarFallback>
+                      <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
                     <Button variant="outline" size="sm" className="w-full">
                       Change Photo
@@ -81,11 +162,19 @@ export default function ProfilePage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" name="name" value={formData.name} onChange={handleChange} />
+                        <Input id="name" name="name" value={user.name} onChange={handleChange} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Username</Label>
+                        <Input id="username" name="username" value={user.username} onChange={handleChange} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="name">Linkedin Handle</Label>
+                        <Input id="linkedin_handle" name="linkedin_handle" value={user.linkedin_handle} onChange={handleChange} />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="email">Email</Label>
-                        <Input id="email" name="email" type="email" value={formData.email} onChange={handleChange} />
+                        <Input id="email" name="email" type="email" value={user.email} onChange={handleChange} />
                       </div>
                     </div>
                     <div className="space-y-2">
@@ -100,6 +189,16 @@ export default function ProfilePage() {
                 </div>
               </CardContent>
               <CardFooter className="flex justify-end">
+                {saveError && (
+                  <div className="text-red-500 text-sm mr-4">
+                    Failed to save: {saveError}
+                  </div>
+                )}
+                {saveSuccess && (
+                  <div className="text-blue-500 text-sm mr-4">
+                    {saveSuccess}
+                  </div>
+                )}
                 <Button onClick={handleSave} disabled={isSaving}>
                   {isSaving ? (
                     <>

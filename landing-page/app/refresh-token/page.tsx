@@ -1,7 +1,8 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function RefreshTokenPage() {
+  const [loading, setLoading] = useState(true);
 
   // sends request to the server to refresh the token
   // This is a placeholder function, you can implement your own logic here
@@ -16,6 +17,8 @@ export default function RefreshTokenPage() {
       });
 
       if (!response.ok) {
+        setLoading(false);
+        console.error('Failed to refresh token:', response.statusText);
         throw new Error('Failed to refresh token');
       }
 
@@ -35,6 +38,7 @@ export default function RefreshTokenPage() {
           : '/dashboard';
         window.location.href = previousPage;
     } catch (error) {
+      setLoading(false);
       console.error('Error refreshing token:', error);
     }
   };
@@ -44,7 +48,7 @@ export default function RefreshTokenPage() {
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center">
+    !loading ? (<div className="flex min-h-screen flex-col items-center justify-center">
       <h1 className="text-2xl font-bold mb-4">Refresh Token</h1>
       <p className="text-gray-600 mb-6">
         This page is used to refresh your authentication token.
@@ -58,6 +62,17 @@ export default function RefreshTokenPage() {
       >
         Go to Login
       </a>
-    </div>
+    </div>) : (
+      <div className="flex min-h-screen flex-col items-center justify-center">
+        <svg className="animate-spin h-8 w-8 text-blue-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+        </svg>
+        <h1 className="text-2xl font-bold mb-4">Refreshing Token...</h1>
+        <p className="text-gray-600 mb-6">
+        Please wait while we refresh your authentication token.
+        </p>
+      </div>
+    )
   )
 }

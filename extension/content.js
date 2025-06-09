@@ -832,7 +832,7 @@ async function generateImprovedText(originalText) {
 
   if (!settings.rewrite_enabled) return;
 
-  const prompt = `Improve and rewrite the following LinkedIn post to make it more engaging, professional, and impactful. Keep the core message but enhance clarity, flow, and engagement. Maintain the same tone (${settings.tone}) and make it suitable for the ${settings.industry} industry:
+  const prompt = `Improve and rewrite the following LinkedIn post to make it more engaging, professional, and impactful. Keep the core message but enhance clarity, flow, and engagement. Maintain unicode characters, maintain the same tone (${settings.tone}) and make it suitable for the ${settings.industry} industry:
 
 "${originalText}"
 

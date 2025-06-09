@@ -22,7 +22,7 @@ exports.getCurrentUser = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   const userId = req.user.sub;
-  const { username, linkedin_handle } = req.body;
+  const { username, linkedin_handle, name } = req.body;
 
   const linkedinRegex = "/^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9-_]{3,}$/;"
 
@@ -52,7 +52,7 @@ exports.updateProfile = async (req, res) => {
 
   const { error } = await supabase
     .from('users')
-    .update({ username, linkedin_handle })
+    .update({ username, linkedin_handle, name })
     .eq('id', userId);
 
   if (error) return res.status(400).json({ error: 'Update failed', details: error.message });

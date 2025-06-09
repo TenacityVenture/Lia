@@ -341,7 +341,19 @@ async function handleAIRewrite() {
   
   try {
     showToolbarLoading()
-    const rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
+
+    let rewrittenText = null;
+    try {
+      // generate ai rewritten text
+      rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
+    } catch (error) {
+      if (error === "Invalid Token") { // token invalid
+        await refreshToken() // refresh the token
+
+        // call generateRewrittenText again after refresh
+        rewrittenText = generateRewrittenText(fullSentence, 'rewrite')
+      }
+    }
     replaceTextInSentence(selection, fullSentence, rewrittenText)
     hideToolbar()
   } catch (error) {
@@ -383,9 +395,10 @@ function getFullSentence(selection) {
 }
 
 async function generateRewrittenText(text, type) {
-  if (!settings.apiKey) {
-    throw new Error("Please add your OpenAI API key in the extension settings")
-  }
+
+  //if (!settings.apiKey) {
+  //  throw new Error("Please add your OpenAI API key in the extension settings")
+  //}
 
   let prompt = ''
   
@@ -414,16 +427,14 @@ async function generateRewrittenText(text, type) {
 
   prompt += ` Return only the improved text without quotes or explanations.`
 
-  const endpoint = prompt === 'rewrite' ? "my_rewrite_endpoint" : "my_ai_improve_endpoint"
-
-  const response = await fetch(endpoint, {
+  const response = await fetch('my_api_endpoint', {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${settings.apiKey}`,
+      Authorization: `Bearer ${await accessToken()}`,
     },
     credentials: 'include',
-    body: JSON.stringify({prompt,type}),
+    body: JSON.stringify({prompt, type}),
   })
 
   const data = await response.json()
@@ -756,7 +767,18 @@ async function handleRewriteAssistant(editor) {
 
   try {
     // Generate improved version
-    const improvedText = await generateImprovedText(currentText)
+
+    let improvedText = null;
+    try {
+      improvedText = await generateImprovedText(currentText)
+    } catch (error) {
+      if (error === "Invalid Token") { // token invalid
+        await refreshToken() // refresh the token
+
+        // call generateImprovedText again after refresh
+        improvedText = await generateImprovedText(currentText)
+      }
+    }
 
     // Remove loading overlay
     loadingOverlay.remove()
@@ -804,9 +826,11 @@ function createLoadingOverlay(editor) {
 }
 
 async function generateImprovedText(originalText) {
-  if (!settings.apiKey) {
-    throw new Error("Please add your OpenAI API key in the extension settings")
-  }
+  //if (!settings.apiKey) {
+  //  throw new Error("Please add your OpenAI API key in the extension settings")
+  //}
+
+  if (!settings.rewrite_enabled) return;
 
   const prompt = `Improve and rewrite the following LinkedIn post to make it more engaging, professional, and impactful. Keep the core message but enhance clarity, flow, and engagement. Maintain the same tone (${settings.tone}) and make it suitable for the ${settings.industry} industry:
 
@@ -814,26 +838,13 @@ async function generateImprovedText(originalText) {
 
 Return only the improved text without any explanations or quotes.`
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const response = await fetch("my_api_endpoint", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${settings.apiKey}`,
+      Authorization: `Bearer ${accessToken()}`,
     },
-    body: JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: `You are a professional LinkedIn content editor. You improve posts to be more engaging and professional while maintaining the original voice and message.`,
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-    }),
+    body: JSON.stringify({prompt}),
   })
 
   const data = await response.json()
@@ -1128,8 +1139,8 @@ async function generateCommentSuggestions(context) {
   if (!settings.reply_enabled) return;
 
   // check if acces_token is available
-  const { access_token, refresh_token } = await chrome.storage.local.get(['access_token', 'refresh_token']);
-  if (access_token == null || refresh_token == null) {
+  const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
+  if (refresh_token == null) {
     throw new Error("Please Sign in to continue")
   };
 
@@ -1158,7 +1169,7 @@ async function generateCommentSuggestions(context) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${access_token}`,
+        Authorization: `Bearer ${await accessToken()}`,
       },
       body: JSON.stringify({
         comment_text: prompt
@@ -1347,6 +1358,12 @@ const refreshToken = async (refresh_token) => {
     return null;
   }
 }
+
+// helper function to fetch access token in chrome storage
+const accessToken = async () => {
+  return await chrome.storage.local.get(['access_token']);
+}
+
   // ===== CHATBOT SYSTEM =====
   const chatbotState = {
     isOpen: false,

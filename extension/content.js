@@ -414,26 +414,16 @@ async function generateRewrittenText(text, type) {
 
   prompt += ` Return only the improved text without quotes or explanations.`
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const endpoint = prompt === 'rewrite' ? "my_rewrite_endpoint" : "my_ai_improve_endpoint"
+
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${settings.apiKey}`,
     },
-    body: JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: `You are a professional LinkedIn content editor. Improve text while maintaining the original voice and message.`,
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-    }),
+    credentials: 'include',
+    body: JSON.stringify({prompt,type}),
   })
 
   const data = await response.json()
@@ -442,7 +432,7 @@ async function generateRewrittenText(text, type) {
     throw new Error(data.error?.message || "Failed to transform text")
   }
 
-  return data.choices[0].message.content.trim()
+  return data.response
 }
 
 function replaceSelectedText(newText) {

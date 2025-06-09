@@ -21,6 +21,16 @@ exports.createChat = async (req, res) => {
       return res.status(500).json({ error: error.message });
     }
 
+    // push one message in chat ie the ai message
+    await supabase.from('chat_messages').insert([
+      { 
+        chat_id: data.id, 
+        user_id: userId, 
+        role: 'assistant', 
+        content: "Hi! I'm Lia, your LinkedIn Intelligence Assistant. <br/><br/> I'm here to help you write posts, polish comments, and improve your content. <br/><br/>What can I assist you with today?" 
+      }
+    ]);
+
     res.status(201).json(data);
   } catch (err) {
     console.error('Error creating chat:', err);

@@ -1,12 +1,23 @@
 "use client"
+
 import Link from "next/link"
+import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText, MessageSquare, Pencil, User } from "lucide-react"
 import DashboardHeader from "@/components/dashboard/dashboard-header"
 
 export default function DashboardPage() {
-  // Animation variants
+  const [usageStats, setUsageStats] = useState({
+    "post_rewrites": 0,
+    "comment_suggestions": 0,
+    "post_suggestions": 0,
+    "total_tokens_used": 0,
+    "total_usage": 0
+  })
+
+  const [getStatsStatus, setGetStatsStatus] = useState("idle")
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -30,38 +41,40 @@ export default function DashboardPage() {
     },
   }
 
-  // Mock usage data - in a real implementation, this would come from storage
-  const usageStats = {
-    post_rewrites: 24,
-    comments_suggestions: 18,
-    reply_suggestions: 32,
-    total_tokens_used: 15000,
-    total_usage: 100,
-  }
-
-  const getUsageStats = () => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/usage`, {
-      method: "GET",
-      headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${getAccessTokenFromCookie()}`,
-      },
-    })
-      .then((response) => response.json())
-      .then((data) => {
-      // Update usageStats with data from API
-      Object.assign(usageStats, data)
+  useEffect(() => {
+    function getStats () {
+      fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/usage/stats`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("lia_access_token")}`,
+        },
+        credentials: "include",
       })
-      .catch((error) => {
-      console.error("Error fetching usage stats:", error)
-      })
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("Fetched usage stats:", data)
+          if (data.error) {
+            console.error("Invalid token, redirecting to refresh token page")
+            // Redirect to refresh token page if the token is invalid
+            window.location.href = '/refresh-token'
+            return
+          }
+          setUsageStats(data)
+          setGetStatsStatus("success")
+        })
+        .catch((err) => {
+          console.error("Error fetching usage stats:", err)
+          setGetStatsStatus("error")
+          // If the token is expired, try to refresh it by redirecting to the refresh token page
+          window.location.href = '/refresh-token'
+          
+        })
+      }
 
-    function getAccessTokenFromCookie() {
-      const match = document.cookie.match(/(?:^|;\s*)access_token=([^;]*)/)
-      return match ? decodeURIComponent(match[1]) : ""
-    }
+      getStats()
 
-  }
+  }, [])
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -75,7 +88,9 @@ export default function DashboardPage() {
           className="space-y-4 mb-8"
         >
           <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Track your LinkedIn AI Assistant usage</p>
+          <p className="text-muted-foreground">
+            Track your LinkedIn AI Assistant usage
+          </p>
         </motion.div>
 
         <motion.div
@@ -92,7 +107,9 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{usageStats.post_rewrites}</div>
-                <p className="text-xs text-muted-foreground mt-1">AI-generated post ideas</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  AI-generated post ideas
+                </p>
               </CardContent>
             </Card>
           </motion.div>
@@ -104,8 +121,10 @@ export default function DashboardPage() {
                 <Pencil className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{usageStats.reply_suggestions}</div>
-                <p className="text-xs text-muted-foreground mt-1">Content improvements</p>
+                <div className="text-3xl font-bold">{usageStats.post_suggestions}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Content improvements
+                </p>
               </CardContent>
             </Card>
           </motion.div>
@@ -117,8 +136,10 @@ export default function DashboardPage() {
                 <MessageSquare className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{usageStats.comments_suggestions}</div>
-                <p className="text-xs text-muted-foreground mt-1">AI-assisted responses</p>
+                <div className="text-3xl font-bold">{usageStats.comment_suggestions}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  AI-assisted responses
+                </p>
               </CardContent>
             </Card>
           </motion.div>
@@ -137,7 +158,9 @@ export default function DashboardPage() {
                 <div className="rounded-full bg-muted p-3 mb-4">
                   <User className="h-6 w-6" />
                 </div>
-                <h3 className="text-lg font-medium mb-2">Your activity will appear here</h3>
+                <h3 className="text-lg font-medium mb-2">
+                  Your activity will appear here
+                </h3>
                 <p className="text-sm text-muted-foreground max-w-md">
                   As you use the LinkedIn AI Assistant to create posts, improve content, and reply to comments, your
                   activity will be tracked here.

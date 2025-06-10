@@ -86,7 +86,7 @@ exports.getChatMessages = async (req, res) => {
     // Filter messages to ensure they belong to the user
     const messages = data.filter(message => message.user_id === userId);
 
-    res.json(messages);
+    res.json({messages});
   } catch (err) {
     console.error('Error fetching chat messages:', err);
     res.status(500).json({ error: 'Failed to fetch chat messages' });
@@ -121,6 +121,27 @@ exports.message = async (req, res) => {
     const messages = [...(history || [])]
       .map(m => ({ role: m.role, content: m.content }))
       .concat([{ role: 'user', content: message }]);
+
+    // if history is grater than or equal to 2
+    // generate a title for the chat based on the first two messages
+    // do this only if the chat has at least 2 messages - only once
+    if (history.length === 1) {
+      const titlePrompt = `Generate a concise title for a LinkedIn chat based on this message: "${message}". Maximum 4 words. Return only the title without any quotes or additional text.`;
+      
+      const { choices } = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [{ role: 'system', content: titlePrompt }],
+      });
+
+      const title = choices[0].message.content || 'New Chat';
+      
+      // Update chat title if it exists
+      await supabase
+        .from('chats')
+        .update({ title })
+        .eq('id', chatId)
+        .eq('user_id', userId);
+    }
       
     // 2. GET AI response
     //first lets insert a key role to start of the messages array

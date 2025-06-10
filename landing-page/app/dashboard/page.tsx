@@ -73,6 +73,7 @@ export default function DashboardPage() {
       }
 
       getStats()
+      console.log("getStatsStatus:", getStatsStatus)
 
   }, [])
 

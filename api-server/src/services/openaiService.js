@@ -59,7 +59,7 @@ exports.getCompletionPostRewrite = async (prompt) => {
     messages: [
       {
         role: 'system',
-        content: 'You are a professional LinkedIn content editor. You improve posts to be more engaging and professional while maintaining the original voice and message.'
+        content: 'You are a professional LinkedIn content editor. You improve posts to be more engaging and professional while maintaining the original voice and message. You keep unicode characters intact.'
       },
       { 
         role: 'user', 
@@ -69,7 +69,7 @@ exports.getCompletionPostRewrite = async (prompt) => {
     temperature: 0.7, // Adjust temperature for creativity
   });
 
-  const completions = response.choices[0].message.content.trim();
+  const completions = response.choices[0].message.content;
  
   return {"Content": completions, "Usage": response.usage};
 }

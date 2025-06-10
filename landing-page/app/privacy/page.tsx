@@ -16,7 +16,7 @@ export default function PrivacyPage() {
 
       <div className="space-y-4 mb-12">
         <h1 className="text-4xl font-bold">Privacy Policy</h1>
-        <p className="text-muted-foreground">Last updated: January 1, 2023</p>
+        <p className="text-muted-foreground">Last updated: January 1, 2025</p>
       </div>
 
       <div className="space-y-8 text-muted-foreground">
@@ -45,8 +45,21 @@ export default function PrivacyPage() {
               toggles are stored locally in your browser.
             </li>
             <li>
-              <strong>OpenAI API key:</strong> If you provide an OpenAI API key, it is stored locally in your browser's
-              storage.
+              <strong>Registration on the <a href="https://www.getlia.live/signup">website:</a></strong> You'll need to use one of the following methods to register:
+              <ul className="list-disc pl-5">
+                <li>
+                  <strong>Email and Password:</strong> You can sign up using your email address and a password. This
+                  will provide us with your email address for account management. 
+                </li>
+                <li>
+                  <strong>OAuth with Google:</strong> You can sign up using your Google account, which will provide us
+                  with your email address and basic profile information.
+                </li>
+                <li>
+                  <strong>OAuth with LinkedIn:</strong> You can sign up using your LinkedIn account, which will provide
+                  us with your email address and basic profile information.
+                </li>
+              </ul>
             </li>
           </ul>
         </section>
@@ -58,7 +71,9 @@ export default function PrivacyPage() {
             <li>Provide, maintain, and improve the LIA extension</li>
             <li>Generate AI-powered content suggestions based on your inputs</li>
             <li>Save your preferences for future use of the extension</li>
-            <li>Process API requests to OpenAI using your provided API key</li>
+            <li>Authenticate and process API requests to our server using the token generated during registration and sign-in</li>
+            <li>Monitor and analyze usage to improve our services</li>
+            <li>Communicate with you about your account, features, and updates</li>
           </ul>
         </section>
 
@@ -71,8 +86,7 @@ export default function PrivacyPage() {
               using Chrome's storage API. This data never leaves your device except when making API calls to OpenAI.
             </li>
             <li>
-              <strong>No server storage:</strong> We do not maintain any servers that store your data. All processing
-              happens either locally in your browser or through direct API calls to OpenAI.
+              <strong>Server storage:</strong> Certain data, such as authentication information (email, OAuth profile data) and usage tracking (e.g., API usage, feature usage), is securely stored on our servers to enable account management, authentication, and to monitor service usage.
             </li>
           </ul>
           <p>
@@ -87,7 +101,7 @@ export default function PrivacyPage() {
           <ul>
             <li>
               <strong>OpenAI API:</strong> When you use our AI features, content is sent to OpenAI's servers for
-              processing. This is done using your own API key. Please review{" "}
+              processing. This is done in the backend using our own OpeanAI API-KEY. Please review{" "}
               <Link href="https://openai.com/privacy/" target="_blank" className="text-primary hover:underline">
                 OpenAI's Privacy Policy
               </Link>{" "}
@@ -113,11 +127,11 @@ export default function PrivacyPage() {
           <p>You have the following rights regarding your data:</p>
           <ul>
             <li>
-              <strong>Access:</strong> You can access all data stored by the extension in your browser's local storage.
+              <strong>Access:</strong> You can access all data stored by the extension in your browser's local storage and on your <a href="https://www.getlia.live/dashboard">dashboard</a> on the LIA website.
             </li>
             <li>
               <strong>Deletion:</strong> You can clear all stored data by uninstalling the extension or clearing your
-              browser's storage for the extension.
+              browser's storage for the extension or by deleting your account on the website.
             </li>
             <li>
               <strong>Control:</strong> You can choose which features to enable or disable through the extension
@@ -150,7 +164,7 @@ export default function PrivacyPage() {
         <section className="mb-8">
           <h2>Contact Us</h2>
           <p>If you have any questions about this Privacy Policy, please contact us at:</p>
-          <p>Email: privacy@lia-assistant.com</p>
+          <p>Email: privacy@getlia.live</p>
         </section>
       </div>
     </div>

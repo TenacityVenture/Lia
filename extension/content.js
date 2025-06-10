@@ -427,7 +427,7 @@ async function generateRewrittenText(text, type) {
 
   prompt += ` Return only the improved text without quotes or explanations.`
 
-  const response = await fetch('my_api_endpoint', {
+  const response = await fetch('http://localhost:4000/api/prompt/improve', {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -775,16 +775,24 @@ async function handleRewriteAssistant(editor) {
       if (error === "Invalid Token") { // token invalid
         await refreshToken() // refresh the token
 
-        // call generateImprovedText again after refresh
-        improvedText = await generateImprovedText(currentText)
+        try { // call generateImprovedText again after refresh
+          improvedText = await generateImprovedText(currentText)
+        } catch (retryError) {
+          throw retryError // pass it to outer catch
+        }
       }
     }
 
     // Remove loading overlay
     loadingOverlay.remove()
-
-    // Perform the in-place rewrite with animation
-    await animateTextRewrite(editor, currentText, improvedText)
+    console.log(currentText, improvedText)
+    if (improvedText) {
+      // Perform the in-place rewrite with animation
+      await animateTextRewrite(editor, currentText, improvedText)
+    } else {
+      // Show a temporary message if no improved text was generated
+      showTemporaryMessage(editor, "No improvements were made to the text because the extension encountered an error")
+    }
   } catch (error) {
     loadingOverlay.remove()
     showTemporaryMessage(editor, `Error: ${error.message}`)
@@ -837,14 +845,13 @@ async function generateImprovedText(originalText) {
 "${originalText}"
 
 Return only the improved text without any explanations or quotes.`
-
-  const response = await fetch("my_api_endpoint", {
+  const response = await fetch("http://localhost:4000/api/prompt/rewrite", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${await accessToken()}`,
     },
-    body: JSON.stringify({prompt}),
+    body: JSON.stringify({prompt, originalText}),
   })
 
   const data = await response.json()
@@ -853,7 +860,7 @@ Return only the improved text without any explanations or quotes.`
     throw new Error(data.error?.message || "Failed to generate improved text")
   }
 
-  return data.choices[0].message.content.trim()
+  return data.response
 }
 
 async function animateTextRewrite(editor, originalText, newText) {
@@ -1391,7 +1398,7 @@ const refreshToken = async () => {
     createChatbotButton()
     createChatbotInterface()
     loadChatHistory()
-    makeChatbotDraggable()
+    //makeChatbotDraggable() remove dragging feature for now
   }
 
   function createChatbotButton() {
@@ -2399,8 +2406,6 @@ const refreshToken = async () => {
       // Add AI response to chat
       addMessageToChat("assistant", response)
 
-      // Save conversation
-      saveCurrentConversation()
     } catch (error) {
       hideTypingIndicator()
       addMessageToChat("assistant", "Sorry, I encountered an error. Please try again. 😔")
@@ -2428,18 +2433,42 @@ const refreshToken = async () => {
         </div>
         <div class="lia-message-content"></div>
       `;
-      const contentDiv = messageDiv.querySelector('.lia-message-content');
-      let i = 0;
-      function typeWriter() {
-        if (i <= content.length) {
-          contentDiv.textContent = content.slice(0, i) + (i < content.length ? "|" : "");
-          i++;
-          setTimeout(typeWriter, 15);
-        } else {
-          contentDiv.textContent = content;
+
+      if (content.includes("Unable to load conversations") || content.includes("Unable to create new chat")) {
+        // If the content is an error message, display it directly
+        messageDiv.innerHTML = `
+        <div class="lia-message-avatar">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+            <rect x="2" y="9" width="4" height="12"/>
+            <circle cx="4" cy="4" r="2"/>
+            <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
+            <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
+          </svg>
+        </div>
+        <div class="lia-message-content">${content}</div>
+      `;
+      } else {
+        const contentDiv = messageDiv.querySelector('.lia-message-content');
+        let i = 0;
+        function typeWriter() {
+          if (i <= content.length) {
+            contentDiv.textContent = content.slice(0, i) + (i < content.length ? "|" : "");
+            i++;
+            setTimeout(typeWriter, 15);
+          } else {
+            contentDiv.textContent = content;
+          }
         }
+        typeWriter();
       }
-      typeWriter();
+
+      //if (content.includes("http")) {
+      //  // If the content includes a URL, create a link
+      //  const url = content.match(/https?:\/\/[^\s]+/)[0];
+      //  const text = content.replace(url, "").trim();
+      //  contentDiv.innerHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">${text} <span class="lia-link-icon">🔗</span></a>`;
+      //}
     } else {
       messageDiv.innerHTML = `
         <div class="lia-message-avatar">U</div>
@@ -2602,45 +2631,6 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
     // Focus on input
     document.getElementById("lia-message-input").focus()
 
-  }
-
-  function saveCurrentConversation() {
-    // Save conversation to localStorage
-    const conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
-
-    const messagesContainer = document.getElementById("lia-messages-container")
-    const messages = Array.from(messagesContainer.children)
-      .filter((msg) => !msg.id || msg.id !== "lia-typing-indicator")
-      .map((msg) => {
-        return {
-          role: msg.classList.contains("user") ? "user" : "assistant",
-          content: msg.querySelector(".lia-message-content").textContent,
-        }
-        
-        
-    })
-
-    console.log(messages)
-
-    const conversation = {
-      id: chatbotState.currentConversationId || Date.now().toString(),
-      title: messages.find((m) => m.role === "user")?.content.substring(0, 25) + "..." || "New Chat",
-      messages: messages,
-      timestamp: Date.now(),
-    }
-
-    const existingIndex = conversations.findIndex((c) => c.id === conversation.id)
-    if (existingIndex >= 0) {
-      conversations[existingIndex] = conversation
-    } else {
-      conversations.unshift(conversation)
-    }
-
-    // Keep only last 15 conversations
-    conversations.splice(15)
-
-    localStorage.setItem("lia-conversations", JSON.stringify(conversations))
-    updateConversationList()
   }
 
   async function loadChatHistory() {

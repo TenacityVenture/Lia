@@ -10,6 +10,12 @@ exports.rewritePost = async (req, res) => {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  // the original text is also passed in the request body
+  let { originalText } = req.body;
+  if (!originalText) {
+    originalText = prompt; // Fallback to prompt if originalText is not provided
+  }
+
   try {
     const {Content: rewritten, Usage: usage} = await openaiService.getCompletionPostRewrite(prompt);
 
@@ -17,7 +23,7 @@ exports.rewritePost = async (req, res) => {
     await usageLogger.log({ 
         userId, 
         type: 'post_rewrite', 
-        original_text, 
+        original_text: originalText, 
         suggested_text: rewritten, 
         token_used: usage.total_tokens || 0 // Fallback to 0 if not available
     })
@@ -65,6 +71,9 @@ exports.suggestReply = async (req, res) => {
     res.status(500).json({ error: 'AI reply suggestion failed' });
   }
 };
+
+
+
 
 // AI Improvement endpoint 
 // makes a text better by rewriting it with a more professional tone

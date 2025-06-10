@@ -842,7 +842,7 @@ Return only the improved text without any explanations or quotes.`
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${accessToken()}`,
+      Authorization: `Bearer ${await accessToken()}`,
     },
     body: JSON.stringify({prompt}),
   })
@@ -1335,7 +1335,8 @@ function insertTextIntoEditor(editor, text) {
 }
 
 // helper functions
-const refreshToken = async (refresh_token) => {
+const refreshToken = async () => {
+  const refresh_token = await getRefreshToken();
   try {
     const response = await fetch('http://localhost:4000/api/auth/refresh-token', {
       method: 'POST',
@@ -1359,10 +1360,22 @@ const refreshToken = async (refresh_token) => {
   }
 }
 
-// helper function to fetch access token in chrome storage
-const accessToken = async () => {
-  return await chrome.storage.local.get(['access_token']);
-}
+  // helper function to fetch access token in chrome storage
+  const accessToken = async () => {
+    const { access_token } = await chrome.storage.local.get(['access_token']);
+    if (!access_token) {
+      throw new Error("Please Sign in to continue")
+    }
+    return access_token;
+  }
+
+  const getRefreshToken = async () => {
+    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
+    if (!refresh_token) {
+      throw new Error("Please Sign in to continue")
+    }
+    return refresh_token;
+  }
 
   // ===== CHATBOT SYSTEM =====
   const chatbotState = {
@@ -2363,7 +2376,22 @@ const accessToken = async () => {
 
     try {
       // Generate AI response
-      const response = await generateChatResponse(message)
+      let response;
+      try {
+        response = await generateChatResponse(message)
+      } catch (error) {
+        console.error("Error generating chat response:", error)
+
+        // try refreshing the token
+        try {
+          await refreshToken()
+          response = await generateChatResponse(message) // try again after refreshing token
+        } catch (refreshError) {
+          console.error("Error refreshing token:", refreshError)
+          response = "Sorry, I encountered an error while trying to generate a response. Please try again later. 😔"
+        }
+        throw new Error("Failed to generate response from AI")
+      }
 
       // Remove typing indicator
       hideTypingIndicator()
@@ -2386,18 +2414,38 @@ const accessToken = async () => {
     const messageDiv = document.createElement("div")
     messageDiv.className = `lia-message ${role}`
 
-    messageDiv.innerHTML = `
-    <div class="lia-message-avatar">${role === "user" ? "U" : `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-      <rect x="2" y="9" width="4" height="12"/>
-      <circle cx="4" cy="4" r="2"/>
-      <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
-      <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
-    </svg>
-    `}</div>
-    <div class="lia-message-content">${content}</div>
-  `
+    if (role === "assistant") {
+      // Simulate text writing animation for assistant
+      messageDiv.innerHTML = `
+        <div class="lia-message-avatar">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+            <rect x="2" y="9" width="4" height="12"/>
+            <circle cx="4" cy="4" r="2"/>
+            <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
+            <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
+          </svg>
+        </div>
+        <div class="lia-message-content"></div>
+      `;
+      const contentDiv = messageDiv.querySelector('.lia-message-content');
+      let i = 0;
+      function typeWriter() {
+        if (i <= content.length) {
+          contentDiv.textContent = content.slice(0, i) + (i < content.length ? "|" : "");
+          i++;
+          setTimeout(typeWriter, 15);
+        } else {
+          contentDiv.textContent = content;
+        }
+      }
+      typeWriter();
+    } else {
+      messageDiv.innerHTML = `
+        <div class="lia-message-avatar">U</div>
+        <div class="lia-message-content">${content}</div>
+      `;
+    }
 
     messagesContainer.appendChild(messageDiv)
     messagesContainer.scrollTop = messagesContainer.scrollHeight
@@ -2446,6 +2494,7 @@ const accessToken = async () => {
   }
 
   async function generateChatResponse(message) {
+    console.log('this is the access token', await accessToken())
     // check if post suggestion enabled
     if (!settings.post_enabled) return
 
@@ -2464,26 +2513,14 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
 
     prompt += `\n\nRespond helpfully and professionally. If they're asking for LinkedIn content help, provide specific suggestions. Keep responses concise but helpful. Use emojis sparingly but appropriately.`
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch(`http://localhost:4000/api/chat/${chatbotState.currentConversationId}/message`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer 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`,
+        Authorization: `Bearer ${await accessToken()}`,
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content: `You are Lia, a professional LinkedIn AI assistant. You help users with LinkedIn content creation, engagement, and professional communication. Be helpful, concise, and professional. Use emojis sparingly.`,
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-        max_tokens: 500,
+        message,
       }),
     })
 
@@ -2493,10 +2530,10 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
       throw new Error(data.error?.message || "Failed to generate response")
     }
 
-    return data.choices[0].message.content.trim()
+    return data.reply
   }
 
-  function startNewConversation() {
+  async function startNewConversation() {
     // Clear current chat
     const messagesContainer = document.getElementById("lia-messages-container")
     messagesContainer.innerHTML = `
@@ -2517,10 +2554,50 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
   `
 
     // Create new conversation ID
-    chatbotState.currentConversationId = Date.now().toString()
+    //chatbotState.currentConversationId = Date.now().toString()
+
+    // now instead of creating a new conversation, we will create a new chat in api server
+    async function createNewChat() {
+      const response = await fetch(`http://localhost:4000/api/chat/start`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await accessToken()}`,
+        },
+        body: JSON.stringify({
+          title: "New Chat",
+        }),
+        credentials: "include",
+      })
+      const chat = await response.json()
+      if (!response.ok) {
+        throw new Error(chat.error?.message || "Failed to create new chat")
+      }
+      chatbotState.currentConversationId = chat.id
+      return chat
+    }
+
+    try {
+      await createNewChat()
+    } catch (error) {
+      console.error("Error creating new chat:", error)
+      // try refreshing the token
+
+      try {
+        await refreshToken()
+        createNewChat() // try again after refreshing token
+      } catch (error) {
+        console.error("Error refreshing token:", error)
+        // Couldn't refresh token, couldn't create new chat
+        // Give up and show error message to user
+        addMessageToChat("assistant", "Unable to create new chat. Please check your connection or try signing in again <a href='https://www.getlia.live/login' target='_blank'>here</a>.")
+        throw new Error("Unable to create new chat. Please check your connection or try signing in again.")
+        
+      }
+    }
 
     // Update conversation list
-    updateConversationList()
+    await updateConversationList()
 
     // Focus on input
     document.getElementById("lia-message-input").focus()
@@ -2566,28 +2643,79 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
     updateConversationList()
   }
 
-  function loadChatHistory() {
-    const conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
-    chatbotState.conversations = conversations
-    updateConversationList()
+  async function loadChatHistory() {
+    //let conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
+    let conversations = []
 
+    // load conversations from API server
+    try {
+      const chats = await loadConversations()
+      conversations = chats
+    } catch (error) {
+      console.error("Error loading conversations:", error)
+      // try refreshing the token
+      try {
+      await refreshToken()
+        conversations = await loadConversations()
+      } catch {
+        console.error("Error refreshing token:", error)
+        // If refresh fails, fallback to localStorage
+        //conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
+        addMessageToChat("assistant", "Unable to load conversations. Please check your connection or try signing in again <a href='https://www.getlia.live/login' target='_blank'>here</a>.")
+        throw new Error("Unable to load conversations. Please check your connection or try signing in again.")
+      }
+    }
+
+    chatbotState.conversations = conversations
+    if (chatbotState.conversations.length === 0) {
+      //addMessageToChat("assistant", "No conversations found. Start a new chat to begin!")
+      startNewConversation()
+      return
+    }
+
+    updateConversationList()
+    
     if (conversations.length > 0) {
       chatbotState.currentConversationId = conversations[0].id
+      
+      loadConversation(chatbotState.currentConversationId)
     }
+
   }
 
-  function updateConversationList() {
+  async function updateConversationList() {
     const conversationList = document.getElementById("lia-conversation-list")
-    const conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
+    //let conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
+
+    let conversations = []
+
+    // load conversations from API server
+    try {
+      const chats = await loadConversations()
+      conversations = chats
+    } catch (error) {
+      console.error("Error loading conversations:", error)
+      // try refreshing the token
+      try {
+      await refreshToken()
+        conversations = await loadConversations()
+      } catch {
+        console.error("Error refreshing token:", error)
+        // If refresh fails, fallback to localStorage
+        //conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
+      }
+    }
+
+
   
     conversationList.innerHTML = conversations
       .map(
-        (conv) => `
-          <div class="lia-conversation-item ${conv.id === chatbotState.currentConversationId ? "active" : ""}" 
-               data-id="${conv.id}">
-            ${conv.title}
-          </div>
-        `,
+      (conv) => `
+        <div class="lia-conversation-item ${conv.id === chatbotState.currentConversationId ? "active" : ""}" 
+           data-id="${conv.id}">
+        ${conv.title.slice(0, 10)}${conv.title.length > 15 ? "..." : ""}
+        </div>
+      `,
       )
       .join("")
   
@@ -2600,9 +2728,47 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
   }
   
 
-  function loadConversation(conversationId) {
-    const conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
-    const conversation = conversations.find((c) => c.id === conversationId)
+  async function loadConversation(conversationId) {
+    //const conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
+    //let conversation = conversations.find((c) => c.id === conversationId)
+
+    let conversation = null
+
+    // load conversation form API server
+    async function loadChats () {
+      const response = await fetch(`http://localhost:4000/api/chat/${conversationId}/messages`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await accessToken()}`,
+        },
+        credentials: "include",
+      })
+      const chats = await response.json()
+      if (!response.ok) {
+        throw new Error(chats.error?.message || "Failed to load conversation")
+      }
+      return chats
+    }
+
+    try {
+      const chats = await loadChats()
+      conversation = chats
+    } catch (error) {
+      console.error("Error loading conversation:", error)
+      // try refreshing the token
+      try {
+        await refreshToken()
+        const chats = await loadChats()
+        conversation = chats
+      }
+      catch (refreshError) {
+        console.error("Error refreshing token:", refreshError)
+        // fails to refresh token, fails to load conversation
+        // Give up and show error message to user
+        throw new Error("Unable to load conversation. Please check your connection or try signing in again.")
+      }
+    }
 
     if (!conversation) return
 
@@ -2669,6 +2835,25 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
 
       e.preventDefault();
     });
+  }
+
+  // chatbot helper functions
+  async function loadConversations() {
+    const access_token = await accessToken()
+    const response = await fetch(`http://localhost:4000/api/chat/history`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${access_token}`,
+      },
+      credentials: "include",
+    })
+    const chats = await response.json()
+    if (!response.ok) {
+      console.error("Error loading conversationsxyz:", chats.error)
+      throw new Error(chats.error?.message || "Failed to load conversations")
+    }
+    return chats
   }
 
   

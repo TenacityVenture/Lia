@@ -30,3 +30,46 @@ exports.getCompletionSuggestPost = async (messages) => {
  
   return {"Content": completions, "Usage": response.usage};
 };
+
+exports.getCompletionPostImprovements = async (prompt) => {
+  const response = await openai.chat.completions.create({
+    model: 'gpt-3.5-turbo',
+    messages: [
+      {
+        role: 'system',
+        content: 'You are Lia, a professional LinkedIn content editor. Improve text while maintaining the original voice and message.'
+      },
+      { 
+        role: 'user', 
+        content: prompt 
+      }
+    ], // conversation between user and AI
+    temperature: 0.7, // Adjust temperature for creativity
+  });
+
+  const completions = response.choices[0].message.content.trim();
+ 
+  return {"Content": completions, "Usage": response.usage};
+}
+
+
+exports.getCompletionPostRewrite = async (prompt) => {
+  const response = await openai.chat.completions.create({
+    model: 'gpt-3.5-turbo',
+    messages: [
+      {
+        role: 'system',
+        content: 'You are a professional LinkedIn content editor. You improve posts to be more engaging and professional while maintaining the original voice and message.'
+      },
+      { 
+        role: 'user', 
+        content: prompt 
+      }
+    ], // conversation between user and AI
+    temperature: 0.7, // Adjust temperature for creativity
+  });
+
+  const completions = response.choices[0].message.content.trim();
+ 
+  return {"Content": completions, "Usage": response.usage};
+}

@@ -7,7 +7,7 @@ export default function RefreshTokenPage() {
 
   // sends request to the server to refresh the token
   // This is a placeholder function, you can implement your own logic here
-  const refreshToken = async () => {
+  /*const refreshToken = async () => {
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/auth/refresh-token`, {
         method: 'POST',
@@ -42,7 +42,7 @@ export default function RefreshTokenPage() {
       setLoading(false);
       console.error('Error refreshing token:', error);
     }
-  };
+  };*/
 
   const refreshTokenDirectly = async () => {
     const token = getCookie('refresh_token') || '';

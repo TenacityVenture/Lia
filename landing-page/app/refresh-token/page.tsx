@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { refreshTokenDirectlyWithSupabase } from '@/lib/supabaseHelpers';
 
 export default function RefreshTokenPage() {
   const [loading, setLoading] = useState(true);
@@ -42,9 +43,44 @@ export default function RefreshTokenPage() {
       console.error('Error refreshing token:', error);
     }
   };
+
+  const refreshTokenDirectly = async () => {
+    const token = getCookie('refresh_token') || '';
+    refreshTokenDirectlyWithSupabase(token)
+    .then((data) => {
+      if (data.access_token && data.refresh_token) {
+        localStorage.setItem('lia_access_token', data.access_token);
+        // for security reasons i will not store the refresh token in local storage
+        //localStorage.setItem('lia_refresh_token', data.refresh_token);
+
+        // send jwts to chrome extension
+        window.postMessage({ type: "SEND_JWTs", 
+          access_token: data.access_token, 
+          refresh_token: data.refresh_token}, "*") // * means all domains (shoule be restricted to lia extension id)
+        
+        // Redirect to the previous page or default to dashboard
+        const previousPage = document.referrer && new URL(document.referrer).origin === window.location.origin
+          ? new URL(document.referrer).pathname
+          : '/dashboard';
+        window.location.href = previousPage;
+      }
+    })
+    .catch((error) => {
+      setLoading(false);
+      console.error('Error refreshing token:', error);
+      throw new Error('Failed to refresh token');
+    })
+  }
+
+  const getCookie = (name: string) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift();
+  } 
   // Call the refresh token function when the component mounts
   useEffect(() => {
-    refreshToken();
+    //refreshToken();
+    refreshTokenDirectly();
   }, []);
 
   return (

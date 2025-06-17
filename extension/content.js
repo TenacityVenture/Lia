@@ -37,6 +37,8 @@ window.addEventListener('message', (event) => {
     });
   }
 
+  initializeChatbot()
+
   if (event.data.type === 'CLEAR_JWTs') {
     chrome.storage.local.remove(['access_token', 'refresh_token'], () => {
       console.log('Access token and refresh token cleared from storage.');
@@ -102,6 +104,35 @@ function toUnicodeStyle(text, style = 'bold') {
   return [...text].map(char => map[char] || char).join('');
 }
 
+
+function fromUnicodeToNormal(text, style = 'bold') {
+  const boldMap = {
+    '𝗮': 'a', '𝗯': 'b', '𝗰': 'c', '𝗱': 'd', '𝗲': 'e', '𝗳': 'f', '𝗴': 'g', '𝗵': 'h', '𝗶': 'i', '𝗷': 'j',
+    '𝗸': 'k', '𝗹': 'l', '𝗺': 'm', '𝗻': 'n', '𝗼': 'o', '𝗽': 'p', '𝗾': 'q', '𝗿': 'r', '𝘀': 's', '𝘁': 't',
+    '𝘂': 'u', '𝘃': 'v', '𝘄': 'w', '𝘅': 'x', '𝘆': 'y', '𝘇': 'z',
+    '𝗔': 'A', '𝗕': 'B', '𝗖': 'C', '𝗗': 'D', '𝗘': 'E', '𝗙': 'F', '𝗚': 'G', '𝗛': 'H', '𝗜': 'I', '𝗝': 'J',
+    '𝗞': 'K', '𝗟': 'L', '𝗠': 'M', '𝗡': 'N', '𝗢': 'O', '𝗣': 'P', '𝗤': 'Q', '𝗥': 'R', '𝗦': 'S', '𝗧': 'T',
+    '𝗨': 'U', '𝗩': 'V', '𝗪': 'W', '𝗫': 'X', '𝗬': 'Y', '𝗭': 'Z',
+    '𝟬': 0, '𝟭': 1, '𝟮': 2, '𝟯': 3, '𝟰': 4, '𝟱': 5, '𝟲': 6, '𝟳': 7, '𝟴': 8, '𝟵': 9
+  };
+
+  const italicMap = {
+    '𝘢': 'a', '𝘣': 'b', '𝘤': 'c', '𝘥': 'd', '𝘦': 'e', '𝘧': 'f', '𝘨': 'g', '𝘩': 'h', '𝘪': 'i', '𝘫': 'j',
+    '𝘬': 'k', '𝘭': 'l', '𝘮': 'm', '𝘯': 'n', '𝘰': 'o', '𝘱': 'p', '𝘲': 'q', '𝘳': 'r', '𝘴': 's', '𝘵': 't',
+    '𝘶': 'u', '𝘷': 'v', '𝘸': 'w', '𝘹': 'x', '𝘺': 'y', '𝘻': 'z',
+    '𝘈': 'A', '𝘉': 'B', '𝘊': 'C', '𝘋': 'D', '𝘌': 'E', '𝘍': 'F', '𝘎': 'G', '𝘏': 'H', '𝘐': 'I', '𝘑': 'J',
+    '𝘒': 'K', '𝘓': 'L', '𝘔': 'M', '𝘕': 'N', '𝘖': 'O', '𝘗': 'P', '𝘘': 'Q', '𝘙': 'R', '𝘚': 'S', '𝘛': 'T',
+    '𝘜': 'U', '𝘝': 'V', '𝘞': 'W', '𝘟': 'X', '𝘠': 'Y', '𝘡': 'Z'
+  };
+
+  const map = style === 'italic' ? italicMap : boldMap;
+
+  return [...text].map(char => map[char] || char).join('');
+}
+
+function isUnicode(text) {
+  return /[^\u0000-\u007F]/.test(text);
+}
 
 function setupTextSelectionToolbar() {
   // Remove existing popup if it exists
@@ -317,12 +348,20 @@ function handleTextFormatting(type) {
 
   switch (type) {
     case 'bold':
-      // Use Unicode bold characters or formatting symbols
-      formattedText = toUnicodeStyle(selectedText) // convert to unicode bold
+      if (isUnicode(selectedText)) {
+        formattedText = fromUnicodeToNormal(selectedText, 'bold') // convert to normal text
+      } else {
+        // Use Unicode bold characters or formatting symbols
+        formattedText = toUnicodeStyle(selectedText) // convert to unicode bold
+      }
       break
     case 'italic':
-      // Use Unicode italic or formatting symbols
-      formattedText = toUnicodeStyle(selectedText, 'italic') // convert to unicode italic
+      if (isUnicode(selectedText)) {
+        formattedText = fromUnicodeToNormal(selectedText, 'italic') // convert to normal text
+      } else {
+        // Use Unicode italic or formatting symbols
+        formattedText = toUnicodeStyle(selectedText, 'italic') // convert to unicode italic
+      }
       break
   }
 
@@ -354,8 +393,12 @@ async function handleAIRewrite() {
         rewrittenText = generateRewrittenText(fullSentence, 'rewrite')
       }
     }
-    replaceTextInSentence(selection, fullSentence, rewrittenText)
-    hideToolbar()
+    if (rewrittenText) {
+      replaceTextInSentence(selection, fullSentence, rewrittenText)
+    } else {
+      showToolbarError('failed to fetch')
+    }
+    //hideToolbar()
   } catch (error) {
     showToolbarError(error.message)
   }

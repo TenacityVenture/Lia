@@ -2451,7 +2451,7 @@ const refreshToken = async () => {
 
     } catch (error) {
       hideTypingIndicator()
-      addMessageToChat("assistant", "Sorry, I encountered an error. Please try again. 😔")
+      addMessageToChat("assistant", "Sorry, I encountered an error. Please try again. 😔\n Try Signin in again if the error continues - <a href='https://getlia.live/login' target='_blank'>here</a>")
       console.error("Chat error:", error)
     }
   }
@@ -2462,8 +2462,24 @@ const refreshToken = async () => {
     const messageDiv = document.createElement("div")
     messageDiv.className = `lia-message ${role}`
 
+    // Enhanced helpers
+    function formatLinks(text) {
+    // Avoid touching existing anchor tags by splitting on them
+      return text.replace(/(<a [^>]+>.*?<\/a>)|(\bhttps?:\/\/[^\s<]+)/g, (match, anchor, url) => {
+        if (anchor) return anchor; // return existing anchor tags untouched
+        if (url) {
+          return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="lia-link">${url} <span class="lia-link-icon">🔗</span></a>`;
+        }
+        return match;
+      });
+    }
+
     if (role === "assistant") {
-      // Simulate text writing animation for assistant
+      // Process content with formatting
+      let processedContent = formatLinks(content);
+      processedContent = formatMarkdown(processedContent);
+
+      // Create message structure
       messageDiv.innerHTML = `
         <div class="lia-message-avatar">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2474,58 +2490,68 @@ const refreshToken = async () => {
             <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
           </svg>
         </div>
-        <div class="lia-message-content"></div>
+        <div class="lia-message-content" style="position: relative;"></div>
       `;
 
+      const contentDiv = messageDiv.querySelector('.lia-message-content');
+
       if (content.includes("Unable to load conversations") || content.includes("Unable to create new chat")) {
-        // If the content is an error message, display it directly
-        messageDiv.innerHTML = `
-        <div class="lia-message-avatar">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-            <rect x="2" y="9" width="4" height="12"/>
-            <circle cx="4" cy="4" r="2"/>
-            <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
-            <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
-          </svg>
-        </div>
-        <div class="lia-message-content">${content}</div>
-      `;
+        // Error messages display immediately
+        contentDiv.innerHTML = processedContent;
       } else {
-        const contentDiv = messageDiv.querySelector('.lia-message-content');
+        // Typewriter effect for normal responses
         let i = 0;
+        const plainContent = content; // Keep original for typewriter
+        
         function typeWriter() {
-          if (i <= content.length) {
-            contentDiv.textContent = content.slice(0, i) + (i < content.length ? "|" : "");
+          if (i <= plainContent.length) {
+            const currentText = plainContent.slice(0, i);
+            const formattedText = formatMarkdown(formatLinks(currentText));
+            contentDiv.innerHTML = formattedText + (i < plainContent.length ? '<span class="lia-cursor">|</span>' : '');
             i++;
-            setTimeout(typeWriter, 15);
+            setTimeout(typeWriter, 20);
           } else {
-            contentDiv.textContent = content;
+            // Final formatting
+            contentDiv.innerHTML = processedContent;
+            
+            // Add action buttons for longer responses
+            if (content.length > 50) {
+              const copyBtn = createCopyButton(content);
+              const regenBtn = createRegenerateButton();
+              
+              contentDiv.appendChild(copyBtn);
+              //contentDiv.appendChild(regenBtn);
+
+              // Show buttons on hover
+              messageDiv.addEventListener("mouseenter", () => {
+                copyBtn.style.opacity = "1";
+                regenBtn.style.opacity = "1";
+              });
+              
+              messageDiv.addEventListener("mouseleave", () => {
+                copyBtn.style.opacity = "0";
+                regenBtn.style.opacity = "0";
+              });
+            }
           }
         }
         typeWriter();
       }
-
-      //if (content.includes("http")) {
-      //  // If the content includes a URL, create a link
-      //  const url = content.match(/https?:\/\/[^\s]+/)[0];
-      //  const text = content.replace(url, "").trim();
-      //  contentDiv.innerHTML = `<a href="${url}" target="_blank" rel="noopener noreferrer">${text} <span class="lia-link-icon">🔗</span></a>`;
-      //}
     } else {
+      // User messages
       messageDiv.innerHTML = `
         <div class="lia-message-avatar">U</div>
-        <div class="lia-message-content">${content}</div>
+        <div class="lia-message-content">${formatLinks(content)}</div>
       `;
     }
 
-    messagesContainer.appendChild(messageDiv)
-    messagesContainer.scrollTop = messagesContainer.scrollHeight
+    messagesContainer.appendChild(messageDiv);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
     // Trigger animation
     setTimeout(() => {
-      messageDiv.style.opacity = "1"
-    }, 50)
+      messageDiv.style.opacity = "1";
+    }, 50);
   }
 
   function showTypingIndicator() {
@@ -2662,7 +2688,7 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
         console.error("Error refreshing token:", error)
         // Couldn't refresh token, couldn't create new chat
         // Give up and show error message to user
-        addMessageToChat("assistant", "Unable to create new chat. Please check your connection or try signing in again <a href='https://www.getlia.live/login' target='_blank'>here</a>.")
+        addMessageToChat("assistant", "Unable to create new chat. Please check your connection or try signing in again <a href='https://www.getlia.live/login' target='_blank'> here</a> ")
         throw new Error("Unable to create new chat. Please check your connection or try signing in again.")
         
       }
@@ -2694,7 +2720,7 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
         console.error("Error refreshing token:", error)
         // If refresh fails, fallback to localStorage
         //conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
-        addMessageToChat("assistant", "Unable to load conversations. Please check your connection or try signing in again <a href='https://www.getlia.live/login' target='_blank'>here</a>.")
+        addMessageToChat("assistant", "Unable to load conversations. Please check your connection or try signing in again <a href='https://www.getlia.live/login' target='_blank' style='color:blue'> here </a>")
         throw new Error("Unable to load conversations. Please check your connection or try signing in again.")
       }
     }
@@ -2740,24 +2766,134 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
     }
 
 
-  
     conversationList.innerHTML = conversations
       .map(
-      (conv) => `
-        <div class="lia-conversation-item ${conv.id === chatbotState.currentConversationId ? "active" : ""}" 
-           data-id="${conv.id}">
-        ${conv.title.slice(0, 10)}${conv.title.length > 15 ? "..." : ""}
-        </div>
-      `,
+        (conv) => {
+          const truncatedTitle = conv.title.slice(0, 10) + (conv.title.length > 15 ? "..." : "");
+          return `
+            <div class="lia-conversation-item-wrapper" style="position: relative;">
+              <div class="lia-conversation-item ${conv.id === chatbotState.currentConversationId ? "active" : ""}" 
+                  data-id="${conv.id}" title="${conv.title}" style="cursor: pointer; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+                <span style="flex: 1; overflow: hidden;">${truncatedTitle}</span>
+                <span class="lia-menu-trigger" style="cursor: pointer; padding: 4px; border-radius: 4px; opacity: 0.7; transition: opacity 0.2s;">⋯</span>
+              </div>
+              <div class="lia-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 120px; overflow: hidden;">
+                <button class="lia-rename-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                  <span style="margin-right: 8px;">✏️</span>Rename
+                </button>
+                ${/*<button class="lia-duplicate-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                  <span style="margin-right: 8px;">📋</span>Duplicate
+                </button>
+                <button class="lia-export-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                  <span style="margin-right: 8px;">💾</span>Export
+                </button>*/}
+                <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+                <button class="lia-delete-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #dc3545; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                  <span style="margin-right: 8px;">🗑️</span>Delete Chat
+                </button>
+              </div>
+            </div>
+          `;
+        }
       )
-      .join("")
-  
-    // Add event listeners
+      .join("");
+
+    // Add hover effects for menu items
+    const style = document.createElement('style');
+    style.textContent = `
+      .lia-conversation-item:hover .lia-menu-trigger {
+        opacity: 1 !important;
+        background-color: rgba(0,0,0,0.1);
+      }
+      .lia-menu button:hover {
+        background-color: #f5f5f5 !important;
+      }
+      .lia-delete-chat-btn:hover {
+        background-color: #fff5f5 !important;
+      }
+    `;
+    document.head.appendChild(style);
+
+    // Add click to load conversation
     document.querySelectorAll(".lia-conversation-item").forEach((item) => {
-      item.addEventListener("click", () => {
-        loadConversation(item.dataset.id)
-      })
-    })
+      item.addEventListener("click", (e) => {
+        // Prevent menu trigger click from also loading conversation
+        if (e.target.classList.contains("lia-menu-trigger")) return;
+        loadConversation(item.dataset.id);
+      });
+    });
+
+    // Add menu toggle
+    document.querySelectorAll(".lia-menu-trigger").forEach((menuBtn) => {
+      menuBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const menu = menuBtn.closest('.lia-conversation-item-wrapper').querySelector('.lia-menu');
+        // Close other menus
+        document.querySelectorAll(".lia-menu").forEach(m => {
+          if (m !== menu) m.style.display = "none";
+        });
+        menu.style.display = menu.style.display === "block" ? "none" : "block";
+      });
+    });
+
+    // Add rename chat action
+    document.querySelectorAll(".lia-rename-chat-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        const conv = conversations.find(c => c.id === id);
+        if (conv) {
+          const newTitle = prompt("Enter new title:", conv.title);
+          if (newTitle && newTitle.trim()) {
+            renameConversation(id, newTitle.trim()); // Implement this function
+          }
+        }
+        // Close menu
+        document.querySelectorAll(".lia-menu").forEach(m => m.style.display = "none");
+      });
+    });
+
+    // Add duplicate chat action
+    document.querySelectorAll(".lia-duplicate-chat-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        duplicateConversation(id); // Implement this function
+        // Close menu
+        document.querySelectorAll(".lia-menu").forEach(m => m.style.display = "none");
+      });
+    });
+
+    // Add export chat action
+    document.querySelectorAll(".lia-export-chat-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        exportConversation(id); // Implement this function
+        // Close menu
+        document.querySelectorAll(".lia-menu").forEach(m => m.style.display = "none");
+      });
+    });
+
+    // Add delete chat action
+    document.querySelectorAll(".lia-delete-chat-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const id = btn.dataset.id;
+        if (confirm("Are you sure you want to delete this chat?")) {
+          deleteConversation(id);
+        }
+        // Close menu
+        document.querySelectorAll(".lia-menu").forEach(m => m.style.display = "none");
+      });
+    });
+
+    // Close menu when clicking elsewhere
+    document.addEventListener("click", (e) => {
+      if (!e.target.closest('.lia-menu') && !e.target.classList.contains('lia-menu-trigger')) {
+        document.querySelectorAll(".lia-menu").forEach(m => m.style.display = "none");
+      }
+    });
   }
   
 
@@ -2823,7 +2959,9 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
                     <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
                   </svg>
                 `}</div>
-                <div class="lia-message-content">${msg.content}</div>
+                <div class="lia-message-content">
+                  ${formatMessage(msg.content)}
+                </div>
               </div>
             `
         },
@@ -2889,6 +3027,169 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
     return chats
   }
 
+  // helper function for farmating chat conversations
+  function formatMessage(Message) {
+    let formattedMessage = formatLinks(Message)
+    formattedMessage = formatMarkdown(Message)
+
+    return formattedMessage
+  }
+
+  // format links
+  function formatLinks(text) {
+    // Avoid touching existing anchor tags by splitting on them
+    return text.replace(/(<a [^>]+>.*?<\/a>)|(\bhttps?:\/\/[^\s<]+)/g, (match, anchor, url) => {
+      if (anchor) return anchor; // return existing anchor tags untouched
+      if (url) {
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="lia-link">${url} <span class="lia-link-icon">🔗</span></a>`;
+      }
+      return match;
+    });
+  }
+
+  function formatMarkdown(text) {
+    // Headers
+    text = text.replace(/^### (.*$)/gm, '<h3 class="lia-h3">$1</h3>');
+    text = text.replace(/^## (.*$)/gm, '<h2 class="lia-h2">$1</h2>');
+    text = text.replace(/^# (.*$)/gm, '<h1 class="lia-h1">$1</h1>');
+
+    // Bold text **text**
+    text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+    // Italic text *text*
+    text = text.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+    // Code blocks ```code```
+    text = text.replace(/```([\s\S]*?)```/g, function(match, code) {
+      // Escape HTML in code
+      // Remove HTML tags and their content (e.g., <a>...</a>)
+      // This will remove tags and their inner text
+      const textWithoutHtml = code.replace(/<[^>]*>.*?<\/[^>]*>/gs, "").replace(/<[^>]*>/g, "");
+      // Add a copy button with a unique id
+      const copyBtnId = 'lia-copy-btn-' + Math.random().toString(36).substr(2, 9);
+      // The button will call a global function with the code content
+      setTimeout(() => {
+      const btn = document.getElementById(copyBtnId);
+      if (btn) {
+        btn.onclick = function() {
+        navigator.clipboard.writeText(textWithoutHtml);
+        btn.innerText = "Copied!";
+        setTimeout(() => { btn.innerText = "Copy"; }, 1500);
+        };
+      }
+      }, 0);
+      return `<pre class="lia-code-block" style='position: relative'><code>${code}</code><button id="${copyBtnId}" class="lia-copy-btn" style="position: absolute; top: 8px; right: 8px; z-index: 10; padding-inline: 4px; border-radius: 5px">Copy</button></pre>`;
+    });
+
+    // Inline code `code`
+    text = text.replace(/`([^`]+)`/g, '<code class="lia-inline-code">$1</code>');
+
+    // Unordered lists
+    text = text.replace(/^\* (.*$)/gm, '<li class="lia-list-item">$1</li>');
+    text = text.replace(/(<li class="lia-list-item">.*<\/li>)/s, '<ul class="lia-list">$1</ul>');
+
+    // Ordered lists  
+    text = text.replace(/^\d+\. (.*$)/gm, '<li class="lia-ordered-item">$1</li>');
+    text = text.replace(/(<li class="lia-ordered-item">.*<\/li>)/s, '<ol class="lia-ordered-list">$1</ol>');
+
+    // Line breaks (double newlines become paragraphs)
+    text = text.replace(/\n\n/g, '</p><p class="lia-paragraph">');
+    text = '<p class="lia-paragraph">' + text + '</p>';
+
+    // Single line breaks
+    text = text.replace(/\n/g, '<br>');
+
+    return text;
+  }
+
+  function createCopyButton(content) {
+    const copyBtn = document.createElement("button");
+    copyBtn.className = "lia-copy-btn";
+    copyBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+      </svg>
+    `;
+    copyBtn.title = "Copy message";
+    copyBtn.style.cssText = `
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      padding: 6px;
+      cursor: pointer;
+      opacity: 0;
+      transition: all 0.2s ease;
+      z-index: 10;
+      backdrop-filter: blur(4px);
+    `;
+
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(content);
+        copyBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+            <polyline points="20,6 9,17 4,12"/>
+          </svg>
+        `;
+        copyBtn.style.background = "#f0fdf4";
+        copyBtn.style.borderColor = "#10b981";
+        
+        setTimeout(() => {
+          copyBtn.innerHTML = `
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          `;
+          copyBtn.style.background = "rgba(255, 255, 255, 0.9)";
+          copyBtn.style.borderColor = "#e9ecef";
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy text: ', err);
+      }
+    });
+
+    return copyBtn;
+  }
+
+  function createRegenerateButton() {
+    const regenBtn = document.createElement("button");
+    regenBtn.className = "lia-regenerate-btn";
+    regenBtn.innerHTML = `
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="23,4 23,10 17,10"/>
+        <polyline points="1,20 1,14 7,14"/>
+        <path d="M20.49,9A9,9,0,0,0,5.64,5.64L1,10m22,4L18.36,18.36A9,9,0,0,1,3.51,15"/>
+      </svg>
+    `;
+    regenBtn.title = "Regenerate response";
+    regenBtn.style.cssText = `
+      position: absolute;
+      top: 8px;
+      right: 50px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #e9ecef;
+      border-radius: 6px;
+      padding: 6px;
+      cursor: pointer;
+      opacity: 0;
+      transition: all 0.2s ease;
+      z-index: 10;
+      backdrop-filter: blur(4px);
+    `;
+
+    regenBtn.addEventListener("click", () => {
+      // Add regenerate functionality here
+      console.log("Regenerate response");
+      // You can call your AI generation function again
+    });
+
+    return regenBtn;
+  }
   
   // Initialize chatbot when extension loads
   initializeChatbot()

@@ -48,7 +48,7 @@ window.addEventListener('message', (event) => {
 
 function initializeExtension() {
   // Initialize the extension functionality
-  setupPostCreationAssistant()
+  //setupPostCreationAssistant()
   setupCommentReplyAssistant()
   setuprewrite_enabledment()
   setupTextSelectionToolbar()
@@ -62,7 +62,7 @@ function initializeExtension() {
       mutationTimeout = setTimeout(() => {
         if (mutation.addedNodes.length) {
             try {
-              setupPostCreationAssistant()
+              //setupPostCreationAssistant()
               setupCommentReplyAssistant()
               setuprewrite_enabledment()
               //setupTextSelectionToolbar()
@@ -1072,6 +1072,16 @@ function getCommentContext(commentInput) {
       context.postWriter = creatorFullname
     }
 
+    // check if the ai reply button is in a comment input replying to a comment
+    //const commentSocailActivity = commentInput.closest(".comment-social-activity")
+    //if (commentSocailActivity) { 
+    //  // we are in a comment input replying to a comment
+    //  const commentText = commentInput.querySelector(".ql-editor")
+    //  if (commentText) {
+    //    context.postContent = commentText.textContent.trim()
+    //  }
+    //}
+
     return context
   } else {
     //* we are in feed or somewhere else */
@@ -1121,9 +1131,17 @@ function getCommentContext(commentInput) {
 
 async function generatePostSuggestions(postContent, context) {
   // Check if API key is available
-  if (!settings.apiKey) {
-    throw new Error("Please add your OpenAI API key in the extension settings")
-  }
+  //if (!settings.apiKey) {
+  //  throw new Error("Please add your OpenAI API key in the extension settings")
+  //}
+
+  if (!settings.post_enabled) return;
+
+  // check if acces_token is available
+  const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
+  if (refresh_token == null) {
+    throw new Error("Please Sign in to continue")
+  };
 
   // Prepare the prompt
   let prompt = `Generate 3 professional LinkedIn post suggestions`
@@ -1148,7 +1166,7 @@ async function generatePostSuggestions(postContent, context) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${settings.apiKey}`,
+      Authorization: `Bearer ${await accessToken()}`,
     },
     body: JSON.stringify({
       model: "gpt-3.5-turbo",

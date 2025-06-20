@@ -2451,7 +2451,7 @@ const refreshToken = async () => {
 
     } catch (error) {
       hideTypingIndicator()
-      addMessageToChat("assistant", "Sorry, I encountered an error. Please try again. 😔\n Try Signin in again if the error continues - <a href='https://getlia.live/login' target='_blank'>here</a>")
+      addMessageToChat("assistant", "Sorry, I encountered an error. Please try again. 😔\n Try Signin in again if the error continues - <a href='https://getlia.live/login' target='_blank' style='color: blue'>here</a>")
       console.error("Chat error:", error)
     }
   }
@@ -2786,7 +2786,7 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
                 </button>
                 <button class="lia-export-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
                   <span style="margin-right: 8px;">💾</span>Export
-                </button>*/}
+                </button>*/ ""}
                 <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
                 <button class="lia-delete-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #dc3545; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
                   <span style="margin-right: 8px;">🗑️</span>Delete Chat
@@ -2845,7 +2845,7 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
         if (conv) {
           const newTitle = prompt("Enter new title:", conv.title);
           if (newTitle && newTitle.trim()) {
-            renameConversation(id, newTitle.trim()); // Implement this function
+            renameConversation(id, newTitle.trim());
           }
         }
         // Close menu
@@ -2880,9 +2880,8 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const id = btn.dataset.id;
-        if (confirm("Are you sure you want to delete this chat?")) {
-          deleteConversation(id);
-        }
+        deleteConversation(id);
+        
         // Close menu
         document.querySelectorAll(".lia-menu").forEach(m => m.style.display = "none");
       });
@@ -2895,6 +2894,44 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
       }
     });
   }
+
+  // chat actions
+  function deleteConversation(id) {
+
+    // Remove from API server
+    async function deleteChat() {
+      const response = await fetch(`http://localhost:4000/api/chat/${id}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await accessToken()}`,
+        },
+        credentials: "include",
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.error?.message || "Failed to delete conversation")
+      }
+      return result
+    }
+
+    deleteChat()
+      .then(() => {
+        const chatbotStateConvId = chatbotState.currentConversationId
+        // updateConversationList()
+        if (chatbotStateConvId == id) {
+          // Remove from local state
+          chatbotState.currentConversationId = null
+          startNewConversation() // Start a new conversation if current is deleted
+        } else {
+          updateConversationList() // Just update the list if another conversation is deleted
+        }
+      })
+      .catch((error) => {
+        console.error("Error deleting conversation:", error)
+        addMessageToChat("assistant", "Unable to delete conversation. Please check your connection or try signing in again <a href='https://www.getlia.live/login' target='_blank'> here </a>")
+      })
+  };
   
 
   async function loadConversation(conversationId) {

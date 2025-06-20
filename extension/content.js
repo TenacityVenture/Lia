@@ -2774,7 +2774,7 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
             <div class="lia-conversation-item-wrapper" style="position: relative;">
               <div class="lia-conversation-item ${conv.id === chatbotState.currentConversationId ? "active" : ""}" 
                   data-id="${conv.id}" title="${conv.title}" style="cursor: pointer; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
-                <span style="flex: 1; overflow: hidden;">${truncatedTitle}</span>
+                <span style="flex: 1; overflow: hidden;" class='truncatedTitle'>${truncatedTitle}</span>
                 <span class="lia-menu-trigger" style="cursor: pointer; padding: 4px; border-radius: 4px; opacity: 0.7; transition: opacity 0.2s;">⋯</span>
               </div>
               <div class="lia-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 120px; overflow: hidden;">
@@ -2843,9 +2843,29 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
         const id = btn.dataset.id;
         const conv = conversations.find(c => c.id === id);
         if (conv) {
-          const newTitle = prompt("Enter new title:", conv.title);
-          if (newTitle && newTitle.trim()) {
-            renameConversation(id, newTitle.trim());
+          const truncatedTitleSpan = btn.closest('.lia-conversation-item-wrapper').querySelector('.truncatedTitle');
+          if (truncatedTitleSpan) {
+            truncatedTitleSpan.contentEditable = "true";
+            truncatedTitleSpan.focus();
+
+            // Move cursor to end
+            document.execCommand('selectAll', false, null);
+            document.getSelection().collapseToEnd();
+
+            // Save on Enter or blur
+            function finishEdit(e) {
+              if (e.type === "keydown" && e.key !== "Enter") return;
+              e.preventDefault();
+              truncatedTitleSpan.contentEditable = "false";
+              const newTitle = truncatedTitleSpan.textContent.trim();
+              if (newTitle && newTitle !== conv.title) {
+                renameConversation(id, newTitle);
+              }
+              truncatedTitleSpan.removeEventListener("keydown", finishEdit);
+              truncatedTitleSpan.removeEventListener("blur", finishEdit);
+            }
+            truncatedTitleSpan.addEventListener("keydown", finishEdit);
+            truncatedTitleSpan.addEventListener("blur", finishEdit);
           }
         }
         // Close menu
@@ -2932,6 +2952,35 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
         addMessageToChat("assistant", "Unable to delete conversation. Please check your connection or try signing in again <a href='https://www.getlia.live/login' target='_blank'> here </a>")
       })
   };
+
+  function renameConversation(id, newTitle) {
+    // Update in API server
+    async function renameChat() {
+      const response = await fetch(`http://localhost:4000/api/chat/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await accessToken()}`,
+        },
+        body: JSON.stringify({ title: newTitle }),
+        credentials: "include",
+      })
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.error?.message || "Failed to rename conversation")
+      }
+      return result
+    }
+
+    renameChat()
+      .then(() => {
+        updateConversationList() // Refresh the conversation list
+      })
+      .catch((error) => {
+        console.error("Error renaming conversation:", error)
+        addMessageToChat("assistant", "Unable to rename conversation. Please check your connection or try signing in again <a href='https://www.getlia.live/login' target='_blank'> here </a>")
+      })
+  }
   
 
   async function loadConversation(conversationId) {

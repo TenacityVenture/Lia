@@ -1456,10 +1456,12 @@ const refreshToken = async () => {
   }
 
   function initializeChatbot() {
-    createChatbotButton()
-    createChatbotInterface()
-    loadChatHistory()
-    //makeChatbotDraggable() remove dragging feature for now
+    if (window.location.href.includes("linkedin.com")) {
+      createChatbotButton()
+      createChatbotInterface()
+      loadChatHistory()
+      //makeChatbotDraggable() remove dragging feature for now
+    }
   }
 
   function createChatbotButton() {

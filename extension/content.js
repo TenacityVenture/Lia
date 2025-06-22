@@ -448,6 +448,7 @@ async function handleAIRewrite() {
     }
     if (rewrittenText) {
       replaceTextInSentence(selection, fullSentence, rewrittenText)
+      hideToolbar()
     } else {
       showToolbarError('failed to fetch')
     }

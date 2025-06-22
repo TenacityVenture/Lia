@@ -7,6 +7,7 @@ let settings = {
   post_enabled: true,
   reply_enabled: true,
   rewrite_enabled: true,
+  isRewriting: false
 }
 
 // Load settings when content script initializes
@@ -702,7 +703,11 @@ function setuprewrite_enabledment() {
       `
       const qlEditor = document.querySelector(".share-box .ql-editor");
       aiButton.addEventListener("click", () => {
-        handleRewriteAssistant(qlEditor)
+        if (settings.isRewriting) {
+          showTemporaryMessage(qlEditor, "LIA is rewriting text. Please wait until the process is complete.")
+        } else {
+          handleRewriteAssistant(qlEditor)
+        }
       })
 
       if (shareBoxAction) {
@@ -816,10 +821,13 @@ async function handlereply_enabledant(commentInput) {
 }
 
 async function handleRewriteAssistant(editor) {
+  settings.isRewriting = true;
+
   // Get the current text content
   const currentText = editor.textContent || editor.innerText || ""
 
   if (!currentText.trim()) {
+    settings.isRewriting = false; // reset the flag
     // Show a temporary message if no text is selected
     showTemporaryMessage(editor, "Please write some text first to rewrite it")
     return
@@ -835,14 +843,11 @@ async function handleRewriteAssistant(editor) {
     try {
       improvedText = await generateImprovedText(currentText)
     } catch (error) {
-      if (error === "Invalid Token") { // token invalid
+      try { // call generateImprovedText again after refresh
         await refreshToken() // refresh the token
-
-        try { // call generateImprovedText again after refresh
-          improvedText = await generateImprovedText(currentText)
-        } catch (retryError) {
-          throw retryError // pass it to outer catch
-        }
+        improvedText = await generateImprovedText(currentText)
+      } catch (retryError) {
+        throw retryError // pass it to outer catch
       }
     }
 
@@ -852,11 +857,14 @@ async function handleRewriteAssistant(editor) {
     if (improvedText) {
       // Perform the in-place rewrite with animation
       await animateTextRewrite(editor, currentText, improvedText)
+      settings.isRewriting = false; // reset the flag
     } else {
+      settings.isRewriting = false; // reset the flag
       // Show a temporary message if no improved text was generated
       showTemporaryMessage(editor, "No improvements were made to the text because the extension encountered an error")
     }
   } catch (error) {
+    settings.isRewriting = false; // reset the flag
     loadingOverlay.remove()
     showTemporaryMessage(editor, `Error: ${error.message}`)
   }
@@ -907,7 +915,7 @@ async function generateImprovedText(originalText) {
 
 "${originalText}"
 
-Return only the improved text without any explanations or quotes.`
+Return only the improved text without any explanations or quotes. Include proper line breaks and formatting as needed - whitespaces.`
   const response = await fetch("http://localhost:4000/api/prompt/rewrite", {
     method: "POST",
     headers: {

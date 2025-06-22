@@ -47,6 +47,28 @@ window.addEventListener('message', (event) => {
   }
 });
 
+// uitlity functions
+function waitForElement(selector, maxAttempts = 20, interval = 500) {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+
+    const check = () => {
+      const el = document.querySelector(selector);
+      if (el) return resolve(el);
+
+      attempts++;
+      if (attempts >= maxAttempts) {
+        return reject(`Element ${selector} not found after ${maxAttempts} attempts`);
+      }
+
+      setTimeout(check, interval);
+    };
+
+    check();
+  });
+}
+
+
 function initializeExtension() {
   // Initialize the extension functionality
   //setupPostCreationAssistant()
@@ -684,8 +706,8 @@ function setuprewrite_enabledment() {
 
   createPostButton.addEventListener('click', () => {
 
-    setTimeout(() => {
-      let shareBoxAction = document.querySelector(".share-box_actions")
+    waitForElement(".share-box_actions").then((shareBoxAction) => {
+      //let shareBoxAction = document.querySelector(".share-box_actions")
       if (shareBoxAction) {
         shareBoxAction.style.display = "flex"
         shareBoxAction.style.gap = "8px"
@@ -717,7 +739,7 @@ function setuprewrite_enabledment() {
       }
       
       
-    }, 5000)
+    })
   })
 	
 }

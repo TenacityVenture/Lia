@@ -1220,7 +1220,7 @@ function getCommentContext(commentInput) {
       const commenterName = commentCommenterMeta.querySelector('.comments-comment-meta__description-title').innerText
 
       const commentReplyContext = `
-      ${commentContentElement.innerText} -- replied by ${commenterName}
+      ${commentContentElement.innerText}. The comment was posted by "${commenterName}"
       `
 
       // push to context
@@ -1434,16 +1434,20 @@ async function generateReplyToCommentSuggestions(context) {
     prompt += `. The original post is: "${context.postContent}"`
   }
 
-  if (context.commenterName) {
-    prompt += `. The post was written by ${context.postWriter}`
+  if (context.postWriter) {
+    //prompt += `. The post was written by "${context.postWriter}""`
+  }
+
+  if (context.postWriter) {
+    prompt += `. The original post was written by ${context.postWriter}`
   }
   
   if (context.previousRepliesOnComment && context.previousRepliesOnComment.length > 0) {
     prompt += `. Consider these previous replies made on that comment: ${context.previousRepliesOnComment.join(" | ")}`
   }
 
-  prompt += `. The tone should be ${settings.tone} or Encouraging or Clarifying or Inviting Dialogue. And industry should be ${settings.industry}`
-  prompt += ` Each reply suggestion should be concise (under 20 words), thoughtful (sounds like human), and add value to the conversation. Each should conveying a different tone. With absolutely no hastags and emojies.`
+  prompt += `. The tone should be ${settings.tone} or Encouraging or Clarifying or Inviting Dialogue, conveying a different style (e.g by the authur of the post, just someone else etc). And industry should be ${settings.industry}`
+  prompt += ` Each reply suggestion should be concise (under 20 words), thoughtful (sounds like human), and add value to the conversation. Return only the suggestions. With absolutely no hastags and emojies.`
 
   async function generate() {
     const { access_token } = await chrome.storage.local.get(['access_token']);

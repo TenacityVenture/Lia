@@ -1118,8 +1118,7 @@ function getCommentContext(commentInput) {
       const commenterName = commentCommenterMeta.querySelector('.comments-comment-meta__description-title').innerText
 
       const commentReplyContext = `
-        ${commenterName} replied:
-        ${commentContentElement.innerText}
+      ${commentContentElement.innerText} -- replied by ${commenterName}
       `
 
       // push to context
@@ -1221,8 +1220,7 @@ function getCommentContext(commentInput) {
       const commenterName = commentCommenterMeta.querySelector('.comments-comment-meta__description-title').innerText
 
       const commentReplyContext = `
-        ${commenterName} replied:
-        ${commentContentElement.innerText}
+      ${commentContentElement.innerText} -- replied by ${commenterName}
       `
 
       // push to context
@@ -1432,14 +1430,14 @@ async function generateReplyToCommentSuggestions(context) {
     prompt += ` to this comment: "${context.commentReply}"`
   }
 
-  if (context.commenterName) {
-    prompt += `. Written by ${context.commenterName}`
-  }
-
   if (context.postContent) {
     prompt += `. The original post is: "${context.postContent}"`
   }
 
+  if (context.commenterName) {
+    prompt += `. The post was written by ${context.postWriter}`
+  }
+  
   if (context.previousRepliesOnComment && context.previousRepliesOnComment.length > 0) {
     prompt += `. Consider these previous replies made on that comment: ${context.previousRepliesOnComment.join(" | ")}`
   }

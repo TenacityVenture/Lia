@@ -47,6 +47,30 @@ window.addEventListener('message', (event) => {
   }
 });
 
+// we are doing this for direct visits or url chat
+function listenForUrlChanges(callback) {
+  let oldHref = location.href;
+
+  const fireIfChanged = () => {
+    const newHref = location.href;
+    if (newHref !== oldHref) {
+      oldHref = newHref;
+      callback();
+    }
+  };
+
+  // Monkey-patch pushState & replaceState
+  ['pushState', 'replaceState'].forEach((method) => {
+    const original = history[method];
+    history[method] = function () {
+      original.apply(this, arguments);
+      fireIfChanged();
+    };
+  });
+
+  window.addEventListener('popstate', fireIfChanged);
+}
+
 // uitlity functions
 function waitForElement(selector, maxAttempts = 20, interval = 500) {
   return new Promise((resolve, reject) => {
@@ -704,6 +728,8 @@ function setuprewrite_enabledment() {
 
   const createPostButton = document.querySelector(".share-box-feed-entry__top-bar button.artdeco-button--tertiary")
 
+  if (!createPostButton) return;
+
   createPostButton.addEventListener('click', () => {
 
     waitForElement(".share-box_actions").then((shareBoxAction) => {
@@ -835,10 +861,11 @@ async function handlereply_enabledant(commentInput) {
     displayCommentSuggestions(suggestionsContainer, suggestions, commentInput)
   } catch (error) {
     suggestionsContainer.innerHTML = `
-      <div style="color: red; padding: 10px;">
-        Error: ${error.message || "Failed to generate suggestions"}
-      </div>
+    <div style="color: red; padding: 10px;">
+    Error: ${error.message || "Failed to generate suggestions"}
+    </div>
     `
+    throw error
   }
 }
 
@@ -1134,7 +1161,12 @@ function getCommentContext(commentInput) {
     // check if the ai reply button is in a comment input replying to a comment
 
     const commentMainContainer = commentInput.closest(".comments-comment-entity")
-    const commentSocailActivity = commentMainContainer.querySelector(".comment-social-activity")
+    let commentSocailActivity = null;
+    if (commentMainContainer) {
+      commentSocailActivity = commentMainContainer.querySelector(".comment-social-activity")
+    } else { // we are in pulse article comments
+      commentSocailActivity = commentInput.closest(".comments-social-activity")
+    }
     console.log(commentSocailActivity, 'this is it')
     if (commentSocailActivity) { 
       // we are in a comment input replying to a comment

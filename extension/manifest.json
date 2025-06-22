@@ -20,7 +20,8 @@
     {
       "matches": ["https://www.linkedin.com/*", "https://www.getlia.live/*"],
       "js": ["content.js"],
-      "css": ["content.css"]
+      "css": ["content.css"],
+      "run_at": "document_idle"
     }
   ]
 }

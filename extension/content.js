@@ -57,6 +57,7 @@ function initializeExtension() {
 
   // Set up mutation observer to detect new elements
   const observer = new MutationObserver((mutations) => {
+    console.log('triggered 🔫')
     mutations.forEach((mutation) => {
       clearTimeout(mutationTimeout);
       mutationTimeout = setTimeout(() => {
@@ -76,6 +77,11 @@ function initializeExtension() {
   })
 
   observer.observe(document.body, { childList: true, subtree: true })
+
+  const commentsContainer = document.body.querySelector('.feed-shared-update-v2__comments-container')
+  if (commentsContainer) {
+    observer.observe(commentsContainer, { childList: true, subtree: true, characterData: true})
+  }
 }
 
 // add bold and italic formatting leveraging unicodes
@@ -637,13 +643,13 @@ function setupCommentReplyAssistant() {
   const commentInputs = document.querySelectorAll(".comments-comment-texteditor")
 
   commentInputs.forEach((input) => {
-    // Check if we've already added our button
     const container = input.querySelector(".ql-container")
 
+    // Check if we've already added our button
     if (input.querySelector(".linkedin-ai-button")) return
 
     // Find the comment actions area
-    const actionsArea = container.closest(".comments-comment-box-comment__text-editor")
+    const actionsArea = input.querySelector(".comments-comment-box-comment__text-editor")
 
     if (actionsArea) {
       // Create AI assistant button
@@ -760,6 +766,8 @@ async function handlepost_enabledant(editor, content) {
 async function handlereply_enabledant(commentInput) {
   // Create suggestions container if it doesn't exist
   const commentBox = commentInput.querySelector(".ql-container")
+  const commentInputEditor = commentInput.querySelector('.ql-editor')
+  commentInputEditor.textContent = ''
 
   let suggestionsContainer = commentBox.querySelector(".linkedin-ai-suggestions")
 
@@ -781,8 +789,20 @@ async function handlereply_enabledant(commentInput) {
     // Get the post and comment context
     const context = getCommentContext(commentInput)
 
-    // Generate suggestions
-    const suggestions = await generateCommentSuggestions(context)
+    if (!context) {
+      throw new Error("Unable to determine comment context")
+    }
+
+    let suggestions;
+    if (context.isReplyingToComment == true) {
+      // we are replying to a comment
+      suggestions = await generateReplyToCommentSuggestions(context)
+    } else {
+      // we are replying to a post
+
+      // Generate suggestions
+      suggestions = await generateCommentSuggestions(context)
+    }
 
     // Display suggestions
     displayCommentSuggestions(suggestionsContainer, suggestions, commentInput)
@@ -1072,15 +1092,67 @@ function getCommentContext(commentInput) {
       context.postWriter = creatorFullname
     }
 
+    const replyContext = {
+      postContent: context.postContent,
+      commenterName: "",
+      commentReply: "",
+      previousRepliesOnComment: [],
+      previousComments: context.previousComments,
+      isReplyingToComment: true
+    }
+
     // check if the ai reply button is in a comment input replying to a comment
-    //const commentSocailActivity = commentInput.closest(".comment-social-activity")
-    //if (commentSocailActivity) { 
-    //  // we are in a comment input replying to a comment
-    //  const commentText = commentInput.querySelector(".ql-editor")
-    //  if (commentText) {
-    //    context.postContent = commentText.textContent.trim()
-    //  }
-    //}
+
+    const commentMainContainer = commentInput.closest(".comments-comment-entity")
+    const commentSocailActivity = commentMainContainer.querySelector(".comment-social-activity")
+    console.log(commentSocailActivity, 'this is it')
+    if (commentSocailActivity) { 
+      // we are in a comment input replying to a comment
+      // also I need it to find all the previous comments on that comment
+
+      // the comment that was made on the post that the user is replying to
+      const commentCommenterMeta = commentMainContainer.querySelector('.comments-comment-meta__container .comments-comment-meta__description')
+      const commentContentElement = commentMainContainer.querySelector('.comments-thread-entity')
+
+      // structure the context
+      const commenterName = commentCommenterMeta.querySelector('.comments-comment-meta__description-title').innerText
+
+      const commentReplyContext = `
+        ${commenterName} replied:
+        ${commentContentElement.innerText}
+      `
+
+      // push to context
+      replyContext.commenterName = commenterName
+      replyContext.commentReply = commentReplyContext
+
+      // get previous reply that was made on that comment
+      const previousReplyContainer = commentSocailActivity.querySelector(".comments-replies-list")
+      if (!previousReplyContainer) { // no one has replied to this comment yet
+        // return the reply context with no previous replies
+        replyContext.previousRepliesOnComment = []
+        replyContext.replyContext = true
+
+        return replyContext;
+      }
+      
+      const previousReplyElements = previousReplyContainer.querySelectorAll(".comments-thread-entity")
+      previousReplyElements.forEach((reply) => {
+        const replyElement = reply.querySelector(".comments-comment-entity .comments-thread-entity")
+        const replier = reply.querySelector(".comments-comment-entity .comments-comment-meta__container")
+        
+        if (replyElement && replier) {
+          const replyOnCommentContext = `
+            ${replier.querySelector('.comments-comment-meta__description-container .comments-comment-meta__description').innerText} replied: 
+            ${replyElement.innerText}
+          `
+          replyContext.previousRepliesOnComment.push(replyOnCommentContext)
+        }
+      })
+
+      replyContext.replyContext = true
+      return replyContext;
+    }
 
     return context
   } else {
@@ -1122,6 +1194,69 @@ function getCommentContext(commentInput) {
       const creatorFullname = postCreator.querySelector('span').innerText
       context.postWriter = creatorFullname
     }
+
+    const replyContext = {
+      postContent: context.postContent,
+      commenterName: "",
+      commentReply: "",
+      previousRepliesOnComment: [],
+      previousComments: context.previousComments,
+      isReplyingToComment: true
+    }
+
+    // check if the ai reply button is in a comment input replying to a comment
+
+    const commentMainContainer = commentInput.closest(".comments-comment-entity")
+    const commentSocailActivity = commentInput.closest(".comment-social-activity")
+    console.log(commentSocailActivity)
+    if (commentSocailActivity) { 
+      // we are in a comment input replying to a comment
+      // also I need it to find all the previous comments on that comment
+
+      // the comment that was made on the post that the user is replying to
+      const commentCommenterMeta = commentMainContainer.querySelector('.comments-comment-meta__container .comments-comment-meta__description')
+      const commentContentElement = commentMainContainer.querySelector('.comments-thread-entity')
+
+      // structure the context
+      const commenterName = commentCommenterMeta.querySelector('.comments-comment-meta__description-title').innerText
+
+      const commentReplyContext = `
+        ${commenterName} replied:
+        ${commentContentElement.innerText}
+      `
+
+      // push to context
+      replyContext.commenterName = commenterName
+      replyContext.commentReply = commentReplyContext
+
+      // get previous reply that was made on that comment
+      const previousReplyContainer = commentSocailActivity.querySelector(".comments-replies-list")
+      if (!previousReplyContainer) { // no one has replied to this comment yet
+        // return the reply context with no previous replies
+        replyContext.previousRepliesOnComment = []
+        replyContext.replyContext = true
+
+        return replyContext;
+      }
+      
+      const previousReplyElements = previousReplyContainer.querySelectorAll(".comments-thread-entity")
+      previousReplyElements.forEach((reply) => {
+        const replyElement = reply.querySelector(".comments-comment-entity .comments-thread-entity")
+        const replier = reply.querySelector(".comments-comment-entity .comments-comment-meta__container")
+        
+        if (replyElement && replier) {
+          const replyOnCommentContext = `
+            ${replier.querySelector('.comments-comment-meta__description-container .comments-comment-meta__description').innerText} replied: 
+            ${replyElement.innerText}
+          `
+          replyContext.previousRepliesOnComment.push(replyOnCommentContext)
+        }
+      })
+
+      replyContext.replyContext = true
+      return replyContext;
+    }
+
 
     return context
   }
@@ -1213,7 +1348,7 @@ async function generateCommentSuggestions(context) {
   };
 
   // Prepare the prompt
-  let prompt = `Generate 3 professional LinkedIn comment replies`
+  let prompt = `Generate 3 playful but professional LinkedIn comment replies`
 
   if (context.postContent) {
     prompt += ` to this post: "${context.postContent}"`
@@ -1225,11 +1360,92 @@ async function generateCommentSuggestions(context) {
 
 
   if (context.previousComments && context.previousComments.length > 0) {
-    prompt += `. Consider these previous comments: ${context.previousComments.join(" | ")}`
+    prompt += `. Consider these previous comments and use them as source inspiration: ${context.previousComments.join(" | ")}`
   }
 
-  prompt += `. The tone should be ${settings.tone}. And industry should b ${settings.industry}`
-  prompt += ` Each reply should be concise (under 100 words), thoughtful, and add value to the conversation. With no hastags.`
+  prompt += `. The tone should be ${settings.tone}. And industry should be ${settings.industry}`
+  prompt += ` Each reply should be concise (under 30 words), thoughtful, and each conveying a different tone or style of speaking. With no hastags. Don't start the content with 'your', and don't write like 'your [text] is' -- don't write like that.`
+
+  async function generate() {
+    const { access_token } = await chrome.storage.local.get(['access_token']);
+    const response = await fetch ("http://localhost:4000/api/prompt/suggest-reply", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${await accessToken()}`,
+      },
+      body: JSON.stringify({
+        comment_text: prompt
+      })
+    })
+
+    
+
+    return await response.json()
+  }
+
+  let data = await generate()
+
+  if (data.error && data.message === 'Invalid Token') {
+    // refresh the token
+    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
+    await refreshToken(refresh_token);
+
+    // retry again
+    const new_data = await generate();
+    data = new_data
+
+  }
+
+  if (data.error) {
+    throw new Error(data.error?.message || "Failed to generate suggestions")
+  }
+
+  // Parse the response to extract the suggestions
+  /*const content = data.choices[0].message.content
+
+  // Split the content into separate suggestions
+  const suggestions = content
+    .split(/\d+\.\s+/)
+    .filter(Boolean)
+    .map((s) => s.trim())*/
+
+  const suggestions = data.suggestions;
+
+  return suggestions
+}
+
+async function generateReplyToCommentSuggestions(context) {
+  // check if comment suggestions enabled by user
+  if (!settings.reply_enabled) return;
+
+  // check if acces_token is available
+  const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
+  if (refresh_token == null) {
+    throw new Error("Please Sign in to continue")
+  };
+
+  // Prepare the prompt
+  let prompt = `Generate 3 playful but professional LinkedIn replies`
+
+  if (context.commentReply) {
+    prompt += ` to this comment: "${context.commentReply}"`
+  }
+
+  if (context.commenterName) {
+    prompt += `. Written by ${context.commenterName}`
+  }
+
+  if (context.postContent) {
+    prompt += `. The original post is: "${context.postContent}"`
+  }
+
+  if (context.previousRepliesOnComment && context.previousRepliesOnComment.length > 0) {
+    prompt += `. Consider these previous replies made on that comment: ${context.previousRepliesOnComment.join(" | ")}`
+  }
+
+  prompt += `. The tone should be ${settings.tone} or Encouraging or Clarifying or Inviting Dialogue. And industry should be ${settings.industry}`
+  prompt += ` Each reply suggestion should be concise (under 20 words), thoughtful (sounds like human), and add value to the conversation. Each should conveying a different tone. With absolutely no hastags and emojies.`
 
   async function generate() {
     const { access_token } = await chrome.storage.local.get(['access_token']);

@@ -10,6 +10,25 @@ export const metadata: Metadata = {
   title: "LIA - LinkedIn Intelligent Assistant",
   description:
     "Enhance your LinkedIn presence with AI-powered post creation, comment replies, and content improvements.",
+  icons: { icon: "/favicon.ico" },
+  openGraph: {
+    title: "LIA - LinkedIn Intelligent Assistant",
+    description:
+      "Enhance your LinkedIn presence with AI-powered post creation, comment replies, and content improvements.",
+    url: "https://getlia.live",
+    siteName: "LIA - LinkedIn Intelligent Assistant",
+    images: [
+      {
+        url: "https://getlia.live/lia-demo.png",
+        width: 1200,
+        height: 630,
+        alt: "LIA - LinkedIn Intelligent Assistant",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+
+  },
 }
 
 export default function RootLayout({

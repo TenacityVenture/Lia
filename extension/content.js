@@ -439,12 +439,10 @@ async function handleAIRewrite() {
       // generate ai rewritten text
       rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
     } catch (error) {
-      if (error === "Invalid Token") { // token invalid
-        await refreshToken() // refresh the token
+      await refreshToken() // refresh the token
 
         // call generateRewrittenText again after refresh
-        rewrittenText = generateRewrittenText(fullSentence, 'rewrite')
-      }
+        rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
     }
     if (rewrittenText) {
       replaceTextInSentence(selection, fullSentence, rewrittenText)
@@ -454,6 +452,7 @@ async function handleAIRewrite() {
     }
     //hideToolbar()
   } catch (error) {
+    console.log('this is the error', error)
     showToolbarError(error.message)
   }
 }
@@ -850,22 +849,43 @@ async function handlereply_enabledant(commentInput) {
     let suggestions;
     if (context.isReplyingToComment == true) {
       // we are replying to a comment
-      suggestions = await generateReplyToCommentSuggestions(context)
+      try {
+        suggestions = await generateReplyToCommentSuggestions(context)
+      } catch (error) {
+          // try to refresh token and generate suggestions again
+          await refreshToken() // refresh the token
+          suggestions = await generateReplyToCommentSuggestions(context)
+      }
     } else {
       // we are replying to a post
 
       // Generate suggestions
-      suggestions = await generateCommentSuggestions(context)
+
+      try {
+        suggestions = await generateCommentSuggestions(context)
+      } catch (error) {
+        // try to refresh token and generate suggestions again
+        await refreshToken() // refresh the token
+        suggestions = await generateCommentSuggestions(context)
+      }
     }
 
     // Display suggestions
     displayCommentSuggestions(suggestionsContainer, suggestions, commentInput)
   } catch (error) {
+    if (error.message === "Failed to generate suggestions") {
+      suggestionsContainer.innerHTML = `
+      <div style="color: red; padding: 10px;">
+      Error: ${error.message || "Failed to generate suggestions"}, maybe your session has expired. Please try signing in again, <a href='https://getlia.live' target='_blank'>here</a>.
+      </div>
+      `
+    } else {
     suggestionsContainer.innerHTML = `
-    <div style="color: red; padding: 10px;">
-    Error: ${error.message || "Failed to generate suggestions"}
-    </div>
-    `
+      <div style="color: red; padding: 10px;">
+      Error: ${error.message || "Failed to generate suggestions"}
+      </div>
+      `
+    }
     throw error
   }
 }
@@ -916,7 +936,11 @@ async function handleRewriteAssistant(editor) {
   } catch (error) {
     settings.isRewriting = false; // reset the flag
     loadingOverlay.remove()
-    showTemporaryMessage(editor, `Error: ${error.message}`)
+    console.error("Error during rewrite:", error)
+    // Show error message
+    if (error.message === "Failed to generate improved text") {
+      showTemporaryMessage(editor, "Failed to generate improved text. Maybe your session has expired. Please try signing in again.")
+    } else showTemporaryMessage(editor, `Error: ${error.message}`)
   }
 }
 

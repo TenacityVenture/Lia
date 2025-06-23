@@ -13,6 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 
 import { supabase } from "@/lib/supabaseClient"
+import { signInDirectlyWithSupabase } from "@/lib/supabaseHelpers"
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -49,7 +50,7 @@ export function SignupForm() {
 
     // Simulate API call
     //await new Promise((resolve) => setTimeout(resolve, 1500))
-    const apiUrl:string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/register`
+    /*const apiUrl:string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/register`
     await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -88,6 +89,31 @@ export function SignupForm() {
       .catch((error) => {
         console.error("Error:", error)
         form.setError("root", { message: error.message || "An error occurred. Please try again." })
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })*/
+      signInDirectlyWithSupabase(values.email, values.password)
+      .then((data) => {
+        // Handle successful login
+        console.log(data)
+
+        // send token to the chrome extension
+        if (data.access_token && data.refresh_token) {
+          
+          window.postMessage({ type: "SEND_JWTs", 
+            access_token: data.access_token, 
+            refresh_token: data.refresh_token}, "*") // * means all domains (shoule be restricted to lia extension id)
+
+          // Save tokens to localStorage
+          localStorage.setItem("lia_access_token", data.access_token)
+
+          // Redirect to the dashboard
+          router.push("/dashboard")
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error)
       })
       .finally(() => {
         setIsLoading(false)

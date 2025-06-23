@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 
 import { supabase } from "@/lib/supabaseClient"
+import { signInDirectlyWithSupabase } from "@/lib/supabaseHelpers"
 
 const formSchema = z.object({
   email: z.string().email({
@@ -46,7 +47,7 @@ export function LoginForm() {
 
     // Simulate API call
     //await new Promise((resolve) => setTimeout(resolve, 1500))
-    const apiUrl:string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/sign-in`
+    /*const apiUrl:string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/sign-in`
     await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -87,10 +88,40 @@ export function LoginForm() {
       })
       .finally(() => {
         setIsLoading(false)
+      })*/
+
+      signInDirectlyWithSupabase(values.email, values.password)
+      .then((data) => {
+        // Handle successful login
+        console.log(data)
+
+        // send token to the chrome extension
+        if (data.access_token && data.refresh_token) {
+          
+          window.postMessage({ type: "SEND_JWTs", 
+            access_token: data.access_token, 
+            refresh_token: data.refresh_token}, "*") // * means all domains (shoule be restricted to lia extension id)
+
+          // Save tokens to localStorage
+          localStorage.setItem("lia_access_token", data.access_token)
+
+          // Redirect to the dashboard
+          router.push("/dashboard")
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error)
+      })
+      .finally(() => {
+        setIsLoading(false)
       })
 
     setIsLoading(false)
   }
+
+  
+
+  
 
   const handleSignInWithLinkedin = async () => {
     setIsLoading(true)

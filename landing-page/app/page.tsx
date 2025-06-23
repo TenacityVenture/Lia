@@ -289,19 +289,19 @@ export default function Home() {
               <h3 className="text-sm font-medium">Connect</h3>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <Link href="https://github.com/TenacityVenture/lia" className="text-muted-foreground transition-colors hover:text-foreground flex items-center gap-2">
+                  <Link href="https://github.com/TenacityVenture/lia" className="text-muted-foreground transition-colors hover:text-foreground flex items-center gap-2" target='_blank'>
                     <Github className="h-4 w-4" />
                     GitHub
                   </Link>
                 </li>
                 <li>
-                  <Link href="https://x.com/getliah" className="text-muted-foreground transition-colors hover:text-foreground flex items-center gap-2">
+                  <Link href="https://x.com/getliah" className="text-muted-foreground transition-colors hover:text-foreground flex items-center gap-2" target='_blank'>
                     <Twitter className="h-4 w-4" />
                     Twitter
                   </Link>
                 </li>
                 <li>
-                  <Link href="https://www.linkedin.com/company/getlia" className="text-muted-foreground transition-colors hover:text-foreground flex items-center gap-2">
+                  <Link href="https://www.linkedin.com/company/getlia" className="text-muted-foreground transition-colors hover:text-foreground flex items-center gap-2" target='_blank'>
                     <Linkedin className="h-4 w-4" />
                     LinkedIn
                   </Link>

@@ -51,6 +51,18 @@ export default function OAuthCallback() {
       // 4. Redirect to dashboard
       router.push('/dashboard');
     });
+
+    // send jwts to website (since contentscript will be listening there to then send to extension)
+    if (access_token && refresh_token) {
+      // Send tokens to the extension
+      window.postMessage({
+          type: 'SEND_JWTs',
+          access_token,
+          refresh_token
+      }, 'https://www.getlia.live');
+    }
+
+    router.push('/dashboard');
   }, [router]);
 
   return (

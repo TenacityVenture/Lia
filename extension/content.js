@@ -429,7 +429,14 @@ async function handleAIRewrite() {
   if (!selectedText) return
 
   // Get the entire sentence containing the selection
-  const fullSentence = getFullSentence(selection)
+  let fullSentence = getFullSentence(selection)
+
+  // check if the last character in fullSentence is a fullstop is a full stop
+  if (fullSentence.length === 0) return
+  if (fullSentence[fullSentence.length - 1] !== '.') {
+    // If not, add a full stop at the end
+    fullSentence += '.'
+  }
   
   try {
     showToolbarLoading()
@@ -445,7 +452,7 @@ async function handleAIRewrite() {
         rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
     }
     if (rewrittenText) {
-      replaceTextInSentence(selection, fullSentence, rewrittenText)
+      await replaceTextInSentence(selection, fullSentence, rewrittenText)
       hideToolbar()
     } else {
       showToolbarError('failed to fetch')
@@ -460,13 +467,22 @@ async function handleAIRewrite() {
 async function handleTextTransform(type) {
   const selection = window.getSelection()
   const selectedText = selection.toString().trim()
-  
+  let fullSentence = getFullSentence(selection)
+
+  // check if the last character in fullSentence is a fullstop is a full stop
+  if (fullSentence.length === 0) return
+  if (fullSentence[fullSentence.length - 1] !== '.') {
+    // If not, add a full stop at the end
+    fullSentence += '.'
+  }
+
   if (!selectedText) return
 
   try {
     showToolbarLoading()
     const transformedText = await generateRewrittenText(selectedText, type)
-    replaceSelectedText(transformedText)
+    //replaceSelectedText(transformedText)
+    await replaceTextInSentence(selection, fullSentence, transformedText)
     hideToolbar()
   } catch (error) {
     showToolbarError(error.message)
@@ -561,7 +577,7 @@ function replaceSelectedText(newText) {
 async function replaceTextInSentence(selection, originalSentence, newSentence) {
   const range = selection.getRangeAt(0)
   const container = range.commonAncestorContainer
-  //const text = container.textContent || container.innerText || ''
+  const text = container.textContent || container.innerText || ''
   
   // Find the actual DOM element (not just the text node)
   let selectedNode = selection.anchorNode;
@@ -575,8 +591,10 @@ async function replaceTextInSentence(selection, originalSentence, newSentence) {
   //const selectionText = selection.toString();
   
   const entireContent = selectedNode.textContent || selectedNode.innerText || '';
+
+  // check if text has fullstop
   let textToInsert = entireContent.replace(originalSentence, newSentence).trim();
-  
+
   //const newText = text.replace(originalSentence, newSentence + ' ')
   
   if (container.nodeType === Node.TEXT_NODE) {

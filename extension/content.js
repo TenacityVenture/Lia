@@ -72,7 +72,7 @@ function listenForUrlChanges(callback) {
 }
 
 // uitlity functions
-function waitForElement(selector, maxAttempts = 20, interval = 500) {
+function waitForElement(selector, maxAttempts = 40, interval = 500) {
   return new Promise((resolve, reject) => {
     let attempts = 0;
 
@@ -932,8 +932,27 @@ async function handlereply_enabledant(commentInput) {
 async function handleRewriteAssistant(editor) {
   settings.isRewriting = true;
 
-  // Get the current text content
-  const currentText = editor.textContent || editor.innerText || ""
+  // let makes sure that we are having all the line breaks and whitespaces
+  // in the editor text content by getting all the p tags and joining their text content
+  // this is to avoid issues with the editor not having line breaks and whitespaces
+  const paragraphs = Array.from(editor.querySelectorAll("p"))
+  const textContent = paragraphs.map(p => {
+    // check if p has a anchor of class .ql-mention
+    // if it does, return the text content of the anchor + '@' in the front
+    const mention = p.querySelector(".ql-mention")
+    if (mention) {
+      return '@' + mention.textContent
+    }
+    return p.textContent
+  
+  }).join("\n")
+  console.log("Text content to rewrite:", textContent)
+  let currentText = textContent
+
+  if (!textContent) {
+    // Get the current text content
+    currentText = editor.textContent || editor.innerText || ""
+  }
 
   if (!currentText.trim()) {
     settings.isRewriting = false; // reset the flag
@@ -965,7 +984,8 @@ async function handleRewriteAssistant(editor) {
     console.log(currentText, improvedText)
     if (improvedText) {
       // Perform the in-place rewrite with animation
-      await animateTextRewrite(editor, currentText, improvedText)
+      //await animateTextRewrite(editor, currentText, improvedText)
+      await window.animateTextRewriteWithMentions(editor, currentText, improvedText)
       settings.isRewriting = false; // reset the flag
     } else {
       settings.isRewriting = false; // reset the flag

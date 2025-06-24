@@ -558,17 +558,38 @@ function replaceSelectedText(newText) {
   }
 }
 
-function replaceTextInSentence(selection, originalSentence, newSentence) {
+async function replaceTextInSentence(selection, originalSentence, newSentence) {
   const range = selection.getRangeAt(0)
   const container = range.commonAncestorContainer
-  const text = container.textContent || container.innerText || ''
+  //const text = container.textContent || container.innerText || ''
   
-  const newText = text.replace(originalSentence, newSentence)
+  // Find the actual DOM element (not just the text node)
+  let selectedNode = selection.anchorNode;
+  if (selectedNode && selectedNode.nodeType !== Node.ELEMENT_NODE) {
+    selectedNode = selectedNode.parentElement;
+  }
+
+  // omit the selection in the selectedNode / original sentence
+  // maybe we might have multiple sentetences in selected node / original sentence
+  // so we want to omit selected text from the selectedNode / original sentence
+  //const selectionText = selection.toString();
+  
+  const entireContent = selectedNode.textContent || selectedNode.innerText || '';
+  let textToInsert = entireContent.replace(originalSentence, newSentence).trim();
+  
+  //const newText = text.replace(originalSentence, newSentence + ' ')
   
   if (container.nodeType === Node.TEXT_NODE) {
-    container.textContent = newText
+    
+    settings.isRewriting = true
+    await animateTextRewrite(selectedNode, originalSentence, textToInsert + ' ')
+    settings.isRewriting = false
+    //container.textContent = newText
   } else {
-    container.innerText = newText
+    //container.innerText = newText
+    settings.isRewriting = true
+    await animateTextRewrite(selectedNode, textToInsert, newSentence)
+    settings.isRewriting = false
   }
   
   // Trigger input event for LinkedIn

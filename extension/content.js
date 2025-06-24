@@ -2645,12 +2645,23 @@ const refreshToken = async () => {
     }
   }
 
-  function openChatbot() {
+  async function openChatbot() {
     const chatbotInterface = document.getElementById("lia-chatbot-interface")
     chatbotInterface.classList.add("open")
     chatbotInterface.classList.remove("minimized")
     chatbotState.isOpen = true
     chatbotState.isMinimized = false
+
+    await updateConversationList()
+    const conversations = document.querySelectorAll(".lia-conversation-item")
+    if (conversations.length > 0) {
+      // Select the first conversation if available
+      // and it's id from data and load it
+      const firstConversation = conversations[0]
+      firstConversation.classList.add("active")
+      chatbotState.currentConversationId = firstConversation.dataset.id
+    }
+    await loadConversation(chatbotState.currentConversationId)
 
     // Focus on input
     setTimeout(() => {

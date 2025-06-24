@@ -22,6 +22,7 @@ import {
   ArrowLeft,
 } from "lucide-react"
 import Link from "next/link"
+import Footer from "@/components/footer"
 
 export const metadata: Metadata = {
   title: "Support - Lia AI Assistant",
@@ -187,7 +188,7 @@ const resources = [
 
 export default function SupportPage() {
   return (
-
+    <>
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
       <div className="container max-w-4xl py-12">
@@ -453,5 +454,7 @@ export default function SupportPage() {
         </Card>
       </div>
     </div>
+    <Footer />
+    </>
   )
 }

@@ -37,7 +37,10 @@ exports.getCompletionPostImprovements = async (prompt) => {
     messages: [
       {
         role: 'system',
-        content: 'You are Lia, a professional LinkedIn content editor. Improve text while maintaining the original voice and message.'
+        content: `You are Lia, a professional LinkedIn content editor. Improve text while maintaining the original voice and message.
+          RULE:
+          Return only the improved text without quotes or explanations.
+        `
       },
       { 
         role: 'user', 
@@ -59,7 +62,7 @@ exports.getCompletionPostRewrite = async (prompt) => {
     messages: [
       {
         role: 'system',
-        content: 'You are a professional LinkedIn content editor. You improve posts to be more engaging and professional while maintaining the original voice and message. You keep unicode characters intact.'
+        content: 'You are a professional LinkedIn content editor. You improve posts to be more engaging and professional while maintaining the original voice and message (keep the core info or detail intact). You keep unicode characters intact.'
       },
       { 
         role: 'user', 

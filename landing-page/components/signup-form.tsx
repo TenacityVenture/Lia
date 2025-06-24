@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 
 import { supabase } from "@/lib/supabaseClient"
-import { signInDirectlyWithSupabase } from "@/lib/supabaseHelpers"
+import { signUpDirectlyWithSupabase } from "@/lib/supabaseHelpers"
 
 const formSchema = z.object({
   name: z.string().min(2, {
@@ -93,7 +93,7 @@ export function SignupForm() {
       .finally(() => {
         setIsLoading(false)
       })*/
-      signInDirectlyWithSupabase(values.email, values.password)
+      await signUpDirectlyWithSupabase(values.name, values.email, values.password)
       .then((data) => {
         // Handle successful login
         console.log(data)
@@ -109,7 +109,7 @@ export function SignupForm() {
           localStorage.setItem("lia_access_token", data.access_token)
 
           // Redirect to the dashboard
-          router.push("/dashboard")
+          router.push("/login")
         }
       })
       .catch((error) => {

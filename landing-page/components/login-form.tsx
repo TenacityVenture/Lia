@@ -90,7 +90,7 @@ export function LoginForm() {
         setIsLoading(false)
       })*/
 
-      signInDirectlyWithSupabase(values.email, values.password)
+      await signInDirectlyWithSupabase(values.email, values.password)
       .then((data) => {
         // Handle successful login
         console.log(data)

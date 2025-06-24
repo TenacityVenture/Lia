@@ -3,21 +3,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
+//import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
+// CheckCircle, AlertCircle, Zap,
 import {
   HelpCircle,
   MessageCircle,
   Mail,
   Phone,
   Clock,
-  CheckCircle,
-  AlertCircle,
   Book,
   Video,
   FileText,
-  Zap,
   Download,
   ArrowLeft,
 } from "lucide-react"
@@ -265,7 +263,7 @@ export default function SupportPage() {
             <CardHeader>
               <CardTitle className="text-center">Send us a Message</CardTitle>
               <CardDescription className="text-center">
-                Can't find what you're looking for? Send us a detailed message and we'll get back to you soon.
+                Can&apos;t find what you&apos;re looking for? Send us a detailed message and we&apos;ll get back to you soon.
               </CardDescription>
             </CardHeader>
             <CardContent>

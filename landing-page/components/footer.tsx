@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {Github, Linkedin, Twitter } from 'lucide-react'
 
-export default function () {
+export default function Footer () {
     return (
         <footer className="border-t bg-slate-50 dark:bg-slate-900">
         <div className="container py-12">

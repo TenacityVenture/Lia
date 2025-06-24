@@ -15,6 +15,30 @@ const signInDirectlyWithSupabase = async (email: string, password: string) => {
   return {access_token: data.session.access_token, refresh_token: data.session.refresh_token}
 }
 
+const signUpDirectlyWithSupabase = async (name: string, email: string, password: string, username: string = '') => {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        name,
+        username
+      }
+    },
+  })
+
+  // checks if there was an error during sign up
+  if (error) {
+    throw Error(error.message)
+  }
+
+  if (!data.session) {
+    throw Error('Sign up failed, please try again')
+  }
+  // return access token and refresh token
+  return {access_token: data.session.access_token, refresh_token: data.session.refresh_token}
+}
+
 const refreshTokenDirectlyWithSupabase = async (refresh_token: string) => {
   const { data, error } = await supabase.auth.refreshSession({
     refresh_token
@@ -29,4 +53,4 @@ const refreshTokenDirectlyWithSupabase = async (refresh_token: string) => {
   return {access_token: data.session?.access_token, refresh_token: data.session?.refresh_token}
 }
 
-export { signInDirectlyWithSupabase, refreshTokenDirectlyWithSupabase }
+export { signInDirectlyWithSupabase, signUpDirectlyWithSupabase, refreshTokenDirectlyWithSupabase }

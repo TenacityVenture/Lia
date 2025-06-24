@@ -368,7 +368,7 @@ export default function SupportPage() {
 
         {/* Status & Updates */}
         <div className="grid md:grid-cols-2 gap-8 mb-16">
-          <Card>
+        {/*  <Card>
             <CardHeader>
               <div className="flex items-center gap-3">
                 <CheckCircle className="h-6 w-6 text-green-600" />
@@ -398,9 +398,9 @@ export default function SupportPage() {
                 View Status Page
               </Button>
             </CardContent>
-          </Card>
+          </Card>*/}
 
-          <Card>
+          {/*<Card>
             <CardHeader>
               <div className="flex items-center gap-3">
                 <Zap className="h-6 w-6 text-blue-600" />
@@ -429,11 +429,11 @@ export default function SupportPage() {
                 View All Updates
               </Button>
             </CardContent>
-          </Card>
+          </Card>*/}
         </div>
 
         {/* Emergency Support */}
-        <Card className="bg-gradient-to-r from-red-50 to-orange-50 border-red-200">
+        {/*<Card className="bg-gradient-to-r from-red-50 to-orange-50 border-red-200">
           <CardContent className="p-8 text-center">
             <AlertCircle className="h-12 w-12 text-red-600 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-red-800 mb-2">Need Urgent Help?</h3>
@@ -451,7 +451,7 @@ export default function SupportPage() {
               </Button>
             </div>
           </CardContent>
-        </Card>
+        </Card>*/}
       </div>
     </div>
     <Footer />

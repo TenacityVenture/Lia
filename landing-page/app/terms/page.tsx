@@ -14,7 +14,7 @@ export default function TermsPage() {
 
       <div className="space-y-4 mb-12">
         <h1 className="text-4xl font-bold">Terms of Service</h1>
-        <p className="text-muted-foreground">Last updated: January 1, 2023</p>
+        <p className="text-muted-foreground">Last updated: January 1, 2025</p>
       </div>
 
       <div className="space-y-8 text-muted-foreground">
@@ -94,9 +94,11 @@ export default function TermsPage() {
             generated through the OpenAI API is subject to OpenAI&apos;s terms of service and usage policies.
           </p>
           <p className="mt-4">
-            You are responsible for providing your own OpenAI API key and for any charges incurred through your use of
-            the OpenAI API. We do not store your API key on our servers and are not responsible for any unauthorized use
-            of your API key.
+            Please review{" "}
+              <Link href="https://openai.com/privacy/" target="_blank" className="text-primary hover:underline">
+                OpenAI's Privacy Policy
+              </Link>{" "}
+              for information on how they handle data.
           </p>
         </section>
 
@@ -163,7 +165,7 @@ export default function TermsPage() {
         <section className="mb-8">
           <h2 className="text-2xl font-semibold text-foreground mb-4">11. Contact Us</h2>
           <p>If you have any questions about these Terms, please contact us at:</p>
-          <p className="mt-2">Email: terms@lia-assistant.com</p>
+          <p className="mt-2">Email: privacy@getlia.live</p>
         </section>
       </div>
     </div>

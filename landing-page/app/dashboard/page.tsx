@@ -18,7 +18,18 @@ export default function DashboardPage() {
   })
 
   const [getStatsStatus, setGetStatsStatus] = useState("idle")
-  const [activity, setActivity] = useState([])
+
+  interface ActivityItem {
+    type: string
+    timestamp: string
+    chat_id?: string
+    // add other properties if needed
+  }
+
+  const [activity, setActivity] = useState<ActivityItem[]>([])
+
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage] = useState(8)
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -108,6 +119,88 @@ export default function DashboardPage() {
 
     getActivity()
   }, [])
+
+  // Calculate pagination
+  const totalPages = Math.ceil(activity.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentActivities = activity.length > 0 ? activity.slice(startIndex, endIndex) : []
+
+  // Helper function to get activity details
+  const getActivityDetails = (item: ActivityItem) => {
+    switch (item.type) {
+      case "post_rewrite":
+        return {
+          icon: <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400" />,
+          bgColor: "bg-blue-100 dark:bg-blue-900",
+          title: "Post Rewrite",
+          description: "AI enhanced your LinkedIn post content",
+        }
+      case "comment_suggestion":
+        return {
+          icon: <MessageSquare className="h-4 w-4 text-green-600 dark:text-green-400" />,
+          bgColor: "bg-green-100 dark:bg-green-900",
+          title: "Comment Suggestion",
+          description: "AI generated a comment response",
+        }
+      case "post_suggestion":
+        return {
+          icon: <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400" />,
+          bgColor: "bg-purple-100 dark:bg-purple-900",
+          title: "Post Suggestion",
+          description: "AI created a new post suggestion",
+        }
+      case "chat_message":
+        return {
+          icon: <MessageSquare className="h-4 w-4 text-orange-600 dark:text-orange-400" />,
+          bgColor: "bg-orange-100 dark:bg-orange-900",
+          title: "Chat Message",
+          description: "New message in AI chat conversation",
+        }
+      case "ai_improve_post_grammar":
+        return {
+          icon: <Pencil className="h-4 w-4 text-red-600 dark:text-red-400" />,
+          bgColor: "bg-red-100 dark:bg-red-900",
+          title: "Grammar Check",
+          description: "AI improved post grammar and spelling",
+        }
+      case "ai_improve_post_shorten":
+        return {
+          icon: <Pencil className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />,
+          bgColor: "bg-yellow-100 dark:bg-yellow-900",
+          title: "Shorten Content",
+          description: "AI shortened your post content",
+        }
+      case "ai_improve_post_expand":
+        return {
+          icon: <Pencil className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />,
+          bgColor: "bg-indigo-100 dark:bg-indigo-900",
+          title: "Expand Content",
+          description: "AI expanded your post with more details",
+        }
+      case "ai_improve_post_rewrite":
+        return {
+          icon: <Pencil className="h-4 w-4 text-pink-600 dark:text-pink-400" />,
+          bgColor: "bg-pink-100 dark:bg-pink-900",
+          title: "Rewrite Content",
+          description: "AI rewrote your post content",
+        }
+      case "ai_improve_post_emoji":
+        return {
+          icon: <Pencil className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />,
+          bgColor: "bg-cyan-100 dark:bg-cyan-900",
+          title: "Add Emojis",
+          description: "AI added emojis to your post",
+        }
+      default:
+        return {
+          icon: <FileText className="h-4 w-4 text-gray-600 dark:text-gray-400" />,
+          bgColor: "bg-gray-100 dark:bg-gray-800",
+          title: "Activity",
+          description: "AI assistant activity",
+        }
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -207,59 +300,78 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {activity.slice(0, 10).map((item, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                    >
-                      <div className="flex-shrink-0">
-                        {item.type === "post_rewrite" ? (
-                          <div className="rounded-full bg-blue-100 dark:bg-blue-900 p-2">
-                            <Pencil className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                          </div>
-                        ) : item.type === "chat_created" ? (
-                          <div className="rounded-full bg-green-100 dark:bg-green-900 p-2">
-                            <MessageSquare className="h-4 w-4 text-green-600 dark:text-green-400" />
-                          </div>
-                        ) : (
-                          <div className="rounded-full bg-gray-100 dark:bg-gray-800 p-2">
-                            <FileText className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h4 className="text-sm font-medium">
-                            {item.type === "post_rewrite" && "Post Rewrite"}
-                            {item.type === "chat_created" && "New Chat Session"}
-                          </h4>
-                          <time className="text-xs text-muted-foreground">
-                            {new Date(item.timestamp).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </time>
+                  {currentActivities.map((item, index) => {
+                    const details = getActivityDetails(item)
+                    return (
+                      <motion.div
+                        key={`${item.type}-${item.timestamp}-${index}`}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="flex items-center gap-4 p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+                      >
+                        <div className="flex-shrink-0">
+                          <div className={`rounded-full ${details.bgColor} p-2`}>{details.icon}</div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {item.type === "post_rewrite" && "AI enhanced your LinkedIn post content"}
-                          {item.type === "chat_created" &&
-                            `Started new conversation${item.chat_id ? ` • ${item.chat_id.slice(0, 8)}...` : ""}`}
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
 
-                  {activity.length > 10 && (
-                    <div className="text-center pt-4">
-                      <p className="text-sm text-muted-foreground">
-                        Showing 10 most recent activities • {activity.length - 10} more
-                      </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-medium">{details.title}</h4>
+                            <time className="text-xs text-muted-foreground">
+                              {new Date(item.timestamp).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </time>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {details.description}
+                            {item.chat_id && ` • ${item.chat_id.slice(0, 8)}...`}
+                          </p>
+                        </div>
+                      </motion.div>
+                    )
+                  })}
+
+                  {/* Pagination Controls */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between pt-6 border-t">
+                      <div className="text-sm text-muted-foreground">
+                        Showing {startIndex + 1}-{Math.min(endIndex, activity.length)} of {activity.length} activities
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                          disabled={currentPage === 1}
+                          className="px-3 py-1 text-sm border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Previous
+                        </button>
+
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                                currentPage === page ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                              }`}
+                            >
+                              {page}
+                            </button>
+                          ))}
+                        </div>
+
+                        <button
+                          onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                          disabled={currentPage === totalPages}
+                          className="px-3 py-1 text-sm border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          Next
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

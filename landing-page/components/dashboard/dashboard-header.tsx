@@ -127,7 +127,7 @@ export default function DashboardHeader() {
               <DropdownMenuSeparator />
               <DropdownMenuItem className="cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
-                <Link href={"/logout"}>Log out</Link>
+                <Link href={"/logout"} className="w-full h-full">Log out</Link>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

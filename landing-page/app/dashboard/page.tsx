@@ -9,14 +9,16 @@ import DashboardHeader from "@/components/dashboard/dashboard-header"
 
 export default function DashboardPage() {
   const [usageStats, setUsageStats] = useState({
-    "post_rewrites": 0,
-    "comment_suggestions": 0,
-    "post_suggestions": 0,
-    "total_tokens_used": 0,
-    "total_usage": 0
+    post_rewrites: 0,
+    comment_suggestions: 0,
+    post_suggestions: 0,
+    total_tokens_used: 0,
+    total_usage: 0,
+    ai_improve_posts: 0, // ai_improve_post_grammar, ai_improve_post_shorten, ai_improve_post_expand, ai_improve_post_rewrite, ai_improve_post_emoji
   })
 
   const [getStatsStatus, setGetStatsStatus] = useState("idle")
+  const [activity, setActivity] = useState([])
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -77,6 +79,39 @@ export default function DashboardPage() {
 
   }, [])
 
+  // get activity
+  useEffect(() => {
+    function getActivity() {
+      fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/usage/activity`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("lia_access_token")}`,
+        },
+        credentials: "include",
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          console.log("Fetched activity:", data)
+          if (data.error) {
+            console.error("Invalid token, redirecting to refresh token page")
+            // Redirect to refresh token page if the token is invalid
+            window.location.href = '/refresh-token'
+            return
+          }
+          setActivity(data)
+        })
+        .catch((err) => {
+          console.error("Error fetching activity:", err)
+          // If the token is expired, try to refresh it by redirecting to the refresh token page
+          window.location.href = '/refresh-token'
+        })
+    }
+
+    getActivity()
+  }
+  , [])
+
   return (
     <div className="flex min-h-screen flex-col">
       <DashboardHeader />
@@ -103,13 +138,13 @@ export default function DashboardPage() {
           <motion.div variants={itemVariants}>
             <Card className="h-full transition-all hover:shadow-md">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium">Post Suggestions</CardTitle>
+                <CardTitle className="text-sm font-medium">Post Rewrites</CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{usageStats.post_rewrites}</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  AI-generated post ideas
+                  AI-generated enhancements to posts
                 </p>
               </CardContent>
             </Card>
@@ -118,13 +153,13 @@ export default function DashboardPage() {
           <motion.div variants={itemVariants}>
             <Card className="h-full transition-all hover:shadow-md">
               <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
-                <CardTitle className="text-sm font-medium">Rewrite Suggestions</CardTitle>
+                <CardTitle className="text-sm font-medium">AI Improvements</CardTitle>
                 <Pencil className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{usageStats.post_suggestions}</div>
+                <div className="text-3xl font-bold">{usageStats.ai_improve_posts}</div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Content improvements
+                  Content improvements: Rewrite Sentence, Shorten, Expand, Grammar Check, Emoji Suggestions
                 </p>
               </CardContent>
             </Card>

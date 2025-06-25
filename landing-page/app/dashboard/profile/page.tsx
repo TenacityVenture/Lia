@@ -24,12 +24,12 @@ export default function ProfilePage() {
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
   const [formData, setFormData] = useState({
-    name: "Sarah Johnson",
-    email: "sarah.johnson@example.com",
-    linkedin_handle: "sarahjohnson",
-    username: "sarahjohnson123",
-    company: "TechCorp",
-    title: "Marketing Director",
+    name: "",
+    email: "",
+    linkedin_handle: "",
+    username: "",
+    company: "",
+    title: "",
   })
 
   const [user, setUser] = useState({
@@ -154,9 +154,9 @@ export default function ProfilePage() {
                       <AvatarImage src="/testimonials/avatar1.jpg" alt="Profile picture" />
                       <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
                     </Avatar>
-                    <Button variant="outline" size="sm" className="w-full">
+                    {/*<Button variant="outline" size="sm" className="w-full">
                       Change Photo
-                    </Button>
+                    </Button>*/}
                   </div>
                   <div className="flex-1 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

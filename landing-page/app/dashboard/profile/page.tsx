@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import DashboardHeader from "@/components/dashboard/dashboard-header"
@@ -8,7 +10,20 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, Save } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
+import { Separator } from "@/components/ui/separator"
+import {
+  Loader2,
+  Save,
+  UserIcon,
+  MailIcon,
+  BuildingIcon,
+  BriefcaseIcon,
+  AtSignIcon,
+  ExternalLinkIcon,
+  CheckCircleIcon,
+  AlertCircleIcon,
+} from "lucide-react"
 
 type ProfileFormData = {
   name: string
@@ -17,22 +32,40 @@ type ProfileFormData = {
   username: string
   company: string
   title: string
+  bio?: string
+}
+
+type UserProfile = {
+  id: string
+  name: string
+  username: string
+  email: string
+  linkedin_handle: string
+  profile_picture_url: string
+  company: string
+  jobTitle: string
+  bio?: string
+  created_at?: string
 }
 
 export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
+  const [hasChanges, setHasChanges] = useState(false)
+
+  const [formData, setFormData] = useState<ProfileFormData>({
     name: "",
     email: "",
     linkedin_handle: "",
     username: "",
     company: "",
     title: "",
+    bio: "",
   })
 
-  const [user, setUser] = useState({
+  const [user, setUser] = useState<UserProfile>({
     id: "",
     name: "",
     username: "",
@@ -41,86 +74,133 @@ export default function ProfilePage() {
     profile_picture_url: "",
     company: "",
     jobTitle: "",
+    bio: "",
   })
 
-  const handleChange = (e: { target: { name: string; value: string } }) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
-    setFormData((prev: ProfileFormData) => ({ ...prev, [name]: value }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
+    setHasChanges(true)
+    // Clear messages when user starts typing
+    if (saveError) setSaveError(null)
+    if (saveSuccess) setSaveSuccess(null)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true)
+    setSaveError(null)
+    setSaveSuccess(null)
 
-    // update user data on the server
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/user/update-profile`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("lia_access_token")}`,
-      },
-      body: JSON.stringify({
-        name: formData.name,
-        email: formData.email,
-        company: formData.company,
-        jobTitle: formData.title,
-        username: formData.username,
-        linkedin_handle: user.linkedin_handle,
-      }),
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Profile updated:", data)
-        if (data.error) {
-          console.error("Error updating profile:", data.error)
-          // Handle error (e.g., show notification)
-          setIsSaving(false)
-          setSaveError(data.error)
-        } else {
-          // Update user state with new data
-          setUser((prev) => ({
-            ...prev,
-            name: formData.name,
-            email: formData.email,
-            company: formData.company,
-            jobTitle: formData.title,
-          }))
-          console.log("Profile updated successfully")
-          setIsSaving(false)
-          setSaveError(null)
-          setSaveSuccess("Profile updated successfully!")
-        }
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/user/update-profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("lia_access_token")}`,
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          company: formData.company,
+          jobTitle: formData.title,
+          username: ('https://www.linkedin.com/in/' + formData.username),
+          linkedin_handle: formData.linkedin_handle,
+          bio: formData.bio,
+        }),
+        credentials: "include",
       })
+
+      const data = await response.json()
+
+      if (data.error) {
+        setSaveError(data.error)
+      } else {
+        // Update user state with new data
+        setUser((prev) => ({
+          ...prev,
+          name: formData.name,
+          email: formData.email,
+          company: formData.company,
+          jobTitle: formData.title,
+          username: formData.username,
+          linkedin_handle: formData.linkedin_handle,
+          bio: formData.bio,
+        }))
+        setSaveSuccess("Profile updated successfully!")
+        setHasChanges(false)
+
+        // Auto-clear success message after 3 seconds
+        setTimeout(() => setSaveSuccess(null), 3000)
+      }
+    } catch (error) {
+      setSaveError("Failed to update profile. Please try again.")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
-  function getUser () {
-    // this function would typically fetch user data from the api-server
-
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/user/me`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("lia_access_token")}`,
-      },
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log("Fetched user data:", data)
-        if (data.error) {
-          console.error("Invalid token, redirecting to refresh token page")
-          // Redirect to refresh token page if the token is invalid
-          window.location.href = '/refresh-token'
-        } else {
-          console.log("User data:", data)
-          setUser(data)
-        }
+  const getUser = async () => {
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/user/me`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("lia_access_token")}`,
+        },
+        credentials: "include",
       })
+
+      const data = await response.json()
+
+      if (data.error) {
+        console.error("Invalid token, redirecting to refresh token page")
+        window.location.href = "/refresh-token"
+      } else {
+        setUser(data)
+        // Initialize form data with user data
+        setFormData({
+          name: data.name || "",
+          email: data.email || "",
+          linkedin_handle: data.linkedin_handle || "",
+          username: data.username || "",
+          company: data.company || "",
+          title: data.jobTitle || "",
+          bio: data.bio || "",
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error)
+      window.location.href = "/refresh-token"
+    } finally {
+      setIsLoading(false)
     }
-  
-    useEffect(() => {
-      getUser()
-    }, [])
+  }
+
+  useEffect(() => {
+    getUser()
+  }, [])
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <DashboardHeader />
+        <main className="flex-1 container py-12">
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -134,72 +214,213 @@ export default function ProfilePage() {
           className="space-y-4 mb-8"
         >
           <h1 className="text-3xl font-bold">Your Profile</h1>
-          <p className="text-muted-foreground">Manage your account information</p>
+          <p className="text-muted-foreground">Manage your account information and preferences</p>
         </motion.div>
 
-        <div className="grid grid-cols-1 gap-8 max-w-3xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl">
+          {/* Profile Overview Card */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
+            className="lg:col-span-1"
           >
             <Card>
               <CardHeader>
-                <CardTitle>Profile Information</CardTitle>
+                <CardTitle>Profile Overview</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="flex flex-col md:flex-row gap-6">
-                  <div className="flex flex-col items-center space-y-2">
-                    <Avatar className="h-24 w-24">
-                      <AvatarImage src="/testimonials/avatar1.jpg" alt="Profile picture" />
-                      <AvatarFallback>{user.name.slice(0, 2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    {/*<Button variant="outline" size="sm" className="w-full">
-                      Change Photo
-                    </Button>*/}
-                  </div>
-                  <div className="flex-1 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
-                        <Input id="name" name="name" value={user.name} onChange={handleChange} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Username</Label>
-                        <Input id="username" name="username" value={user.username} onChange={handleChange} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Linkedin Handle</Label>
-                        <Input id="linkedin_handle" name="linkedin_handle" value={user.linkedin_handle} onChange={handleChange} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input id="email" name="email" type="email" value={user.email} onChange={handleChange} />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="company">Company</Label>
-                      <Input id="company" name="company" value={formData.company} onChange={handleChange} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="title">Job Title</Label>
-                      <Input id="title" name="title" value={formData.title} onChange={handleChange} />
-                    </div>
+                <div className="flex flex-col items-center space-y-4">
+                  <Avatar className="h-24 w-24">
+                    <AvatarImage src={user.profile_picture_url || "/placeholder.svg"} alt="Profile picture" />
+                    <AvatarFallback className="text-lg">{getInitials(user.name)}</AvatarFallback>
+                  </Avatar>
+                  <div className="text-center space-y-1">
+                    <h3 className="font-semibold text-lg">{user.name}</h3>
+                    <p className="text-sm text-muted-foreground">{user.username ? '@'+user.username : ''}</p>
+                    {user.jobTitle && user.company && (
+                      <p className="text-sm text-muted-foreground">
+                        {user.jobTitle} at {user.company}
+                      </p>
+                    )}
                   </div>
                 </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm">
+                    <MailIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="truncate">{user.email}</span>
+                  </div>
+                  {user.linkedin_handle && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <ExternalLinkIcon className="h-4 w-4 text-muted-foreground" />
+                      <a
+                        href={`https://linkedin.com/in/${user.linkedin_handle}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-600 hover:underline truncate"
+                      >
+                        linkedin.com/in/{user.linkedin_handle}
+                      </a>
+                    </div>
+                  )}
+                  {user.created_at && (
+                    <div className="flex items-center gap-2 text-sm">
+                      <UserIcon className="h-4 w-4 text-muted-foreground" />
+                      <span>Joined {new Date(user.created_at).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                </div>
+
+                {hasChanges && (
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                    <div className="flex items-center gap-2 text-sm text-yellow-800 dark:text-yellow-200">
+                      <AlertCircleIcon className="h-4 w-4" />
+                      You have unsaved changes
+                    </div>
+                  </div>
+                )}
               </CardContent>
-              <CardFooter className="flex justify-end">
-                {saveError && (
-                  <div className="text-red-500 text-sm mr-4">
-                    Failed to save: {saveError}
+            </Card>
+          </motion.div>
+
+          {/* Profile Form */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="lg:col-span-2"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Edit Profile Information</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">
+                      <UserIcon className="h-4 w-4 inline mr-2" />
+                      Full Name
+                    </Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      value={formData.name}
+                      onChange={handleChange}
+                      placeholder="Enter your full name"
+                    />
                   </div>
-                )}
-                {saveSuccess && (
-                  <div className="text-blue-500 text-sm mr-4">
-                    {saveSuccess}
+                  <div className="space-y-2">
+                    <Label htmlFor="username">
+                      <AtSignIcon className="h-4 w-4 inline mr-2" />
+                      Username
+                    </Label>
+                    <Input
+                      id="username"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleChange}
+                      placeholder="Enter your username"
+                    />
                   </div>
-                )}
-                <Button onClick={handleSave} disabled={isSaving}>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">
+                    <MailIcon className="h-4 w-4 inline mr-2" />
+                    Email Address
+                  </Label>
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="Enter your email address"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="linkedin_handle">
+                    <ExternalLinkIcon className="h-4 w-4 inline mr-2" />
+                    LinkedIn Handle
+                  </Label>
+                  <div className="flex">
+                    <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm">
+                      linkedin.com/in/
+                    </span>
+                    <Input
+                      id="linkedin_handle"
+                      name="linkedin_handle"
+                      value={formData.linkedin_handle}
+                      onChange={handleChange}
+                      placeholder="your-handle"
+                      className="rounded-l-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="company">
+                      <BuildingIcon className="h-4 w-4 inline mr-2" />
+                      Company
+                    </Label>
+                    <Input
+                      id="company"
+                      name="company"
+                      value={formData.company}
+                      onChange={handleChange}
+                      placeholder="Enter your company"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="title">
+                      <BriefcaseIcon className="h-4 w-4 inline mr-2" />
+                      Job Title
+                    </Label>
+                    <Input
+                      id="title"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleChange}
+                      placeholder="Enter your job title"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="bio">Bio</Label>
+                  <Textarea
+                    id="bio"
+                    name="bio"
+                    value={formData.bio}
+                    onChange={handleChange}
+                    placeholder="Tell us about yourself..."
+                    rows={4}
+                    className="resize-none"
+                  />
+                  <p className="text-xs text-muted-foreground">{formData.bio?.length || 0}/500 characters</p>
+                </div>
+              </CardContent>
+              <CardFooter className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div className="flex flex-col gap-2">
+                  {saveError && (
+                    <div className="flex items-center gap-2 text-red-600 text-sm">
+                      <AlertCircleIcon className="h-4 w-4" />
+                      {saveError}
+                    </div>
+                  )}
+                  {saveSuccess && (
+                    <div className="flex items-center gap-2 text-green-600 text-sm">
+                      <CheckCircleIcon className="h-4 w-4" />
+                      {saveSuccess}
+                    </div>
+                  )}
+                </div>
+                <Button onClick={handleSave} disabled={isSaving || !hasChanges}>
                   {isSaving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -215,8 +436,6 @@ export default function ProfilePage() {
               </CardFooter>
             </Card>
           </motion.div>
-
-          
         </div>
       </main>
 

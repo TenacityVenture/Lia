@@ -24,7 +24,7 @@ exports.updateProfile = async (req, res) => {
   const userId = req.user.sub;
   const { username, linkedin_handle, name } = req.body;
 
-  const linkedinRegex = "/^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9-_]{3,}$/;"
+  const linkedinRegex = /^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9-_]{3,}$/i;
 
 
   // Ensuring the username is not empty

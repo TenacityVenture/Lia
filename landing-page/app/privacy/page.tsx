@@ -21,7 +21,7 @@ export default function PrivacyPage() {
 
       <div className="space-y-8 text-muted-foreground">
         <section className="mb-8">
-          <h2>Introduction</h2>
+          <h2 className="text-2xl font-semibold text-foreground mb-4">Introduction</h2>
           <p>
             At LinkedIn Intelligent Assistant (LIA), we take your privacy seriously. This Privacy Policy explains how we
             collect, use, disclose, and safeguard your information when you use our Chrome extension.
@@ -33,7 +33,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2>Information We Collect</h2>
+          <h2 className="text-2xl font-semibold text-foreground mb-4">Information We Collect</h2>
           <p>The LIA extension collects the following information:</p>
           <ul>
             <li>
@@ -65,7 +65,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2>How We Use Your Information</h2>
+          <h2 className="text-2xl font-semibold text-foreground mb-4">How We Use Your Information</h2>
           <p>We use the information we collect to:</p>
           <ul>
             <li>Provide, maintain, and improve the LIA extension</li>
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2>Data Storage and Security</h2>
+          <h2 className="text-2xl font-semibold text-foreground mb-4">Data Storage and Security</h2>
           <p>The LIA extension stores data in the following ways:</p>
           <ul>
             <li>
@@ -96,7 +96,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2>Third-Party Services</h2>
+          <h2 className="text-2xl font-semibold text-foreground mb-4">Third-Party Services</h2>
           <p>The LIA extension uses the following third-party services:</p>
           <ul>
             <li>
@@ -123,7 +123,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2>Your Rights and Choices</h2>
+          <h2 className="text-2xl font-semibold text-foreground mb-4">Your Rights and Choices</h2>
           <p>You have the following rights regarding your data:</p>
           <ul>
             <li>
@@ -141,7 +141,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2>Children's Privacy</h2>
+          <h2 className="text-2xl font-semibold text-foreground mb-4">Children's Privacy</h2>
           <p>
             The LIA extension is not intended for use by individuals under the age of 16. We do not knowingly collect
             personal information from children under 16. If we learn we have collected personal information from a child
@@ -150,7 +150,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2>Changes to This Privacy Policy</h2>
+          <h2 className="text-2xl font-semibold text-foreground mb-4">Changes to This Privacy Policy</h2>
           <p>
             We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new
             Privacy Policy on this page and updating the "Last updated" date.
@@ -162,7 +162,7 @@ export default function PrivacyPage() {
         </section>
 
         <section className="mb-8">
-          <h2>Contact Us</h2>
+          <h2 className="text-2xl font-semibold text-foreground mb-4">Contact Us</h2>
           <p>If you have any questions about this Privacy Policy, please contact us at:</p>
           <p>Email: privacy@getlia.live</p>
         </section>

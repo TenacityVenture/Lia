@@ -133,6 +133,7 @@ export default function ProfilePage() {
         setTimeout(() => setSaveSuccess(null), 3000)
       }
     } catch (error) {
+      console.error("Error updating profile:", error)
       setSaveError("Failed to update profile. Please try again.")
     } finally {
       setIsSaving(false)

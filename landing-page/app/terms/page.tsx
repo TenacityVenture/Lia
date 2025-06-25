@@ -96,7 +96,7 @@ export default function TermsPage() {
           <p className="mt-4">
             Please review{" "}
               <Link href="https://openai.com/privacy/" target="_blank" className="text-primary hover:underline">
-                OpenAI's Privacy Policy
+                OpenAI&apos;s Privacy Policy
               </Link>{" "}
               for information on how they handle data.
           </p>

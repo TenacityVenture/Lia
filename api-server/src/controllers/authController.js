@@ -110,7 +110,8 @@ const registerUser = async (req, res) => {
   res.cookie('refresh_token', refreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'Strict',
+    sameSite: 'None', // <== allow cross-site cookie
+    domain: '.getlia.live',  // <== apply to all subdomains
     maxAge: 24 * 60 * 60 * 1000 // 24 hours
   });
 
@@ -168,7 +169,8 @@ const refreshAccessToken = async (req, res) => {
   res.cookie('refresh_token', newRefreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'Strict',
+    sameSite: 'None', // <== allow cross-site cookie
+    domain: '.getlia.live',  // <== apply to all subdomains
     maxAge: 24 * 60 * 60 * 1000
   });
 
@@ -209,6 +211,25 @@ const syncOAuthUser = async (req, res) => {
       social_provider: 'linkedin'
     });
   }
+
+  // send refresh token in a secure cookie
+  // first we need to get the new refresh token from Supabase
+  // this is needed because the user might have logged in with a different provider
+  let newRefreshToken = supabase.auth.session()?.refresh_token;
+  await supabase.auth.getSession().then(({ data: { session } }) => {
+    newRefreshToken = session?.refresh_token;
+    if (!session || !session.refresh_token) {
+      return res.status(400).json({ error: 'Failed to get session' });
+    }
+  });
+
+  res.cookie('refresh_token', newRefreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'None', // <== allow cross-site cookie
+    domain: '.getlia.live',  // <== apply to all subdomains
+    maxAge: 24 * 60 * 60 * 1000
+  });
 
   res.status(200).json({
     message: 'OAuth user synced successfully',
@@ -253,6 +274,25 @@ const syncGoogleOAuthUser = async (req, res) => {
     });
   }
 
+  // send refresh token in a secure cookie
+  // first we need to get the new refresh token from Supabase
+  // this is needed because the user might have logged in with a different provider
+  let newRefreshToken = supabase.auth.session()?.refresh_token;
+  await supabase.auth.getSession().then(({ data: { session } }) => {
+    newRefreshToken = session?.refresh_token;
+    if (!session || !session.refresh_token) {
+      return res.status(400).json({ error: 'Failed to get session' });
+    }
+  });
+
+  res.cookie('refresh_token', newRefreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'None', // <== allow cross-site cookie
+    domain: '.getlia.live',  // <== apply to all subdomains
+    maxAge: 24 * 60 * 60 * 1000
+  });
+
   res.status(200).json({
     message: 'OAuth user synced successfully',
     user: {
@@ -277,7 +317,9 @@ const logoutUser = async (req, res) => {
   res.clearCookie('refresh_token', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'Strict'
+    sameSite: 'None', // <== allow cross-site cookie
+    domain: '.getlia.live',  // <== apply to all subdomains
+
   });
 
   // Revoke the session with Supabase. This will revoke the

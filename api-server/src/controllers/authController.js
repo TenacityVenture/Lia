@@ -145,7 +145,6 @@ const refreshAccessToken = async (req, res) => {
 
   }
 
-
   // If there's no cookie, the client isn't allowed to refresh — simple as that
   if (!refreshToken) {
     return res.status(401).json({ error: 'Refresh token missing' });
@@ -157,8 +156,8 @@ const refreshAccessToken = async (req, res) => {
   });
 
   if (error || !data.session) {
-    // If Supabase fails, the token is probably expired or revoked
-    return res.status(403).json({ error: 'Invalid or expired refresh token' });
+    // If Supabase fails, the token is probably expired, revoked or has bee used already
+    return res.status(error?.status || 403).json({ error: error?.message || 'Invalid or expired refresh token' });
   }
 
   const newAccessToken = data.session.access_token;

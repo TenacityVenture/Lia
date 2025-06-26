@@ -429,7 +429,15 @@ async function handleAIRewrite() {
   if (!selectedText) return
 
   // Get the entire sentence containing the selection
-  let fullSentence = getFullSentence(selection)
+  // but first check if . ? or ! is in the selectedText
+  // if it is, then it's already a full sentence
+  let fullSentence = selectedText
+  if (selectedText.endsWith('.') || selectedText.endsWith('?') || selectedText.endsWith('!')) {
+    fullSentence = selectedText
+  } else {
+    fullSentence = getFullSentence(selection)
+
+  }
 
   // check if the last character in fullSentence is a fullstop is a full stop
   if (fullSentence.length === 0) return
@@ -491,19 +499,96 @@ async function handleTextTransform(type) {
 
 function getFullSentence(selection) {
   const range = selection.getRangeAt(0)
-  const container = range.commonAncestorContainer
-  const text = container.textContent || container.innerText || ''
+  let container = range.commonAncestorContainer
   
-  const startOffset = range.startOffset
+  // If we're in a text node, move up to the parent element
+  if (container.nodeType === Node.TEXT_NODE) {
+    container = container.parentNode
+  }
+  
+  // Get the plain text content to find sentence boundaries
+  const text = container.textContent
+  
+  // Calculate the selection offset in the text content
+  const walker = document.createTreeWalker(
+    container,
+    NodeFilter.SHOW_TEXT,
+    null,
+    false
+  )
+  
+  let textOffset = 0
+  let currentNode
+  let selectionOffset = 0
+  
+  // Find the offset of the selection start in the text content
+  while (currentNode = walker.nextNode()) {
+    if (currentNode === range.startContainer) {
+      selectionOffset = textOffset + range.startOffset
+      break
+    }
+    textOffset += currentNode.textContent.length
+  }
   
   // Find sentence boundaries
-  let sentenceStart = text.lastIndexOf('.', startOffset - 1) + 1
-  let sentenceEnd = text.indexOf('.', startOffset)
+  let sentenceStart = 0
+  let sentenceEnd = text.length
   
-  if (sentenceStart < 0) sentenceStart = 0
-  if (sentenceEnd < 0) sentenceEnd = text.length
+  // Look backwards for sentence start
+  for (let i = selectionOffset - 1; i >= 0; i--) {
+    if (text[i] === '.' && (i === 0 || /\s/.test(text[i + 1]))) {
+      sentenceStart = i + 1
+      break
+    }
+  }
   
-  return text.substring(sentenceStart, sentenceEnd).trim()
+  // Look forwards for sentence end
+  for (let i = selectionOffset; i < text.length; i++) {
+    if (text[i] === '.' && (i === text.length - 1 || /\s/.test(text[i + 1]))) {
+      sentenceEnd = i + 1
+      break
+    }
+  }
+  
+  // Extract the sentence text first
+  let sentence = text.substring(sentenceStart, sentenceEnd).trim()
+  
+  // Now find and replace .ql-mention elements that fall within this sentence range
+  const mentions = container.querySelectorAll('.ql-mention')
+  
+  mentions.forEach(mention => {
+    // Calculate the position of this mention in the text content
+    const mentionWalker = document.createTreeWalker(
+      container,
+      NodeFilter.SHOW_ALL,
+      null,
+      false
+    )
+    
+    let mentionOffset = 0
+    let node
+    
+    while (node = mentionWalker.nextNode()) {
+      if (node === mention) {
+        break
+      }
+      if (node.nodeType === Node.TEXT_NODE) {
+        mentionOffset += node.textContent.length
+      }
+    }
+    
+    const mentionEnd = mentionOffset + mention.textContent.length
+    
+    // Check if this mention falls within our sentence boundaries
+    if (mentionOffset >= sentenceStart && mentionEnd <= sentenceEnd) {
+      // Replace the mention text in our sentence
+      const mentionText = mention.textContent
+      sentence = sentence.replace(mentionText, `@${mentionText}`)
+    }
+  })
+  
+  console.log('this is the sentence', sentence)
+  return sentence
 }
 
 async function generateRewrittenText(text, type) {
@@ -593,21 +678,22 @@ async function replaceTextInSentence(selection, originalSentence, newSentence) {
   const entireContent = selectedNode.textContent || selectedNode.innerText || '';
 
   // check if text has fullstop
-  let textToInsert = entireContent.replace(originalSentence, newSentence).trim();
+  //let textToInsert = entireContent.replace(originalSentence, newSentence).trim();
 
-  //const newText = text.replace(originalSentence, newSentence + ' ')
+  const newText = text.replace(originalSentence, newSentence + ' ')
   
   if (container.nodeType === Node.TEXT_NODE) {
-    
-    settings.isRewriting = true
-    await animateTextRewrite(selectedNode, originalSentence, textToInsert + ' ')
-    settings.isRewriting = false
-    //container.textContent = newText
+
+    //settings.isRewriting = true
+    //await animateTextRewrite(selectedNode, originalSentence, textToInsert + ' ')
+    //settings.isRewriting = false
+    container.textContent = newText
   } else {
-    //container.innerText = newText
-    settings.isRewriting = true
-    await animateTextRewrite(selectedNode, textToInsert, newSentence)
-    settings.isRewriting = false
+    console.log('this is the selected node - in else', selectedNode)
+    container.innerText = newText
+    //settings.isRewriting = true
+    //await animateTextRewrite(selectedNode, textToInsert, newSentence)
+    //settings.isRewriting = false
   }
   
   // Trigger input event for LinkedIn
@@ -1071,7 +1157,11 @@ Return only the improved text without any explanations or quotes. Include proper
 }
 
 async function animateTextRewrite(editor, originalText, newText) {
+  
   return new Promise((resolve) => {
+    // extract mentions from the original text
+    window.linkedInMentionHandler.extractMentions(editor)
+
     // Create a temporary container for the animation
     const animationContainer = document.createElement("div")
     animationContainer.style.cssText = `
@@ -1132,6 +1222,9 @@ async function animateTextRewrite(editor, originalText, newText) {
         }
       }, 30) // Adjust speed here (lower = faster)
     }, 300)
+
+    // restore mentions after the animation
+    window.linkedInMentionHandler.restoreMentions(newText, editor)
   })
 }
 
@@ -1777,7 +1870,6 @@ const refreshToken = async () => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-    
       },
       // include credentials to allow cookies to be sent
       credentials: 'include',

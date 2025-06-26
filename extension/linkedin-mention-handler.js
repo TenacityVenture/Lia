@@ -47,20 +47,41 @@ class LinkedInMentionHandler {
     let processedText = newText
 
     // Step 1: Handle @mentions (existing functionality)
-    const mentionRegex = /@([^@\n.,!?;:]+?)(?=\n|$|[.,!?;:]|@|\s+@)/g
+    /*const mentionRegex = /@([^@\n.,!?;:]+?)(?=\n|$|[.,!?;:]|@|\s+@)/g
     processedText = processedText.replace(mentionRegex, (match, mentionText) => {
       const trimmedMentionText = mentionText.trim()
+      console.log('trimmedMentionText', trimmedMentionText)
       const mentionData = this.findMentionData(trimmedMentionText)
+      console.log('mentionData', mentionData)
 
       if (mentionData) {
         return this.createMentionElement(mentionData)
       }
       return match
-    })
+    })*/
+
+    const trimmedMentionText = newText.trim()
+    const mentionData = this.findMentionData(trimmedMentionText)
+
+    if (mentionData && mentionData.length > 0) {
+      mentionData.forEach((mention) => {
+        const textToReplace = '@' + (mention.originalText || mention.text)
+        const textToReplaceWith = this.createMentionElement(mention)
+        processedText = processedText.replaceAll(textToReplace, textToReplaceWith)
+      })
+    } else {
+      // If no mention data found, just return the original text
+      const mentionRegex = /@([^@\n.,!?;:]+?)(?=\n|$|[.,!?;:]|@|\s+@)/g
+      processedText = processedText.replaceAll(mentionRegex, (match) => {
+        return match // No replacement, keep original text
+      })
+      return processedText
+    }
+
 
     // Step 2: Handle standalone names (without @) that match cached mentions
     // Create a regex for each cached mention to find standalone occurrences
-    for (const [cachedText, mentionData] of this.mentionCache) {
+    /*for (const [cachedText, mentionData] of this.mentionCache) {
       // Create a regex that matches the exact name with word boundaries
       // But avoid matching if it's already part of a mention element
       const nameRegex = new RegExp(`(?<!<a[^>]*>)\\b(${this.escapeRegex(mentionData.text)})\\b(?![^<]*</a>)`, "gi")
@@ -69,7 +90,7 @@ class LinkedInMentionHandler {
         // Additional check: don't replace if it's already inside HTML tags
         return this.createMentionElement(mentionData)
       })
-    }
+    }*/
 
     return processedText
   }
@@ -89,17 +110,33 @@ class LinkedInMentionHandler {
 
     // Direct match
     if (this.mentionCache.has(lowerText)) {
-      return this.mentionCache.get(lowerText)
+      // If direct match, return all matching mention data (could be multiple for same text)
+      const matches = []
+      for (const [key, mentionData] of this.mentionCache) {
+        if (key === lowerText) {
+          matches.push(mentionData)
+        }
+      }
+      // Return array of matches if more than one, else single object
+      return matches.length > 1 ? matches : matches[0]
     }
 
     // Fuzzy match - find mentions that contain or are contained in the text
+    let fuzzyMatches = []
     for (const [cachedText, mentionData] of this.mentionCache) {
       if (cachedText.includes(lowerText) || lowerText.includes(cachedText)) {
-        return mentionData
+        // Collect all fuzzy matches in an array
+        fuzzyMatches.push(mentionData)
       }
     }
 
+    if (fuzzyMatches.length > 0) {
+      // If fuzzy matches found, return them
+      return fuzzyMatches.length > 1 ? fuzzyMatches : fuzzyMatches[0]
+    }
+
     // Try matching by first/last name parts
+    const allMatches = []
     const textParts = lowerText.split(/\s+/)
     for (const [cachedText, mentionData] of this.mentionCache) {
       const cachedParts = cachedText.split(/\s+/)
@@ -108,8 +145,14 @@ class LinkedInMentionHandler {
           cachedParts.some((cachedPart) => cachedPart.includes(part) || part.includes(cachedPart)),
         )
       ) {
-        return mentionData
+        // Collect all matches in an array
+        allMatches.push(mentionData)
       }
+    }
+
+    if (allMatches.length > 0) {
+      // If all matches found return them
+      return allMatches
     }
 
     return null
@@ -215,8 +258,14 @@ async function animateTextRewriteWithMentions(editor, originalText, newText) {
           clearInterval(typewriterInterval)
 
           // Phase 3: Restore mentions and fade back in
+          console.log('this is the new text', newText)
           const textWithMentions = linkedInMentionHandler.restoreMentions(newText, editor)
-          editor.innerHTML = textWithMentions
+          console.log(textWithMentions)
+          // convert to HTML
+          // every new line should be a p
+          const paragraphs = textWithMentions.split(/\n/).map(line => `<p>${line}</p>`).join('')
+          // Set the editor's innerHTML to the paragraphs
+          editor.innerHTML = paragraphs
 
           // Fade back in with final text
           editor.style.opacity = "1"

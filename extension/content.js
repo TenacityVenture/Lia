@@ -36,10 +36,10 @@ window.addEventListener('message', (event) => {
       access_token: event.data.access_token,
       refresh_token: event.data.refresh_token
     });
+    initializeChatbot()
   }
 
-  initializeChatbot()
-
+  
   if (event.data.type === 'CLEAR_JWTs') {
     chrome.storage.local.remove(['access_token', 'refresh_token'], () => {
       console.log('Access token and refresh token cleared from storage.');
@@ -937,14 +937,17 @@ async function handleRewriteAssistant(editor) {
   // this is to avoid issues with the editor not having line breaks and whitespaces
   const paragraphs = Array.from(editor.querySelectorAll("p"))
   const textContent = paragraphs.map(p => {
-    // check if p has a anchor of class .ql-mention
-    // if it does, return the text content of the anchor + '@' in the front
-    const mention = p.querySelector(".ql-mention")
-    if (mention) {
-      return '@' + mention.textContent
-    }
-    return p.textContent
-  
+    let result = '';
+    p.childNodes.forEach(node => {
+      if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('ql-mention')) {
+        result += '@' + node.textContent;
+      } else if (node.nodeType === Node.TEXT_NODE) {
+        result += node.textContent;
+      } else if (node.nodeType === Node.ELEMENT_NODE) {
+        result += node.textContent;
+      }
+    });
+    return result.trim();
   }).join("\n")
   console.log("Text content to rewrite:", textContent)
   let currentText = textContent

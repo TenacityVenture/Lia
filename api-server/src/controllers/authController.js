@@ -36,7 +36,8 @@ const loginUser = async (req, res) => {
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production', // Set to true in production
-      sameSite: 'Strict', // CSRF protection
+      sameSite: 'None', // <== allow cross-site cookie
+      domain: '.getlia.live',  // <== apply to all subdomains
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 

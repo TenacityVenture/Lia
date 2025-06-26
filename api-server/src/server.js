@@ -24,7 +24,7 @@ const limiter = rateLimit({
 //app.use(cors());
 // Enable CORS for specific origins
 app.use(cors({
-  origin: ['https://www.getlia.live', process.env.EXTENSION_ID, 'https://www.linkedin.com', 'http://localhost:3000'], // production domain and extension ID
+  origin: ['https://www.getlia.live', process.env.EXTENSION_ID, 'https://www.linkedin.com'], // production domain and extension ID
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true}))
 app.use(cookieParser()); // To parse cookies

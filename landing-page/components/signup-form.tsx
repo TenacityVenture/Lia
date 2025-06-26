@@ -50,7 +50,7 @@ export function SignupForm() {
 
     // Simulate API call
     //await new Promise((resolve) => setTimeout(resolve, 1500))
-    /*const apiUrl:string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/register`
+    const apiUrl:string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/register`
     await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -92,8 +92,8 @@ export function SignupForm() {
       })
       .finally(() => {
         setIsLoading(false)
-      })*/
-      await signUpDirectlyWithSupabase(values.name, values.email, values.password)
+      })
+      /*await signUpDirectlyWithSupabase(values.name, values.email, values.password)
       .then((data) => {
         // Handle successful login
         console.log(data)
@@ -117,7 +117,7 @@ export function SignupForm() {
       })
       .finally(() => {
         setIsLoading(false)
-      })
+      })*/
 
     setIsLoading(false)
   }

@@ -47,7 +47,7 @@ export function LoginForm() {
 
     // Simulate API call
     //await new Promise((resolve) => setTimeout(resolve, 1500))
-    /*const apiUrl:string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/sign-in`
+    const apiUrl:string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/sign-in`
     await fetch(apiUrl, {
       method: "POST",
       headers: {
@@ -88,9 +88,9 @@ export function LoginForm() {
       })
       .finally(() => {
         setIsLoading(false)
-      })*/
+      })
 
-      await signInDirectlyWithSupabase(values.email, values.password)
+      /*await signInDirectlyWithSupabase(values.email, values.password)
       .then((data) => {
         // Handle successful login
         console.log(data)
@@ -114,7 +114,7 @@ export function LoginForm() {
       })
       .finally(() => {
         setIsLoading(false)
-      })
+      })*/
 
     setIsLoading(false)
   }

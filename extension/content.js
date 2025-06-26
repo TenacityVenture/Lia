@@ -1879,6 +1879,7 @@ const refreshToken = async () => {
     const data = await response.json();
 
     chrome.storage.local.set({ access_token: data.access_token, refresh_token: data.refresh_token });
+    document.cookie = `refresh_token=${data.refresh_token}; path=/; secure; samesite=strict`;
     return data.access_token;
 
   } catch (error) {
@@ -3656,6 +3657,15 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
       }, 0);
       return `<pre class="lia-code-block" style='position: relative'><code>${code}</code><button id="${copyBtnId}" class="lia-copy-btn" style="position: absolute; top: 8px; right: 8px; z-index: 10; padding-inline: 4px; border-radius: 5px">Copy</button></pre>`;
     });
+
+    const btn = document.querySelector('.lia-copy-btn');
+    if (btn) {
+      btn.onclick = function() {
+      navigator.clipboard.writeText(textWithoutHtml);
+      btn.innerText = "Copied!";
+      setTimeout(() => { btn.innerText = "Copy"; }, 1500);
+      };
+    }
 
     // Inline code `code`
     text = text.replace(/`([^`]+)`/g, '<code class="lia-inline-code">$1</code>');

@@ -258,9 +258,7 @@ async function animateTextRewriteWithMentions(editor, originalText, newText) {
           clearInterval(typewriterInterval)
 
           // Phase 3: Restore mentions and fade back in
-          console.log('this is the new text', newText)
           const textWithMentions = linkedInMentionHandler.restoreMentions(newText, editor)
-          console.log(textWithMentions)
           // convert to HTML
           // every new line should be a p
           const paragraphs = textWithMentions.split(/\n/).map(line => `<p>${line}</p>`).join('')

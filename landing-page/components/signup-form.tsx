@@ -56,6 +56,7 @@ export function SignupForm() {
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: 'include',
       body: JSON.stringify(values),
     })
       .then((res) => {

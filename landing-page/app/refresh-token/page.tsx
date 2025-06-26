@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { refreshTokenDirectlyWithSupabase } from '@/lib/supabaseHelpers';
+//import { refreshTokenDirectlyWithSupabase } from '@/lib/supabaseHelpers';
 
 export default function RefreshTokenPage() {
   const [loading, setLoading] = useState(true);

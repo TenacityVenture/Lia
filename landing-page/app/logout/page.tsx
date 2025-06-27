@@ -52,6 +52,8 @@ export default function LogoutPage() {
           if (!res.ok) {
               console.error("Failed to log out from the server");
           }
+          // clear refresh_token in cookie
+          document.cookie = "refresh_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
       }).catch((error) => {
           console.error("Error logging out from the server:", error);
       });

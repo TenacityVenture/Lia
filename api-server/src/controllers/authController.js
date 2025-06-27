@@ -215,13 +215,11 @@ const syncOAuthUser = async (req, res) => {
   // send refresh token in a secure cookie
   // first we need to get the new refresh token from Supabase
   // this is needed because the user might have logged in with a different provider
-  let newRefreshToken = '';
-  await supabase.auth.getSession().then(({ data: { session } }) => {
-    newRefreshToken = session?.refresh_token;
-    if (!session || !session.refresh_token) {
-      return res.status(400).json({ error: 'Failed to get session' });
-    }
-  });
+  const newRefreshToken = req.query.refresh_token;
+  
+  if (!newRefreshToken) {
+    return res.status(400).json({ error: 'Failed to get session' });
+  }
 
   res.cookie('refresh_token', newRefreshToken, {
     httpOnly: true,
@@ -275,15 +273,13 @@ const syncGoogleOAuthUser = async (req, res) => {
   }
 
   // send refresh token in a secure cookie
-  // first we need to get the new refresh token from Supabase
+  // first we need to get the new refresh token from query
   // this is needed because the user might have logged in with a different provider
-  let newRefreshToken = '';
-  await supabase.auth.getSession().then(({ data: { session } }) => {
-    newRefreshToken = session?.refresh_token;
-    if (!session || !session.refresh_token) {
-      return res.status(400).json({ error: 'Failed to get session' });
-    }
-  });
+  const newRefreshToken = req.query.refresh_token;
+  
+  if (!newRefreshToken) {
+    return res.status(400).json({ error: 'Failed to get session' });
+  }
 
   res.cookie('refresh_token', newRefreshToken, {
     httpOnly: true,

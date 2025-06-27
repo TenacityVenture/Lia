@@ -30,9 +30,9 @@ export default function LogoutPage() {
 
       try {
         // Send a message to the extension to clear the tokens
-        window.postMessage({ type: "CLEAR_TOKENS" }, "*"); // * means all domains (should be restricted to lia extension id)
+        window.postMessage({ type: "CLEAR_JWTs" }, "*"); // * means all domains (should be restricted to lia extension id)
       } catch (err) {
-        console.warn("Error sending CLEAR_TOKENS message to extension:", err);
+        console.warn("Error sending CLEAR_JWTs message to extension:", err);
       }
 
       // Wait a moment to show the logout animation

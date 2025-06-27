@@ -215,7 +215,7 @@ const syncOAuthUser = async (req, res) => {
   // send refresh token in a secure cookie
   // first we need to get the new refresh token from Supabase
   // this is needed because the user might have logged in with a different provider
-  let newRefreshToken = supabase.auth.session()?.refresh_token;
+  let newRefreshToken = '';
   await supabase.auth.getSession().then(({ data: { session } }) => {
     newRefreshToken = session?.refresh_token;
     if (!session || !session.refresh_token) {
@@ -277,7 +277,7 @@ const syncGoogleOAuthUser = async (req, res) => {
   // send refresh token in a secure cookie
   // first we need to get the new refresh token from Supabase
   // this is needed because the user might have logged in with a different provider
-  let newRefreshToken = supabase.auth.session()?.refresh_token;
+  let newRefreshToken = '';
   await supabase.auth.getSession().then(({ data: { session } }) => {
     newRefreshToken = session?.refresh_token;
     if (!session || !session.refresh_token) {

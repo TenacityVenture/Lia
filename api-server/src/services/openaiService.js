@@ -42,7 +42,10 @@ exports.getCompletionPostImprovements = async (prompt) => {
             - Return only the improved text without quotes or explanations.
             - Replace **sometext** with bold Unicode characters (𝘦.𝘨. 𝗯𝗼𝗹𝗱)
             - Replace *sometext* with italic Unicode characters (𝘦.𝘨. 𝘪𝘵𝘢𝘭𝘪𝘤)
-            - Do not use markdown or HTML
+            - Do not use markdown or HTML or ** or * or _ or __ formatting
+            - Do not change the meaning or introduce new ideas
+            - Keep @someone's name as is
+            - Keep emojis and Unicode characters exactly as-is
         `
       },
       { 

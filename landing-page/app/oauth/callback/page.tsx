@@ -26,7 +26,7 @@ export default function OAuthCallback() {
     localStorage.setItem('lia_access_token', access_token);
 
     // 2. Sync user to DB (optional if you're using SQL trigger)
-    fetch(`${process.env.NEXT_PUBLIC_API_HOST}${syncEndpoint}`, {
+    fetch(`${process.env.NEXT_PUBLIC_API_HOST}${syncEndpoint}?refresh_token=${refresh_token}`, {
       method: 'GET',
       headers: { 
         'Authorization': `Bearer ${access_token}`

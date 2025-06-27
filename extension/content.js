@@ -624,7 +624,7 @@ async function generateRewrittenText(text, type) {
 
   prompt += ` Return only the improved text without quotes or explanations.`
 
-  const response = await fetch('http://localhost:4000/api/prompt/improve', {
+  const response = await fetch('https://api.getlia.live/api/prompt/improve', {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -1138,7 +1138,7 @@ async function generateImprovedText(originalText) {
 "${originalText}"
 
 Return only the improved text without any explanations or quotes. Include proper line breaks and formatting as needed - whitespaces.`
-  const response = await fetch("http://localhost:4000/api/prompt/rewrite", {
+  const response = await fetch("https://api.getlia.live/api/prompt/rewrite", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -1608,7 +1608,7 @@ async function generateCommentSuggestions(context) {
 
   async function generate() {
     const { access_token } = await chrome.storage.local.get(['access_token']);
-    const response = await fetch ("http://localhost:4000/api/prompt/suggest-reply", {
+    const response = await fetch ("https://api.getlia.live/api/prompt/suggest-reply", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1693,7 +1693,7 @@ async function generateReplyToCommentSuggestions(context) {
 
   async function generate() {
     const { access_token } = await chrome.storage.local.get(['access_token']);
-    const response = await fetch ("http://localhost:4000/api/prompt/suggest-reply", {
+    const response = await fetch ("https://api.getlia.live/api/prompt/suggest-reply", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1866,7 +1866,7 @@ function insertTextIntoEditor(editor, text) {
 const refreshToken = async () => {
   const refresh_token = await getRefreshToken();
   try {
-    const response = await fetch('http://localhost:4000/api/auth/refresh-token', {
+    const response = await fetch('https://api.getlia.live/api/auth/refresh-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -3102,7 +3102,7 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
 
     prompt += `\n\nRespond helpfully and professionally. If they're asking for LinkedIn content help, provide specific suggestions. Keep responses concise but helpful. Use emojis sparingly but appropriately.`
 
-    const response = await fetch(`http://localhost:4000/api/chat/${chatbotState.currentConversationId}/message`, {
+    const response = await fetch(`https://api.getlia.live/api/chat/${chatbotState.currentConversationId}/message`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -3147,7 +3147,7 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
 
     // now instead of creating a new conversation, we will create a new chat in api server
     async function createNewChat() {
-      const response = await fetch(`http://localhost:4000/api/chat/start`, {
+      const response = await fetch(`https://api.getlia.live/api/chat/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -3411,7 +3411,7 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
 
     // Remove from API server
     async function deleteChat() {
-      const response = await fetch(`http://localhost:4000/api/chat/${id}`, {
+      const response = await fetch(`https://api.getlia.live/api/chat/${id}`, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -3447,7 +3447,7 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
   function renameConversation(id, newTitle) {
     // Update in API server
     async function renameChat() {
-      const response = await fetch(`http://localhost:4000/api/chat/${id}`, {
+      const response = await fetch(`https://api.getlia.live/api/chat/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -3482,7 +3482,7 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
 
     // load conversation form API server
     async function loadChats () {
-      const response = await fetch(`http://localhost:4000/api/chat/${conversationId}/messages`, {
+      const response = await fetch(`https://api.getlia.live/api/chat/${conversationId}/messages`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -3588,7 +3588,7 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
   // chatbot helper functions
   async function loadConversations() {
     const access_token = await accessToken()
-    const response = await fetch(`http://localhost:4000/api/chat/history`, {
+    const response = await fetch(`https://api.getlia.live/api/chat/history`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

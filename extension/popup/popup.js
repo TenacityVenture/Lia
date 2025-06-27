@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // check if access_token is still valid
   async function getMe(token) {
-    const me = await fetch('http://localhost:4000/api/user/me', {
+    const me = await fetch('https://api.getlia.live/api/user/me', {
       headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   unauth.style.display = 'none';
 
   // Show usage count
-  const usage = await fetch('http://localhost:4000/api/usage/stats', {
+  const usage = await fetch('https://api.getlia.live/api/usage/stats', {
     headers: { Authorization: `Bearer ${access_token}` }
   });
 
@@ -109,7 +109,7 @@ document.getElementById('signin-btn')?.addEventListener('click', () => {
 // refreshToken function
 const refreshToken = async (refresh_token) => {
   try {
-    const response = await fetch('http://localhost:4000/api/auth/refresh-token', {
+    const response = await fetch('https://api.getlia.live/api/auth/refresh-token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -39,37 +39,13 @@ window.addEventListener('message', (event) => {
     initializeChatbot()
   }
 
-  
+  // clear tokens when logout on the website
   if (event.data.type === 'CLEAR_JWTs') {
     chrome.storage.local.remove(['access_token', 'refresh_token'], () => {
       console.log('Access token and refresh token cleared from storage.');
     });
   }
 });
-
-// we are doing this for direct visits or url chat
-function listenForUrlChanges(callback) {
-  let oldHref = location.href;
-
-  const fireIfChanged = () => {
-    const newHref = location.href;
-    if (newHref !== oldHref) {
-      oldHref = newHref;
-      callback();
-    }
-  };
-
-  // Monkey-patch pushState & replaceState
-  ['pushState', 'replaceState'].forEach((method) => {
-    const original = history[method];
-    history[method] = function () {
-      original.apply(this, arguments);
-      fireIfChanged();
-    };
-  });
-
-  window.addEventListener('popstate', fireIfChanged);
-}
 
 // uitlity functions
 function waitForElement(selector, maxAttempts = 40, interval = 500) {

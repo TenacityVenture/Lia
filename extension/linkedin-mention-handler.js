@@ -68,6 +68,7 @@ class LinkedInMentionHandler {
         const textToReplace = '@' + (mention.originalText || mention.text)
         const textToReplaceWith = this.createMentionElement(mention)
         processedText = processedText.replaceAll(textToReplace, textToReplaceWith)
+        console.log(processedText, 'processedText after replacement')
       })
     } else {
       // If no mention data found, just return the original text
@@ -298,3 +299,4 @@ async function animateTextRewriteWithMentions(editor, originalText, newText) {
 // Export for use in your existing code
 window.linkedInMentionHandler = linkedInMentionHandler
 window.animateTextRewriteWithMentions = animateTextRewriteWithMentions
+window.LinkedInMentionHandler = LinkedInMentionHandler

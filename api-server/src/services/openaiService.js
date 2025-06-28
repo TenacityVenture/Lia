@@ -44,7 +44,7 @@ exports.getCompletionPostImprovements = async (prompt) => {
             - Replace *sometext* with italic Unicode characters (𝘦.𝘨. 𝘪𝘵𝘢𝘭𝘪𝘤)
             - Do not use markdown or HTML or ** or * or _ or __ formatting
             - Do not change the meaning or introduce new ideas
-            - Keep @someone's name as is
+            - IMPORTANT: Preserve any @mentions exactly as they appear (like @PersonName or @Company Name). Do not change the names after @ symbols.
             - Keep emojis and Unicode characters exactly as-is
         `
       },

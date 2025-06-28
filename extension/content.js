@@ -238,7 +238,7 @@ function setupTextSelectionToolbar() {
       icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
         <path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10Zm0 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/>
       </svg>`,
-      title: 'AI Rewrite Sentence',
+      title: 'AI Rewrite Paragraph',
       action: () => handleAIRewrite()
     },
     {
@@ -436,11 +436,13 @@ async function handleAIRewrite() {
     fullSentence = selectedText
   } else {
     fullSentence = getFullSentence(selection)
-
   }
 
   // check if the last character in fullSentence is a fullstop is a full stop
-  if (fullSentence.length === 0) return
+  if (fullSentence.length === 0) return;
+
+  // fullSentence without added full stop 
+  const originalSentence = fullSentence
   if (fullSentence[fullSentence.length - 1] !== '.') {
     // If not, add a full stop at the end
     fullSentence += '.'
@@ -460,7 +462,7 @@ async function handleAIRewrite() {
         rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
     }
     if (rewrittenText) {
-      await replaceTextInSentence(selection, fullSentence, rewrittenText)
+      await replaceTextInSentence(selection, originalSentence, rewrittenText)
       hideToolbar()
     } else {
       showToolbarError('failed to fetch')
@@ -488,8 +490,21 @@ async function handleTextTransform(type) {
 
   try {
     showToolbarLoading()
-    const transformedText = await generateRewrittenText(selectedText, type)
+    let transformedText = ""
+    try {
+      transformedText = await generateRewrittenText(selectedText, type)
+    } catch (error) {
+      // refresh the token
+      await refreshToken() // refresh the token
+
+      // call generateRewrittenText again after refresh
+      transformedText = await generateRewrittenText(selectedText, type)
+    }
     //replaceSelectedText(transformedText)
+    if (!transformedText) {
+      showToolbarError('Failed to fetch transformed text')
+      return
+    }
     await replaceTextInSentence(selection, fullSentence, transformedText)
     hideToolbar()
   } catch (error) {
@@ -498,98 +513,106 @@ async function handleTextTransform(type) {
 }
 
 function getFullSentence(selection) {
-  const range = selection.getRangeAt(0)
-  let container = range.commonAncestorContainer
-  
-  // If we're in a text node, move up to the parent element
-  if (container.nodeType === Node.TEXT_NODE) {
-    container = container.parentNode
-  }
-  
-  // Get the plain text content to find sentence boundaries
-  const text = container.textContent
-  
-  // Calculate the selection offset in the text content
-  const walker = document.createTreeWalker(
-    container,
-    NodeFilter.SHOW_TEXT,
-    null,
-    false
-  )
-  
-  let textOffset = 0
-  let currentNode
-  let selectionOffset = 0
-  
-  // Find the offset of the selection start in the text content
-  while (currentNode = walker.nextNode()) {
-    if (currentNode === range.startContainer) {
-      selectionOffset = textOffset + range.startOffset
-      break
+    const range = selection.getRangeAt(0)
+
+    // Find the paragraph containing the selection
+    let paragraph = range.commonAncestorContainer
+    while (paragraph && paragraph.tagName !== "P") {
+      paragraph = paragraph.parentElement
     }
-    textOffset += currentNode.textContent.length
-  }
-  
-  // Find sentence boundaries
-  let sentenceStart = 0
-  let sentenceEnd = text.length
-  
-  // Look backwards for sentence start
-  for (let i = selectionOffset - 1; i >= 0; i--) {
-    if (text[i] === '.' && (i === 0 || /\s/.test(text[i + 1]))) {
-      sentenceStart = i + 1
-      break
+
+    if (paragraph && paragraph.tagName === "P") {
+      // Store mention data for later restoration
+      const mentions = extractMentionsFromParagraph(paragraph)
+
+      // Convert mentions to @format for AI processing
+      const textWithMentions = convertMentionsToAtFormat(paragraph)
+
+      // Store mentions data globally for restoration
+      window.linkedinMentionsData = mentions
+
+      return textWithMentions
     }
+
+    // Fallback to original method
+    const container = range.commonAncestorContainer
+    const text = container.textContent || container.innerText || ""
+    const startOffset = range.startOffset
+
+    // Find sentence boundaries
+    let sentenceStart = text.lastIndexOf(".", startOffset - 1) + 1
+    let sentenceEnd = text.indexOf(".", startOffset)
+
+    if (sentenceStart < 0) sentenceStart = 0
+    if (sentenceEnd < 0) sentenceEnd = text.length
+
+    return text.substring(sentenceStart, sentenceEnd).trim()
   }
-  
-  // Look forwards for sentence end
-  for (let i = selectionOffset; i < text.length; i++) {
-    if (text[i] === '.' && (i === text.length - 1 || /\s/.test(text[i + 1]))) {
-      sentenceEnd = i + 1
-      break
-    }
+
+  function extractMentionsFromParagraph(paragraph) {
+    const mentions = []
+    const mentionElements = paragraph.querySelectorAll(".ql-mention")
+
+    mentionElements.forEach((mention, index) => {
+      mentions.push({
+        id: index,
+        text: mention.textContent.trim(),
+        originalElement: mention.outerHTML,
+        entityUrn: mention.getAttribute("data-entity-urn"),
+        objectUrn: mention.getAttribute("data-object-urn"),
+        href: mention.getAttribute("href"),
+        guid: mention.getAttribute("data-guid"),
+      })
+    })
+
+    return mentions
   }
-  
-  // Extract the sentence text first
-  let sentence = text.substring(sentenceStart, sentenceEnd).trim()
-  
-  // Now find and replace .ql-mention elements that fall within this sentence range
-  const mentions = container.querySelectorAll('.ql-mention')
-  
-  mentions.forEach(mention => {
-    // Calculate the position of this mention in the text content
-    const mentionWalker = document.createTreeWalker(
-      container,
-      NodeFilter.SHOW_ALL,
-      null,
-      false
-    )
-    
-    let mentionOffset = 0
-    let node
-    
-    while (node = mentionWalker.nextNode()) {
-      if (node === mention) {
-        break
+
+  function convertMentionsToAtFormat(paragraph) {
+    let text = paragraph.innerHTML
+    const mentionElements = paragraph.querySelectorAll(".ql-mention")
+
+    mentionElements.forEach((mention, index) => {
+      const mentionText = mention.textContent.trim()
+      const placeholder = `@${mentionText}`
+      text = text.replace(mention.outerHTML, placeholder)
+    })
+
+    // Convert HTML to plain text but preserve @mentions
+    const tempDiv = document.createElement("div")
+    tempDiv.innerHTML = text
+    return tempDiv.textContent || tempDiv.innerText || ""
+  }
+
+  function restoreMentionsInText(text, mentions) {
+    if (!mentions || mentions.length === 0) return text
+
+    let restoredText = text
+
+    mentions.forEach((mention) => {
+      const atMention = `@${mention.text}`
+      if (restoredText.includes(atMention)) {
+        // Create new mention element with preserved attributes
+        const newMentionElement = createLinkedInMention(mention)
+        restoredText = restoredText.replace(atMention, `<MENTION_${mention.id}>`)
       }
-      if (node.nodeType === Node.TEXT_NODE) {
-        mentionOffset += node.textContent.length
+    })
+
+    // Replace placeholders with actual mention HTML
+    mentions.forEach((mention) => {
+      const placeholder = `<MENTION_${mention.id}>`
+      if (restoredText.includes(placeholder)) {
+        const newMentionElement = createLinkedInMention(mention)
+        restoredText = restoredText.replace(placeholder, newMentionElement)
       }
-    }
-    
-    const mentionEnd = mentionOffset + mention.textContent.length
-    
-    // Check if this mention falls within our sentence boundaries
-    if (mentionOffset >= sentenceStart && mentionEnd <= sentenceEnd) {
-      // Replace the mention text in our sentence
-      const mentionText = mention.textContent
-      sentence = sentence.replace(mentionText, `@${mentionText}`)
-    }
-  })
-  
-  console.log('this is the sentence', sentence)
-  return sentence
-}
+    })
+
+    return restoredText
+  }
+
+  function createLinkedInMention(mentionData) {
+    return `<a class="ql-mention" href="${mentionData.href || "#"}" data-entity-urn="${mentionData.entityUrn || ""}" data-guid="${mentionData.guid || ""}" data-object-urn="${mentionData.objectUrn || ""}" data-original-text="${mentionData.text}" spellcheck="false" data-test-ql-mention="true">${mentionData.text}</a>`
+  }
 
 async function generateRewrittenText(text, type) {
 
@@ -659,48 +682,126 @@ function replaceSelectedText(newText) {
   }
 }
 
-async function replaceTextInSentence(selection, originalSentence, newSentence) {
-  const range = selection.getRangeAt(0)
-  const container = range.commonAncestorContainer
-  const text = container.textContent || container.innerText || ''
-  
-  // Find the actual DOM element (not just the text node)
-  let selectedNode = selection.anchorNode;
-  if (selectedNode && selectedNode.nodeType !== Node.ELEMENT_NODE) {
-    selectedNode = selectedNode.parentElement;
+  async function replaceTextInSentence(selection, originalSentence, newSentence) {
+    const range = selection.getRangeAt(0)
+
+    // Find the paragraph containing the selection
+    let paragraph = range.commonAncestorContainer
+    while (paragraph && paragraph.tagName !== "P") {
+      paragraph = paragraph.parentElement
+    }
+
+    if (!paragraph || paragraph.tagName !== "P") {
+      // Fallback to simple replacement
+      replaceSelectedText(newSentence)
+      return
+    }
+
+    // Get stored mentions data
+    const mentions = window.linkedinMentionsData || []
+
+    // Restore mentions in the new sentence
+    const restoredSentence = restoreMentionsInText(newSentence, mentions)
+
+    // Store the original HTML structure
+    const originalHTML = paragraph.innerHTML
+    const originalText = paragraph.textContent || paragraph.innerText || ""
+
+    // Create a temporary span to hold the paragraph being replaced
+    const tempSpan = document.createElement("span")
+    tempSpan.style.cssText = `
+  background: linear-gradient(90deg, #e7f3ff, #f0f9ff);
+  border-radius: 4px;
+  padding: 2px 4px;
+  transition: all 0.3s ease;
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  min-height: 1.2em;
+`
+
+    // Replace the paragraph content with our temp span
+    tempSpan.textContent = originalText
+    paragraph.innerHTML = ""
+    paragraph.appendChild(tempSpan)
+
+    // Animate the replacement
+    await animateTextReplacement(tempSpan, originalText, newSentence)
+
+    // After animation, restore the paragraph with mentions
+    paragraph.innerHTML = restoredSentence
+
+    // Clean up stored mentions data
+    delete window.linkedinMentionsData
+
+    // Trigger input event for LinkedIn
+    const editor = paragraph.closest(".ql-editor")
+    if (editor) {
+      const inputEvent = new Event("input", { bubbles: true })
+      editor.dispatchEvent(inputEvent)
+    }
   }
 
-  // omit the selection in the selectedNode / original sentence
-  // maybe we might have multiple sentetences in selected node / original sentence
-  // so we want to omit selected text from the selectedNode / original sentence
-  //const selectionText = selection.toString();
-  
-  const entireContent = selectedNode.textContent || selectedNode.innerText || '';
+  function createLinkedInFormattedHTML(text, originalHTML) {
+    // Simple text replacement that preserves basic formatting
+    // This is a basic implementation - you might want to enhance this
+    // to better preserve mentions and other LinkedIn-specific elements
 
-  // check if text has fullstop
-  //let textToInsert = entireContent.replace(originalSentence, newSentence).trim();
-
-  const newText = text.replace(originalSentence, newSentence + ' ')
-  
-  if (container.nodeType === Node.TEXT_NODE) {
-
-    //settings.isRewriting = true
-    //await animateTextRewrite(selectedNode, originalSentence, textToInsert + ' ')
-    //settings.isRewriting = false
-    container.textContent = newText
-  } else {
-    console.log('this is the selected node - in else', selectedNode)
-    container.innerText = newText
-    //settings.isRewriting = true
-    //await animateTextRewrite(selectedNode, textToInsert, newSentence)
-    //settings.isRewriting = false
+    // For now, just return the text as plain HTML
+    // In a more sophisticated version, you'd parse the original HTML
+    // and try to preserve mentions, links, etc.
+    return text.replace(/\n/g, "<br>")
   }
-  
-  // Trigger input event for LinkedIn
-  const editor = container.parentElement || container
-  const inputEvent = new Event("input", { bubbles: true })
-  editor.dispatchEvent(inputEvent)
-}
+
+  async function animateTextReplacement(element, originalText, newText) {
+    return new Promise((resolve) => {
+      // Phase 1: Highlight the original text
+      element.style.background = "linear-gradient(90deg, #fef3c7, #fde68a)"
+      element.style.transform = "scale(1.02)"
+
+      setTimeout(() => {
+        // Phase 2: Start the typewriter effect
+        let currentIndex = 0
+
+        // Add a subtle pulse effect during typing
+        element.style.background = "linear-gradient(90deg, #e7f3ff, #dbeafe)"
+        element.style.transform = "scale(1)"
+
+        const typewriterInterval = setInterval(() => {
+          if (currentIndex <= newText.length) {
+            const partialText = newText.substring(0, currentIndex)
+
+            // Add typing cursor effect
+            if (currentIndex < newText.length) {
+              element.innerHTML = partialText + '<span style="animation: blink 1s infinite; color: #0a66c2;">|</span>'
+            } else {
+              element.textContent = newText
+            }
+
+            currentIndex++
+          } else {
+            // Animation complete
+            clearInterval(typewriterInterval)
+
+            // Phase 3: Success highlight
+            element.style.background = "linear-gradient(90deg, #d1fae5, #a7f3d0)"
+            element.style.transform = "scale(1.02)"
+
+            setTimeout(() => {
+              // Phase 4: Fade back to normal
+              element.style.background = "transparent"
+              element.style.transform = "scale(1)"
+              element.style.transition = "all 0.5s ease"
+
+              setTimeout(() => {
+                resolve()
+              }, 500)
+            }, 800)
+          }
+        }, 50) // Adjust typing speed here (lower = faster)
+      }, 300)
+    })
+  }
 
 function showToolbarLoading() {
   const toolbar = document.getElementById('linkedin-ai-text-toolbar')
@@ -1159,8 +1260,6 @@ Return only the improved text without any explanations or quotes. Include proper
 async function animateTextRewrite(editor, originalText, newText) {
   
   return new Promise((resolve) => {
-    // extract mentions from the original text
-    window.linkedInMentionHandler.extractMentions(editor)
 
     // Create a temporary container for the animation
     const animationContainer = document.createElement("div")
@@ -1223,8 +1322,6 @@ async function animateTextRewrite(editor, originalText, newText) {
       }, 30) // Adjust speed here (lower = faster)
     }, 300)
 
-    // restore mentions after the animation
-    window.linkedInMentionHandler.restoreMentions(newText, editor)
   })
 }
 
@@ -2604,6 +2701,11 @@ const refreshToken = async () => {
       .lia-sidebar-toggle {
         display: none;
       }
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
     }
   `
 

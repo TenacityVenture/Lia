@@ -154,13 +154,13 @@ exports.message = async (req, res) => {
         - Use **bold** for important points
         - Use *italics* for emphasis
         - Use \`code\` for technical terms
-        - use \`\`\`code\`\`\` for key contents like summaries, posts content or comments suggestions - include proper line breaks withing the code block
         - Use bullet points and lists for clarity
         - Include proper line breaks
         - Make links clickable when mentioning URLs
 
         You help users create engaging LinkedIn posts, write professional comments, and improve their content.
 ` 
+        // - use \`\`\`code\`\`\` for key contents like summaries, posts content or comments suggestions - include proper line breaks withing the code block
       });
     const openaiRes = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',

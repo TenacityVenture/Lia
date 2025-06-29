@@ -48,6 +48,8 @@ window.addEventListener('message', (event) => {
 });
 
 // uitlity functions
+
+// check if element exists in dom / waits for it to exist by keep trying
 function waitForElement(selector, maxAttempts = 40, interval = 500) {
   return new Promise((resolve, reject) => {
     let attempts = 0;
@@ -80,7 +82,7 @@ function initializeExtension() {
 
   // Set up mutation observer to detect new elements
   const observer = new MutationObserver((mutations) => {
-    console.log('triggered 🔫')
+
     mutations.forEach((mutation) => {
       clearTimeout(mutationTimeout);
       mutationTimeout = setTimeout(() => {
@@ -89,7 +91,6 @@ function initializeExtension() {
               //setupPostCreationAssistant()
               setupCommentReplyAssistant()
               setuprewrite_enabledment()
-              //setupTextSelectionToolbar()
 
           } catch (error) {
               console.error("MutationObserver Error:", error);
@@ -99,8 +100,10 @@ function initializeExtension() {
     })
   })
 
+  // observer entire document body
   observer.observe(document.body, { childList: true, subtree: true })
 
+  // observer .feed-shared-update-v2__comments-container
   const commentsContainer = document.body.querySelector('.feed-shared-update-v2__comments-container')
   if (commentsContainer) {
     observer.observe(commentsContainer, { childList: true, subtree: true, characterData: true})
@@ -133,7 +136,7 @@ function toUnicodeStyle(text, style = 'bold') {
   return [...text].map(char => map[char] || char).join('');
 }
 
-
+// convert from unicode to normal formatting
 function fromUnicodeToNormal(text, style = 'bold') {
   const boldMap = {
     '𝗮': 'a', '𝗯': 'b', '𝗰': 'c', '𝗱': 'd', '𝗲': 'e', '𝗳': 'f', '𝗴': 'g', '𝗵': 'h', '𝗶': 'i', '𝗷': 'j',
@@ -159,7 +162,9 @@ function fromUnicodeToNormal(text, style = 'bold') {
   return [...text].map(char => map[char] || char).join('');
 }
 
+// check if text is unicode
 function isUnicode(text) {
+  // range of unicode characters
   return /[^\u0000-\u007F]/.test(text);
 }
 
@@ -445,7 +450,6 @@ async function handleAIRewrite() {
     }
     //hideToolbar()
   } catch (error) {
-    console.log('this is the error', error)
     showToolbarError(error.message)
   }
 }
@@ -591,11 +595,6 @@ function getFullSentence(selection) {
   }
 
 async function generateRewrittenText(text, type) {
-
-  //if (!settings.apiKey) {
-  //  throw new Error("Please add your OpenAI API key in the extension settings")
-  //}
-
   let prompt = ''
   
   switch (type) {
@@ -686,15 +685,14 @@ function replaceSelectedText(newText) {
     // Create a temporary span to hold the paragraph being replaced
     const tempSpan = document.createElement("span")
     tempSpan.style.cssText = `
-  background: linear-gradient(90deg, #e7f3ff, #f0f9ff);
-  border-radius: 4px;
-  padding: 2px 4px;
-  transition: all 0.3s ease;
-  position: relative;
-  display: inline-block;
-  width: 100%;
-  min-height: 1.2em;
-`
+    background: linear-gradient(90deg, #e7f3ff, #f0f9ff);
+    border-radius: 4px;
+    padding: 2px 4px;
+    transition: all 0.3s ease;
+    position: relative;
+    display: inline-block;
+    width: 100%;
+    min-height: 1.2em;`
 
     // Replace the paragraph content with our temp span
     tempSpan.textContent = originalText
@@ -839,8 +837,6 @@ function setupPostCreationAssistant() {
       aiPostInput.setAttribute("spellcheck", "false")
       aiPostInput.setAttribute("autocapitalize", "off")
       
-
-
       // Create AI assistant button
       const aiButton = document.createElement("button")
       aiButton.className = "linkedin-ai-button"
@@ -858,7 +854,6 @@ function setupPostCreationAssistant() {
         if (event.key === "Enter") {
           event.preventDefault()
           const content = aiPostInput.value
-          console.log('this is the content|', content)
           handlepost_enabledant(editor, content)
         }
       })
@@ -866,7 +861,6 @@ function setupPostCreationAssistant() {
       aiButton.addEventListener("click", (event) => {
         event.preventDefault()
         const content = aiPostInput.value
-        console.log('this is the content|', content)
         handlepost_enabledant(editor, content)
       })
 
@@ -913,10 +907,9 @@ function setupCommentReplyAssistant() {
         AI Reply
       `
 
-      aiButton.addEventListener("click", () => {
+      aiButton.addEventListener("click", (e) => {
+        e.preventDefault()
         handlereply_enabledant(input)
-        //setInterval(() => {
-        //}, 1000)
       })
 
       // Add button to actions area
@@ -1022,7 +1015,6 @@ async function handlereply_enabledant(commentInput) {
   // Create suggestions container if it doesn't exist
   const commentBox = commentInput.querySelector(".ql-container")
   const commentInputEditor = commentInput.querySelector('.ql-editor')
-  commentInputEditor.textContent = ''
 
   let suggestionsContainer = commentBox.querySelector(".linkedin-ai-suggestions")
 
@@ -1071,6 +1063,9 @@ async function handlereply_enabledant(commentInput) {
         suggestions = await generateCommentSuggestions(context)
       }
     }
+
+    // set the ql-editor container to empty
+    commentInputEditor.textContent = ''
 
     // Display suggestions
     displayCommentSuggestions(suggestionsContainer, suggestions, commentInput)
@@ -1147,7 +1142,6 @@ async function handleRewriteAssistant(editor) {
 
     // Remove loading overlay
     loadingOverlay.remove()
-    console.log(currentText, improvedText)
     if (improvedText) {
       // Perform the in-place rewrite with animation
       //await animateTextRewrite(editor, currentText, improvedText)
@@ -1204,17 +1198,17 @@ function createLoadingOverlay(editor) {
 }
 
 async function generateImprovedText(originalText) {
-  //if (!settings.apiKey) {
-  //  throw new Error("Please add your OpenAI API key in the extension settings")
-  //}
 
   if (!settings.rewrite_enabled) return;
 
+  // setup prompt
   const prompt = `Improve and rewrite the following LinkedIn post to make it more engaging, professional, and impactful. Keep the core message but enhance clarity, flow, and engagement. Maintain unicode characters, maintain the same tone (${settings.tone}) and make it suitable for the ${settings.industry} industry:
 
-"${originalText}"
+  "${originalText}"
 
-Return only the improved text without any explanations or quotes. Include proper line breaks and formatting as needed - whitespaces.`
+  Return only the improved text without any explanations or quotes. Include proper line breaks and formatting as needed - whitespaces.`
+
+  // fetch the response from api-server
   const response = await fetch("https://api.getlia.live/api/prompt/rewrite", {
     method: "POST",
     headers: {
@@ -1224,17 +1218,17 @@ Return only the improved text without any explanations or quotes. Include proper
     body: JSON.stringify({prompt, originalText}),
   })
 
-  const data = await response.json()
-
   if (!response.ok) {
     throw new Error(data.error?.message || "Failed to generate improved text")
   }
+
+  // get the json response
+  const data = await response.json()
 
   return data.response
 }
 
 async function animateTextRewrite(editor, originalText, newText) {
-  
   return new Promise((resolve) => {
 
     // Create a temporary container for the animation
@@ -1301,6 +1295,14 @@ async function animateTextRewrite(editor, originalText, newText) {
   })
 }
 
+/**
+ * Shows a temporary message above the editor with a fade-in and fade-out animation.
+ *
+ * @param {HTMLElement} editor - The editor element to position the message relative to.
+ * @param {string} message - The message to display.
+ * @param {"info"|"success"|"error"} [type="info"] - The type of message to display.
+ *   Determines the background color of the message.
+ */
 function showTemporaryMessage(editor, message, type = "info") {
   const messageEl = document.createElement("div")
   messageEl.style.cssText = `
@@ -1408,7 +1410,9 @@ function getCommentContext(commentInput) {
       commentReply: "",
       previousRepliesOnComment: [],
       previousComments: context.previousComments,
-      isReplyingToComment: true
+      isReplyingToComment: true,
+      isReplyingTo: "",
+      isSubReplyingTo: false // replying to a reply on a comment
     }
 
     // check if the ai reply button is in a comment input replying to a comment
@@ -1420,7 +1424,7 @@ function getCommentContext(commentInput) {
     } else { // we are in pulse article comments
       commentSocailActivity = commentInput.closest(".comments-social-activity")
     }
-    console.log(commentSocailActivity, 'this is it')
+
     if (commentSocailActivity) { 
       // we are in a comment input replying to a comment
       // also I need it to find all the previous comments on that comment
@@ -1431,6 +1435,17 @@ function getCommentContext(commentInput) {
 
       // structure the context
       const commenterName = commentCommenterMeta.querySelector('.comments-comment-meta__description-title').innerText
+
+      // get content in ql editor because sometimes linkedin will append the person you're replying to in it after clicking reply
+      // we need it to tell the ai who to reply to
+      const currentContent = commentInput.querySelector('.ql-editor').textContent
+      // remove duplicate words in currentContent because sometime there are
+      // duplicate words in currentContent
+      const currentContentWords = currentContent.split(' ')
+      const uniqueCurrentContentWords = [...new Set(currentContentWords)]
+      const uniqueCurrentContent = uniqueCurrentContentWords.join(' ')
+      
+      replyContext.isReplyingTo = uniqueCurrentContent.trim()
 
       const commentReplyContext = `
       ${commentContentElement.innerText} -- replied by ${commenterName}
@@ -1461,6 +1476,16 @@ function getCommentContext(commentInput) {
             ${replyElement.innerText}
           `
           replyContext.previousRepliesOnComment.push(replyOnCommentContext)
+        }
+      })
+
+      // loop through previous reply on comment if it contains replyContext.isReplyingTo
+      // then change replyContext.commentReply to that comment
+      replyContext.previousRepliesOnComment.forEach((reply) => {
+        if (reply.includes((replyContext.isReplyingTo + ' replied'))) {
+          replyContext.commentReply = reply
+          replyContext.isSubReplyingTo = true
+          return
         }
       })
 
@@ -1515,14 +1540,15 @@ function getCommentContext(commentInput) {
       commentReply: "",
       previousRepliesOnComment: [],
       previousComments: context.previousComments,
-      isReplyingToComment: true
+      isReplyingToComment: true,
+      isReplyingTo: "",
+      isSubReplyingTo: false // replying to a reply on a comment
     }
 
     // check if the ai reply button is in a comment input replying to a comment
 
     const commentMainContainer = commentInput.closest(".comments-comment-entity")
     const commentSocailActivity = commentInput.closest(".comment-social-activity")
-    console.log(commentSocailActivity)
     if (commentSocailActivity) { 
       // we are in a comment input replying to a comment
       // also I need it to find all the previous comments on that comment
@@ -1533,6 +1559,17 @@ function getCommentContext(commentInput) {
 
       // structure the context
       const commenterName = commentCommenterMeta.querySelector('.comments-comment-meta__description-title').innerText
+
+      // get content in ql editor because sometimes linkedin will append the person you're replying to in it after clicking reply
+      // we need it to tell the ai who to reply to
+      const currentContent = commentInput.querySelector('.ql-editor').textContent
+      // remove duplicate words in currentContent because sometime there are
+      // duplicate words in currentContent
+      const currentContentWords = currentContent.split(' ')
+      const uniqueCurrentContentWords = [...new Set(currentContentWords)]
+      const uniqueCurrentContent = uniqueCurrentContentWords.join(' ')
+
+      replyContext.isReplyingTo = uniqueCurrentContent.trim()
 
       const commentReplyContext = `
       ${commentContentElement.innerText}. The comment was posted by "${commenterName}"
@@ -1566,6 +1603,16 @@ function getCommentContext(commentInput) {
         }
       })
 
+      // loop through previous reply on comment if it contains replyContext.isReplyingTo
+      // then change replyContext.commentReply to that comment
+      replyContext.previousRepliesOnComment.forEach((reply) => {
+        if (reply.includes(replyContext.isReplyingTo)) {
+          replyContext.commentReply = reply
+          replyContext.isSubReplyingTo = true
+          return
+        }
+      })
+
       replyContext.replyContext = true
       return replyContext;
     }
@@ -1579,9 +1626,6 @@ function getCommentContext(commentInput) {
 
 async function generatePostSuggestions(postContent, context) {
   // Check if API key is available
-  //if (!settings.apiKey) {
-  //  throw new Error("Please add your OpenAI API key in the extension settings")
-  //}
 
   if (!settings.post_enabled) return;
 
@@ -1680,7 +1724,6 @@ async function generateCommentSuggestions(context) {
   prompt += ` Each reply should be concise (under 30 words), thoughtful, and each conveying a different tone or style of speaking. With no hastags. Don't start the content with 'your', and don't write like 'your [text] is' -- don't write like that.`
 
   async function generate() {
-    const { access_token } = await chrome.storage.local.get(['access_token']);
     const response = await fetch ("https://api.getlia.live/api/prompt/suggest-reply", {
       method: "POST",
       headers: {
@@ -1713,15 +1756,6 @@ async function generateCommentSuggestions(context) {
   if (data.error) {
     throw new Error(data.error?.message || "Failed to generate suggestions")
   }
-
-  // Parse the response to extract the suggestions
-  /*const content = data.choices[0].message.content
-
-  // Split the content into separate suggestions
-  const suggestions = content
-    .split(/\d+\.\s+/)
-    .filter(Boolean)
-    .map((s) => s.trim())*/
 
   const suggestions = data.suggestions;
 
@@ -1742,7 +1776,7 @@ async function generateReplyToCommentSuggestions(context) {
   let prompt = `Generate 3 playful but professional LinkedIn replies`
 
   if (context.commentReply) {
-    prompt += ` to this comment: "${context.commentReply}"`
+    prompt += ` to this comment${context.isSubReplyingTo ? " that is a reply to a reply" : ""}: "${context.commentReply}"`
   }
 
   if (context.postContent) {
@@ -1761,11 +1795,10 @@ async function generateReplyToCommentSuggestions(context) {
     prompt += `. Consider these previous replies made on that comment: ${context.previousRepliesOnComment.join(" | ")}`
   }
 
-  prompt += `. The tone should be ${settings.tone} or Encouraging or Clarifying or Inviting Dialogue, conveying a different style (e.g by the authur of the post, just someone else etc). And industry should be ${settings.industry}`
+  prompt += `. The tone should be ${settings.tone} or Encouraging or Clarifying or Inviting Dialogue, conveying a different style (NOTE: It could be that it is the Author replying to a comment Or Just someone else replying to a comment -- convey bot views ). And industry should be ${settings.industry}`
   prompt += ` Each reply suggestion should be concise (under 20 words), thoughtful (sounds like human), and add value to the conversation. Return only the suggestions. With absolutely no hastags and emojies.`
 
   async function generate() {
-    const { access_token } = await chrome.storage.local.get(['access_token']);
     const response = await fetch ("https://api.getlia.live/api/prompt/suggest-reply", {
       method: "POST",
       headers: {
@@ -1798,15 +1831,6 @@ async function generateReplyToCommentSuggestions(context) {
   if (data.error) {
     throw new Error(data.error?.message || "Failed to generate suggestions")
   }
-
-  // Parse the response to extract the suggestions
-  /*const content = data.choices[0].message.content
-
-  // Split the content into separate suggestions
-  const suggestions = content
-    .split(/\d+\.\s+/)
-    .filter(Boolean)
-    .map((s) => s.trim())*/
 
   const suggestions = data.suggestions;
 
@@ -1915,7 +1939,6 @@ function displayCommentSuggestions(container, suggestions, commentInput) {
 
 function insertTextIntoEditor(editor, text) {
   // For contentEditable elements
-  console.log(editor, text)
   if (editor.isContentEditable) {
     editor.textContent = text.replaceAll('"', '')
 
@@ -2506,16 +2529,24 @@ const refreshToken = async () => {
       word-wrap: break-word;
     }
 
+    .lia-message-content.user .lia-paragraph {
+      color: #fff !important;
+    }
+
+    .lia-message-content.assistant .lia-paragraph {
+      color: #333 !important;
+    }
+
     .lia-message.user .lia-message-content {
       background: linear-gradient(135deg, #0a66c2, #004182);
-      color: white;
+      color: white !important;
       border-bottom-right-radius: 6px;
       box-shadow: 0 4px 12px rgba(10, 102, 194, 0.2);
     }
 
     .lia-message.assistant .lia-message-content {
       background: linear-gradient(135deg, #f8f9fa, #ffffff);
-      color: #333;
+      color: #333 !important;
       border-bottom-left-radius: 6px;
       border: 1px solid #e9ecef;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
@@ -2869,8 +2900,6 @@ const refreshToken = async () => {
   }
 
   function toggleChatbot() {
-    const chatbotInterface = document.getElementById("lia-chatbot-interface")
-
     if (chatbotState.isOpen) {
       closeChatbot()
     } else {
@@ -3161,14 +3190,8 @@ const refreshToken = async () => {
   }
 
   async function generateChatResponse(message) {
-    console.log('this is the access token', await accessToken())
     // check if post suggestion enabled
     if (!settings.post_enabled) return
-
-    // Check if API key is available
-    //if (!settings.apiKey) {
-    //  return "Please add your OpenAI API key in the extension settings to use the chat feature. 🔑"
-    //}
 
     let prompt = `You are Lia, a helpful LinkedIn AI assistant. You help users create engaging LinkedIn posts, write professional comments, and improve their content. 
 
@@ -3219,9 +3242,6 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
       </div>
     </div>
   `
-
-    // Create new conversation ID
-    //chatbotState.currentConversationId = Date.now().toString()
 
     // now instead of creating a new conversation, we will create a new chat in api server
     async function createNewChat() {
@@ -3329,8 +3349,6 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
         conversations = await loadConversations()
       } catch {
         console.error("Error refreshing token:", error)
-        // If refresh fails, fallback to localStorage
-        //conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
       }
     }
 
@@ -3676,7 +3694,6 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
     })
     const chats = await response.json()
     if (!response.ok) {
-      console.error("Error loading conversationsxyz:", chats.error)
       throw new Error(chats.error?.message || "Failed to load conversations")
     }
     return chats

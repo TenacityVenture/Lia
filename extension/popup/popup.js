@@ -40,8 +40,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     headers: { Authorization: `Bearer ${access_token}` }
   });
 
-  console.log(userData)
-
   const usageData = await usage.json();
   try {
     document.getElementById('username').innerText = userData.name.split(' ')[0];

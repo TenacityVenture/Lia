@@ -20,4 +20,43 @@ const authenticate = (req, res, next) => {
   }
 };
 
-module.exports = { authenticate };
+// get access token from PayPal
+// for subsequent API calls
+const getPaypalAccessToken = async () => {
+  const response = await got.post(`${process.env.PAYPAL_BASE_URL}/v1/oauth2/token`, {
+    headers: {
+      'Accept': 'application/json',
+      'Accept-Language': 'en_US',
+    },
+    username: process.env.PAYPAL_CLIENT_ID,
+    password: process.env.PAYPAL_CLIENT_SECRET,
+    form: {
+      grant_type: 'client_credentials',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to get access token: ${response.statusCode} ${response.statusMessage}`);
+  }
+
+  if (!response || !response.body) {
+    throw new Error('No response received from PayPal');
+  }
+
+  if (response.statusCode !== 200) {
+    throw new Error(`Failed to get access token: ${response.statusCode} ${response.statusMessage}`);
+  }
+
+  // Parse the response body and return the access token
+  if (!response.body) {
+    throw new Error('No response body received');
+  }
+
+  if (!response.body.startsWith('{')) {
+    throw new Error('Invalid response body format');
+  }
+
+  return JSON.parse(response.body).access_token;
+}
+
+module.exports = { authenticate, getPaypalAccessToken };

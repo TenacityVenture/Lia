@@ -3736,31 +3736,8 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
       // Escape HTML in code
       // Remove HTML tags and their content (e.g., <a>...</a>)
       // This will remove tags and their inner text
-      const textWithoutHtml = code.replace(/<[^>]*>.*?<\/[^>]*>/gs, "").replace(/<[^>]*>/g, "");
-      // Add a copy button with a unique id
-      const copyBtnId = 'lia-copy-btn-' + Math.random().toString(36).substr(2, 9);
-      // The button will call a global function with the code content
-      setTimeout(() => {
-      const btn = document.getElementById(copyBtnId);
-      if (btn) {
-        btn.onclick = function() {
-        navigator.clipboard.writeText(textWithoutHtml);
-        btn.innerText = "Copied!";
-        setTimeout(() => { btn.innerText = "Copy"; }, 1500);
-        };
-      }
-      }, 0);
-      return `<pre class="lia-code-block" style='position: relative'><code>${code}</code><button id="${copyBtnId}" class="lia-copy-btn" style="position: absolute; top: 8px; right: 8px; z-index: 10; padding-inline: 4px; border-radius: 5px">Copy</button></pre>`;
+      return `<pre class="lia-code-block" style='position: relative'><code>${code}</code></pre>`;
     });
-
-    const btn = document.querySelector('.lia-copy-btn');
-    if (btn) {
-      btn.onclick = function() {
-      navigator.clipboard.writeText(textWithoutHtml);
-      btn.innerText = "Copied!";
-      setTimeout(() => { btn.innerText = "Copy"; }, 1500);
-      };
-    }
 
     // Inline code `code`
     text = text.replace(/`([^`]+)`/g, '<code class="lia-inline-code">$1</code>');
@@ -3810,7 +3787,7 @@ Respond helpfully and professionally. If they're asking for LinkedIn content hel
 
     copyBtn.addEventListener("click", async () => {
       try {
-        await navigator.clipboard.writeText(content);
+        await navigator.clipboard.writeText(content.trim());
         copyBtn.innerHTML = `
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
             <polyline points="20,6 9,17 4,12"/>

@@ -54,6 +54,9 @@ app.use('/api/usage', usageRoutes);
 const chatRoutes = require('./routes/chatRoutes');
 app.use('/api/chat', chatRoutes);
 
+// Paypal routes
+const paypalRoutes = require('./routes/paypalRoutes');
+app.use('/api/paypal', paypalRoutes);
 
 // Default route
 app.get('/', (req, res) => {

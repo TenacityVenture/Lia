@@ -1,3 +1,5 @@
+import got from got
+
 /**
  * 
  * @param {Object} req 

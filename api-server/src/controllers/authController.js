@@ -38,7 +38,7 @@ const loginUser = async (req, res) => {
       secure: process.env.NODE_ENV === 'production', // Set to true in production
       sameSite: 'None', // <== allow cross-site cookie
       domain: '.getlia.live',  // <== apply to all subdomains
-      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
     });
 
     // The frontend or extension will store this access token in memory or local storage
@@ -112,7 +112,7 @@ const registerUser = async (req, res) => {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'None', // <== allow cross-site cookie
     domain: '.getlia.live',  // <== apply to all subdomains
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   });
 
   // We return the access token so the frontend can start authenticated requests
@@ -171,7 +171,7 @@ const refreshAccessToken = async (req, res) => {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'None', // <== allow cross-site cookie
     domain: '.getlia.live',  // <== apply to all subdomains
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: 30 * 24 * 60 * 60 * 1000
   });
 
   // Give the client a new access token so they can retry failed requests
@@ -226,7 +226,7 @@ const syncOAuthUser = async (req, res) => {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'None', // <== allow cross-site cookie
     domain: '.getlia.live',  // <== apply to all subdomains
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: 30 * 24 * 60 * 60 * 1000
   });
 
   res.status(200).json({
@@ -286,7 +286,7 @@ const syncGoogleOAuthUser = async (req, res) => {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'None', // <== allow cross-site cookie
     domain: '.getlia.live',  // <== apply to all subdomains
-    maxAge: 24 * 60 * 60 * 1000
+    maxAge: 30 * 24 * 60 * 60 * 1000
   });
 
   res.status(200).json({

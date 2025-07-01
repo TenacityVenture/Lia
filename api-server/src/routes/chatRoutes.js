@@ -10,38 +10,38 @@ const {
     updateChatTitle,
     updateChatLastUsed
 } = require('../controllers/chatController');
-const { authenticate } = require('../middlewares/authMiddleware');
+const { authenticate, checkPlan } = require('../middlewares/authMiddleware');
 
 // create a new chat
 // POST /api/chat/start
-router.post('/start', authenticate, createChat);
+router.post('/start', authenticate, checkPlan('standard'), createChat);
 
 // POST /api/chat/:chatId/message
 // add a message to a chat
-router.post('/:chatId/message', authenticate, message);
+router.post('/:chatId/message', authenticate, checkPlan('standard'), message);
 
 // list all chats for a user
 // GET /api/chat
-router.get('/history', authenticate, chats)
+router.get('/history', authenticate, checkPlan('standard'), chats)
 
 // list all chats history (messages) in a chats
 // GET /api/chat/:chatId/history
-router.get('/:chatId/messages', authenticate, getChatMessages) // chat messages in a chat);
+router.get('/:chatId/messages', authenticate, checkPlan('standard'), getChatMessages) // chat messages in a chat);
 
 // update a chat
 // PUT /api/chat/:chatId
-router.put('/:chatId', authenticate, updateChatTitle);
+router.put('/:chatId', authenticate, checkPlan('standard'), updateChatTitle);
 
 // get chat by ID
 // GET /api/chat/:chatId
-router.get('/:chatId', authenticate, getChatById);
+router.get('/:chatId', authenticate, checkPlan('standard'), getChatById);
 
 // update chat last updated time
 // PUT /api/chat/:chatId/update
-router.put('/:chatId/last-used', authenticate, updateChatLastUsed); 
+router.put('/:chatId/last-used', authenticate, checkPlan('standard'), updateChatLastUsed); 
 
 // delete a chat
 // DELETE /api/chat/:chatId
-router.delete('/:chatId', authenticate, deleteChat);
+router.delete('/:chatId', authenticate, checkPlan('standard'), deleteChat);
 
 module.exports = router;

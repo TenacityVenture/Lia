@@ -155,6 +155,11 @@ export function SignupForm() {
 
   return (
     <Form {...form}>
+      {form.formState.errors.root && (
+      <FormMessage className="mb-2 text-destructive">
+        {form.formState.errors.root.message}
+      </FormMessage>
+    )}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}

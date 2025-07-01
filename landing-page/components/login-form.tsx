@@ -86,6 +86,7 @@ export function LoginForm() {
       })
       .catch((error) => {
         console.error("Error:", error)
+        form.setError("root", { message: error.message || "An error occurred during sign-in. Please try again." })
       })
       .finally(() => {
         setIsLoading(false)
@@ -156,6 +157,11 @@ export function LoginForm() {
 
   return (
     <Form {...form}>
+      {form.formState.errors.root && (
+        <FormMessage className="mb-2 text-destructive">
+          {form.formState.errors.root.message}
+        </FormMessage>
+      )}
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}

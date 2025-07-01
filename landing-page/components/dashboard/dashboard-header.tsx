@@ -144,7 +144,7 @@ export default function DashboardHeader() {
               <DropdownMenuSeparator />
                 <DropdownMenuItem className="cursor-default">
                 <span className="flex flex-col">
-                  <span className="font-medium">Plan expires</span>
+                  <span className="font-medium">{user.plan === 'free' ? 'Free Trial' : 'Plan'} expires</span>
                   <span className="text-xs text-muted-foreground">
                   {user.plan_expires_at
                     ? (() => {

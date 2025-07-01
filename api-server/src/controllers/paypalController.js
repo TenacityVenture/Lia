@@ -1,4 +1,4 @@
-const { getPaypalAccessToken } = require('../middlewares/authMiddleware');
+const { getPaypalAccessToken } = require('../services/getPaypalAccessToken');
 const supabase = require('../utils/supabaseClient');
 
 exports.createOrders = async (req, res) => {

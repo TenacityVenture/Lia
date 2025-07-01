@@ -1,6 +1,6 @@
 "use client"
 
-import type { Metadata } from "next"
+//import type { Metadata } from "next"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,20 +24,16 @@ import {
 import Link from "next/link"
 import Footer from "@/components/footer"
 import { FormEvent } from "react"
-
-export const metadata: Metadata = {
-  title: "Support - Lia AI Assistant",
-  description: "Get help with Lia AI Assistant. FAQs, contact support, and comprehensive help resources.",
-}
+import { useEffect } from "react"
 
 const faqs = [
   {
     category: "Getting Started",
     questions: [
       {
-        question: "How do I install the Lia AI Assistant extension?",
+        question: "How do I install the LinkedIn Intelligent Assistant extension?",
         answer:
-          "You can install Lia from the Chrome Web Store by searching for 'Lia AI Assistant' and clicking 'Add to Chrome'. Alternatively, visit our installation page for detailed step-by-step instructions.",
+          "You can install Lia from the Chrome Web Store by searching for 'LinkedIn Intelligent Assistant' and clicking 'Add to Chrome'. Alternatively, visit our installation page for detailed step-by-step instructions.",
       },
       {
         question: "Do I need to create an account to use Lia?",
@@ -214,6 +210,25 @@ async function handleSendMessage(e: FormEvent<HTMLFormElement>) {
 }
 
 export default function SupportPage() {
+
+  // update the document title and description
+  useEffect(() => {
+    document.title = "Support - LinkedIn Intelligent Assistant"
+    const metaDescription = document.querySelector('meta[name="description"]')
+    if (metaDescription) {
+      metaDescription.setAttribute(
+        "content",
+        "Get help with Lia AI Assistant. FAQs, contact support, and comprehensive help resources."
+      )
+    } else {
+      const meta = document.createElement("meta")
+      meta.name = "description"
+      meta.content =
+        "Get help with Lia AI Assistant. FAQs, contact support, and comprehensive help resources."
+      document.head.appendChild(meta)
+    }
+  }, [])
+
   return (
     <>
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">

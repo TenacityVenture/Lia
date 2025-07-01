@@ -9,7 +9,7 @@ exports.getCurrentUser = async (req, res) => {
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, name, username, email, linkedin_handle, profile_picture_url')
+    .select('id, name, username, email, linkedin_handle, profile_picture_url, plan, plan_started_at, plan_expires_at')
     .eq('id', userId)
     .single();
 

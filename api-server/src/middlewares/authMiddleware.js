@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const { message } = require('../controllers/chatController');
 require('dotenv').config();
 
 const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET || 'a_very_secure_jwt_secret';
@@ -57,7 +58,7 @@ const checkPlan = (requiredPlan = 'free') => {
     const now = new Date();
 
     if (!user || !user.plan) {
-      return res.status(401).json({ error: 'Unauthorized or missing plan' });
+      return res.status(401).json({ error: 'Unauthorized or missing plan', message: 'User plan not found' });
     }
 
     const tiers = ['free', 'standard', 'pro'];
@@ -79,12 +80,12 @@ const checkPlan = (requiredPlan = 'free') => {
 
     // 4. If expired, deny
     if (isExpired) {
-      return res.status(403).json({ error: 'Your plan has expired. Please upgrade.' });
+      return res.status(403).json({ error: 'Your expired.', message: 'Plan expired. Please upgrade.' });
     }
 
     // 5. If user's plan is below required level, deny
     if (currentLevel < requiredLevel) {
-      return res.status(403).json({ error: `This action requires a ${requiredPlan} plan.` });
+      return res.status(403).json({ error: `${requiredPlan} plan required`, message: `This action requires a ${requiredPlan} plan. Please upgrade.` });
     }
 
     // 6. Pass through

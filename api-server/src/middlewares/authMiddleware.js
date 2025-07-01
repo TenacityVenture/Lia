@@ -76,4 +76,4 @@ const checkPlan = (requiredPlan = 'free') => {
 };
 
 
-module.exports = { authenticate, getPaypalAccessToken, checkPlan };
+module.exports = { authenticate, checkPlan };

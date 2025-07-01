@@ -1,120 +1,112 @@
-import got from got
+const { getPaypalAccessToken } = require('../middlewares/authMiddleware');
+const supabase = require('../utils/supabaseClient');
 
-/**
- * 
- * @param {Object} req 
- * @param {Object} res 
- * * Creates a new PayPal order with the items in the cart.
- * * The request body should contain a cart array with items.
- * * Each item should have a name, price, and quantity.
- * * Example request body:
- * * {
- * *   "cart": [
- * *     {
- * *       "name": "Item 1",
- * *       "price": "10.00",
- * *       "quantity": 1
- * *     },
- * *   ]
- * * }
- * @returns 
- */
 exports.createOrders = async (req, res) => {
-  // Validate request body
-  // ensure that req.body is an object and has a cart array with at least one item
+
   if (!req.body || !Array.isArray(req.body.cart) || req.body.cart.length === 0) {
     return res.status(400).json({ error: 'Invalid request body. Cart must be an array with at least one item.' });
   }
 
-  // ensure that each item in the cart has a name, price, and quantity
   for (const item of req.body.cart) {
     if (!item.name || !item.price || !item.quantity) {
       return res.status(400).json({ error: 'Each item in the cart must have a name, price, and quantity.' });
     }
-    // ensure that price is a valid number
     if (isNaN(item.price) || parseFloat(item.price) <= 0) {
       return res.status(400).json({ error: 'Price must be a valid positive number.' });
     }
-    // ensure that quantity is a valid integer greater than 0
     if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
       return res.status(400).json({ error: 'Quantity must be a valid integer greater than 0.' });
     }
   }
 
   try {
-    // Get access token from PayPal
-    // retrieves access token from PayPal for subsequent API calls
     const accessToken = await getPaypalAccessToken();
     if (!accessToken) {
       throw new Error('Failed to retrieve access token from PayPal');
     }
-    // Create a new order with the items in the cart
-    // The order is created with the intent to capture the payment immediately
-    const response = await got.post(`${process.env.PAYPAL_BASE_URL}/v2/checkout/orders`, {
+
+    const body = {
+      intent: 'CAPTURE',
+      purchase_units:
+        req.body.cart.map(item => ({
+          amount: {
+            currency_code: 'USD',
+            value: item.price,
+            breakdown: {
+              item_total: {
+                currency_code: 'USD',
+                value: item.price,
+              },
+            },
+          },
+          items: [{
+            name: item.name,
+            unit_amount: {
+              currency_code: 'USD',
+              value: item.price,
+            },
+            quantity: item.quantity.toString(),
+          }],
+        })),
+      payment_source: {
+        paypal: {
+          experience_context: {
+            payment_method_preference: 'IMMEDIATE_PAYMENT_REQUIRED',
+            payment_method_selected: 'PAYPAL',
+            brand_name: 'Local Store',
+            locale: 'en-US',
+            user_action: 'PAY_NOW',
+            shipping_preference: 'NO_SHIPPING',
+            return_url: `${process.env.PAYPAL_REDIRECT_BASE_URL}/success`,
+            cancel_url: `${process.env.PAYPAL_REDIRECT_BASE_URL}/cancel`,
+          },
+        },
+      },
+    };
+
+    const response = await fetch(`${process.env.PAYPAL_BASE_URL}/v2/checkout/orders`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`,
       },
-      json: {
-        intent: 'CAPTURE',
-        purchase_units:
-            req.body.cart.map(item => ({
-            amount: {
-              currency_code: 'USD',
-              value: item.price,
-              breakdown: {
-                item_total: {
-                  currency_code: 'USD',
-                  value: item.price,
-                },
-              },
-            },
-            items: [{
-              name: item.name,
-              unit_amount: {
-                currency_code: 'USD',
-                value: item.price,
-              },
-              quantity: item.quantity.toString(),
-            }],
-          })),
-        payment_source: {
-          paypal: {
-            experience_context: {
-              payment_method_preference: 'IMMEDIATE_PAYMENT_REQUIRED',
-              payment_method_selected: 'PAYPAL',
-              brand_name: 'Local Store',
-              locale: 'en-US',
-              user_action: 'PAY_NOW',
-              shipping_preference: 'NO_SHIPPING',
-              return_url: `${process.env.PAYPAL_REDIRECT_BASE_URL}/success`,
-              cancel_url: `${process.env.PAYPAL_REDIRECT_BASE_URL}/cancel`,
-            },
-          },
-        },
-      },
+      body: JSON.stringify(body),
     });
 
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`PayPal API error: ${response.status} ${errorBody}`);
+    }
+
+    const orderData = await response.json();
+    if (!orderData.id) {
+      throw new Error('Order ID not found in PayPal response');
+    }
+
+    // Store each cart item as a separate order in Supabase
+    const item = req.body.cart[0];
+    const { data, error } = await supabase.from('orders').insert({
+      plan: (item.planKey === 'starter' ? 'standard' : item.planKey === 'professional' ? 'pro' : item.planKey) || '',
+      paypal_order_id: orderData.id,
+      user_id: req.user.sub, // User id is available in request
+      amount: item.price * item.quantity,
+      status: 'created',
+      description: item.description || ''
+    });
     
-    const orderData = JSON.parse(response.body);
+    if (error) {
+      throw new Error(`Failed to insert order for item ${item.name}: ${error.message}`);
+    }
+
+    console.log(`Order created with ID: ${orderData.id}`);
+
     res.status(201).json({ id: orderData.id });
-    
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 }
 
-/**
- * 
- * @param {Object} req 
- * @param {Object} res 
- * @param {string} req.params.paymentId - The ID of the order to capture.
- * * Captures an order by its payment ID.
- * * @example
- * * POST /api/paypal/orders/capture/:paymentId
- * * The paymentId is the ID of the order to capture.
- * @returns 
- */
 exports.captureOrder = async (req, res) => {
   const { paymentId } = req.params;
   if (!paymentId) {
@@ -126,18 +118,57 @@ exports.captureOrder = async (req, res) => {
     if (!accessToken) {
       throw new Error('Failed to retrieve access token from PayPal');
     }
-    const response = await got.post(`${process.env.PAYPAL_BASE_URL}/v2/checkout/orders/${paymentId}/capture`, {
+
+    const response = await fetch(`${process.env.PAYPAL_BASE_URL}/v2/checkout/orders/${paymentId}/capture`, {
+      method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${accessToken}`,
       },
-      responseType: 'json',
     });
 
-    if (!response || !response.body) {
-      throw new Error('No response received from PayPal');
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`PayPal API error: ${response.status} ${errorBody}`);
     }
-    const captureData = response.body;
+
+    const captureData = await response.json();
+
+    if (!captureData.id) {
+      throw new Error('Capture ID not found in PayPal response');
+    }
+
+    console.log(`Payment captured:`);
+    // update the order status in Supabase
+    const { data, error } = await supabase.from('orders').update({
+      status: 'completed',
+      paypal_order_id: captureData.id,
+      currency: captureData.payer?.address?.country_code || 'USD',
+      metadata: captureData.payer || {},
+    }).eq('paypal_order_id', paymentId).select().single();
+
+    // get the user associated with the order and update their plan
+    if (data) {
+      console.log('data', data)
+      const userId = data.user_id;
+      const { error: userError } = await supabase.from('users')
+        .update({
+          plan: data.plan,
+          plan_started_at: new Date(),
+          plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        })
+        .eq('id', userId);
+
+      if (userError) {
+        throw new Error(`Failed to update user plan: ${userError.message}`);
+      }
+
+      console.log(`User plan updated for user ID: ${userId}`);
+    }
+
+    if (error) {
+      throw new Error(`Failed to update order status: ${error.message}`);
+    }
     res.status(200).json(captureData);
   } catch (error) {
     res.status(500).json({ error: error.message });

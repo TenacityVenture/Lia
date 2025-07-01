@@ -129,7 +129,7 @@ exports.message = async (req, res) => {
       const titlePrompt = `Generate a concise title for a LinkedIn chat based on this message: "${message}". Maximum 4 words. Return only the title without any quotes or additional text.`;
       
       const { choices } = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4.1',
         messages: [{ role: 'system', content: titlePrompt }],
       });
 
@@ -163,7 +163,7 @@ exports.message = async (req, res) => {
         // - use \`\`\`code\`\`\` for key contents like summaries, posts content or comments suggestions - include proper line breaks withing the code block
       });
     const openaiRes = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4.1',
       messages: messages,
     });
 

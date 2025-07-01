@@ -3,8 +3,7 @@ const dotenv = require('dotenv');
 const { authenticate, getPaypalAccessToken } = require('../middlewares/authMiddleware');
 const { 
     createOrders, 
-    captureOrder,
-    capturePaymentCompleted
+    captureOrder
  } = require('../controllers/paypalController');
 dotenv.config();
 
@@ -33,23 +32,5 @@ router.post('/orders', authenticate, createOrders)
 // GET /api/paypal/orders/capture/:paymentId
 // The paymentId is the ID of the order to capture
 router.get('/orders/capture/:paymentId', authenticate, captureOrder);
-
-// capture payment completed via PayPal webhook
-// This endpoint captures the payment completed via PayPal webhook
-// POST /api/paypal/webhook
-// The request body should contain the webhook event data
-// Example request body:
-// {
-//   "event_type": "PAYMENT.CAPTURE.COMPLETED",
-//   "resource": {
-//     "id": "PAY-1234567890",
-//     "status": "COMPLETED",
-//     "amount": {
-//       "currency_code": "USD",
-//       "value": "10.00"
-//     },
-//     "invoice_id": "INV-1234567890"
-//   }
-// }
 
 module.exports = router;

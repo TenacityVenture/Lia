@@ -54,7 +54,7 @@ const planDetails = {
   },
 }
 
-export function CheckoutButton({ plan, email, children, className, variant = "default" }: CheckoutButtonProps) {
+export function CheckoutButton({ plan, email, className }: CheckoutButtonProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   const selectedPlan = planDetails[plan]

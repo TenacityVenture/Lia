@@ -206,7 +206,7 @@ async function handleSendMessage(e: FormEvent<HTMLFormElement>) {
     // Optionally show a success message or reset the form
     form.reset()
     alert("Your message has been sent. We'll get back to you soon, via email.")
-  } catch (error) {
+  } catch {
     alert("There was an error sending your message. Please try again later.")
   }
 }

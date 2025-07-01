@@ -1,4 +1,5 @@
 const supabase = require('../utils/supabaseClient');
+const { message } = require('./chatController');
 
 /**
  * Handles logging in a user with their email and password.
@@ -13,7 +14,7 @@ const loginUser = async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-        return res.status(400).json({ error: "Email and password are required" });
+        return res.status(400).json({ error: "Email and password are required", message: "Email and password are required" });
     }
 
     // sign in with Supabase
@@ -24,7 +25,7 @@ const loginUser = async (req, res) => {
 
     // checks if there was an error during sign in
     if (error) {
-        return res.status(401).json({ error: "Invalid credentials" });
+        return res.status(401).json({ error: "Invalid credentials", message: error.message });
     }
 
     const accessToken = data.session.access_token;
@@ -69,7 +70,7 @@ const registerUser = async (req, res) => {
     }
   });
 
-  if (error) return res.status(400).json({ error: 'Registration failed', details: error.message });
+  if (error) return res.status(400).json({ error: 'Registration failed', message: error.message });
 
   const user = data.user;
 
@@ -106,7 +107,7 @@ const registerUser = async (req, res) => {
   const refreshToken = data.session.refresh_token;
 
   if (!accessToken || !refreshToken) {
-    return res.status(401).json({ error: 'Token generation failed' });
+    return res.status(401).json({ error: 'Token generation failed', message: 'Failed to generate access or refresh token' });
   }
 
   // We set the refresh token in a secure cookie (just like we did in loginUser)
@@ -152,7 +153,7 @@ const refreshAccessToken = async (req, res) => {
 
   // If there's no cookie, the client isn't allowed to refresh — simple as that
   if (!refreshToken) {
-    return res.status(401).json({ error: 'Refresh token missing' });
+    return res.status(401).json({ error: 'Refresh token missing', message: 'No refresh token provided in cookies or body' });
   }
 
   // Asking Supabase to refresh the session using the token from our cookie
@@ -162,7 +163,7 @@ const refreshAccessToken = async (req, res) => {
 
   if (error || !data.session) {
     // If Supabase fails, the token is probably expired, revoked or has bee used already
-    return res.status(error?.status || 403).json({ error: error?.message || 'Invalid or expired refresh token' });
+    return res.status(error?.status || 403).json({ error: error?.message || 'Invalid or expired refresh token', message: 'Invalid or expired refresh token' });
   }
 
   const newAccessToken = data.session.access_token;
@@ -221,7 +222,7 @@ const syncOAuthUser = async (req, res) => {
   const newRefreshToken = req.query.refresh_token;
   
   if (!newRefreshToken) {
-    return res.status(400).json({ error: 'Failed to get session' });
+    return res.status(400).json({ error: 'Failed to get session', message: 'No refresh token provided' });
   }
 
   res.cookie('refresh_token', newRefreshToken, {
@@ -281,7 +282,7 @@ const syncGoogleOAuthUser = async (req, res) => {
   const newRefreshToken = req.query.refresh_token;
   
   if (!newRefreshToken) {
-    return res.status(400).json({ error: 'Failed to get session' });
+    return res.status(400).json({ error: 'Failed to get session', message: 'No refresh token provided' });
   }
 
   res.cookie('refresh_token', newRefreshToken, {
@@ -357,7 +358,7 @@ const changePassword = async (req, res) => {
   });
 
   if (error) {
-    return res.status(500).json({ error: 'Failed to update password', details: error.message });
+    return res.status(500).json({ error: 'Failed to update password', message: error.message });
   }
 
   // Supabase will invalidate the refresh token after password change

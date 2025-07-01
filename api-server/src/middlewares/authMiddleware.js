@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { message } = require('../controllers/chatController');
+const supabase = require('../utils/supabaseClient');
 require('dotenv').config();
 
 const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET || 'a_very_secure_jwt_secret';
@@ -57,20 +57,33 @@ const checkPlan = (requiredPlan = 'free') => {
     const user = req.user;
     const now = new Date();
 
-    if (!user || !user.plan) {
+    // Check if user is authenticated
+    if (!user) {
       return res.status(401).json({ error: 'Unauthorized or missing plan', message: 'User plan not found' });
     }
 
+    // get the associate user in the users table
+    // which has the plan field
+    const { data: userData, error } = await supabase // actual user in users table
+      .from('users')
+      .select('plan, plan_expires_at')
+      .eq('id', user.sub) // assuming user.sub is the user ID
+      .single();
+    
+    if (error || !userData || userData.length === 0) {
+      return res.status(401).json({ error: 'Unauthorized or missing plan', message: 'User plan not found in database' });
+    }
+
     const tiers = ['free', 'standard', 'pro'];
-    const currentLevel = tiers.indexOf(user.plan);
+    const currentLevel = tiers.indexOf(userData.plan);
     const requiredLevel = tiers.indexOf(requiredPlan);
 
     // 1. Expired plan?
-    const isExpired = user.plan_expires_at && new Date(user.plan_expires_at) < now;
+    const isExpired = userData.plan_expires_at && new Date(userData.plan_expires_at) < now;
 
     // 2. Trial logic: if free + not expired + requiredPlan is standard
     const isTrialValid = (
-      user.plan === 'free' &&
+      userData.plan === 'free' &&
       !isExpired &&
       requiredPlan === 'standard'
     );

@@ -24,7 +24,7 @@ const limiter = rateLimit({
 //app.use(cors());
 // Enable CORS for specific origins
 app.use(cors({
-  origin: ['https://www.getlia.live', `chrome-extension://${process.env.EXTENSION_ID}`, 'https://www.linkedin.com'], // production domain and extension ID
+  origin: ['https://www.getlia.live', `chrome-extension://${process.env.EXTENSION_ID}`, 'http://localhost:3000', 'https://www.linkedin.com'], // production domain and extension ID
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
   credentials: true}))
 app.use(cookieParser()); // To parse cookies
@@ -57,6 +57,10 @@ app.use('/api/chat', chatRoutes);
 // Paypal routes
 const paypalRoutes = require('./routes/paypalRoutes');
 app.use('/api/paypal', paypalRoutes);
+
+// support routes
+const supportRoutes = require('./routes/supportRoutes');
+app.use('/api/support', supportRoutes);
 
 // Default route
 app.get('/', (req, res) => {

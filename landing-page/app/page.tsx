@@ -9,6 +9,7 @@ import { DemoTabs } from '@/components/demo-tabs'
 import { TestimonialCard } from '@/components/testimonial-card'
 import { FaqItem } from '@/components/faq-item'
 import Footer from '@/components/footer'
+import { CheckoutButton } from '@/components/billing/checkout-button'
 
 export default function Home() {
   return (
@@ -160,6 +161,151 @@ export default function Home() {
               role="Startup Founder"
               avatar="/images/male3.jpg"
             />
+          </div>
+        </section>
+
+        {/* Pricing Section */}
+        <section id="pricing" className="container py-20 space-y-8">
+          <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">
+            <h2 className="font-heading text-3xl font-bold sm:text-4xl">Simple, Transparent Pricing</h2>
+            <p className="max-w-[42rem] leading-normal text-muted-foreground sm:text-xl sm:leading-8">
+              Choose the plan that fits your LinkedIn growth goals. Start with our free trial.
+            </p>
+          </div>
+
+          <div className="mx-auto grid max-w-5xl gap-8 lg:grid-cols-2">
+            <div className="relative rounded-lg border p-8 shadow-sm">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold">Starter</h3>
+                <div className="mt-4 flex items-baseline justify-center">
+                  <span className="text-4xl font-bold">$5</span>
+                  <span className="ml-2 text-muted-foreground">/month</span>
+                </div>
+                <p className="mt-4 text-muted-foreground">Perfect for getting started with AI-powered content</p>
+              </div>
+              <ul className="mt-8 space-y-3">
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="ml-3">Unlimited AI post suggestions</span>
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="ml-3">Smart comment assistance</span>
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="ml-3">Content improvement analysis</span>
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="ml-3">Email support</span>
+                </li>
+              </ul>
+              <CheckoutButton plan="starter" className="mt-8 w-full" variant="outline">
+                Start Free Trial
+              </CheckoutButton>
+            </div>
+
+            <div className="relative rounded-lg border-2 border-primary p-8 shadow-lg">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2">
+                <span className="rounded-full bg-primary px-4 py-1 text-sm font-medium text-primary-foreground">
+                  Most Popular
+                </span>
+              </div>
+              <div className="text-center">
+                <h3 className="text-2xl font-bold">Professional</h3>
+                <div className="mt-4 flex items-baseline justify-center">
+                  <span className="text-4xl font-bold">$20</span>
+                  <span className="ml-2 text-muted-foreground">/month</span>
+                </div>
+                <p className="mt-4 text-muted-foreground">Advanced AI features for serious LinkedIn growth</p>
+              </div>
+              <ul className="mt-8 space-y-3">
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="ml-3">Everything in Starter</span>
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="ml-3">Advanced AI models (GPT-4)</span>
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="ml-3">Content analytics dashboard</span>
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="ml-3">Priority support</span>
+                </li>
+                <li className="flex items-center">
+                  <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                  <span className="ml-3">Custom tone training</span>
+                </li>
+              </ul>
+              <CheckoutButton plan="professional" className="mt-8 w-full">
+                Start Pro Trial
+              </CheckoutButton>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              14-day free trial • No credit card required • Cancel anytime
+            </p>
           </div>
         </section>
 

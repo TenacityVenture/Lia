@@ -51,4 +51,46 @@ const getPaypalAccessToken = async () => {
   return data.access_token;
 }
 
+module.exports = function checkPlan(requiredPlan = 'free') {
+  return async (req, res, next) => {
+    const user = req.user;
+    const now = new Date();
+
+    if (!user || !user.plan) {
+      return res.status(401).json({ error: 'Unauthorized or missing plan' });
+    }
+
+    const tiers = ['free', 'standard', 'pro'];
+    const currentLevel = tiers.indexOf(user.plan);
+    const requiredLevel = tiers.indexOf(requiredPlan);
+
+    // 1. Expired plan?
+    const isExpired = user.plan_expires_at && new Date(user.plan_expires_at) < now;
+
+    // 2. Trial logic: if free + not expired + requiredPlan is standard
+    const isTrialValid = (
+      user.plan === 'free' &&
+      !isExpired &&
+      requiredPlan === 'standard'
+    );
+
+    // 3. If trial is valid, allow
+    if (isTrialValid) return next();
+
+    // 4. If expired, deny
+    if (isExpired) {
+      return res.status(403).json({ error: 'Your plan has expired. Please upgrade.' });
+    }
+
+    // 5. If user's plan is below required level, deny
+    if (currentLevel < requiredLevel) {
+      return res.status(403).json({ error: `This action requires a ${requiredPlan} plan.` });
+    }
+
+    // 6. Pass through
+    next();
+  };
+};
+
+
 module.exports = { authenticate, getPaypalAccessToken };

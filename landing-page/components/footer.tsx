@@ -107,9 +107,6 @@ export default function Footer () {
               <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">
                 Privacy
               </Link>
-              <Link href="/cookies" className="text-sm text-muted-foreground hover:text-foreground">
-                Cookies
-              </Link>
             </div>
           </div>
         </div>

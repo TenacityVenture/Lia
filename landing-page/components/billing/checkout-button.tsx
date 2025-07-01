@@ -5,15 +5,10 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Loader2 } from "lucide-react"
 import { PayPalScriptProvider, PayPalButtons } from "@paypal/react-paypal-js"
+import type { OnApproveData } from "@paypal/paypal-js" // Use PayPal's type
 
 // PayPal type definitions
-interface OnApproveData {
-  orderID: string
-  payerID?: string
-  paymentID?: string
-  billingToken?: string
-  facilitatorAccessToken?: string
-}
+// Removed custom OnApproveData interface to avoid type conflict
 
 interface PayPalButtonStyle {
   layout?: "vertical" | "horizontal"
@@ -219,7 +214,7 @@ export function CheckoutButton({ plan, email, children, className, variant = "de
     }
   }
 
-  const onApprove = async (data: OnApproveData): Promise<unknown> => {
+  const onApprove = async (data: OnApproveData): Promise<void> => {
     setIsLoading(true)
 
     if (!data.orderID) {
@@ -275,7 +270,8 @@ export function CheckoutButton({ plan, email, children, className, variant = "de
           }
           const retryData = await retryResponse.json()
           console.log("Order captured successfully on retry:", retryData)
-          return retryData
+          // No return value needed
+          return
         } catch (refreshError) {
           console.error("Error refreshing token:", refreshError)
           throw new Error("Failed to refresh access token")
@@ -290,7 +286,8 @@ export function CheckoutButton({ plan, email, children, className, variant = "de
 
       // Redirect to success page
       window.location.href = "/billing/complete"
-      return orderData
+      // No return value needed
+      return
     } catch (error) {
       console.error("Error capturing order:", error)
       throw error // Re-throw the error so PayPal can handle it

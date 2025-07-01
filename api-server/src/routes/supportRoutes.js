@@ -3,7 +3,7 @@ const dotenv = require('dotenv');
 const { authenticate } = require('../middlewares/authMiddleware');
 const { 
     sendMessage,
- } = require('../controllers/paypalController');
+ } = require('../controllers/supportController');
 dotenv.config();
 
 // Initialize the express router

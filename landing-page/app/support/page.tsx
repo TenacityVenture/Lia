@@ -21,6 +21,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import Footer from "@/components/footer"
+import { FormEvent } from "react"
 
 export const metadata: Metadata = {
   title: "Support - Lia AI Assistant",
@@ -184,6 +185,32 @@ const resources = [
   },
 ]
 
+async function handleSendMessage(e: FormEvent<HTMLFormElement>) {
+  e.preventDefault()
+  const form = e.currentTarget
+  const formData = new FormData(form)
+  const data = {
+    name: formData.get("name") as string,
+    email: formData.get("email") as string,
+    subject: formData.get("subject") as string,
+    priority: formData.get("priority") as string,
+    message: formData.get("message") as string,
+  }
+
+  try {
+    await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/support/message`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    })
+    // Optionally show a success message or reset the form
+    form.reset()
+    alert("Your message has been sent. We'll get back to you soon, via email.")
+  } catch (error) {
+    alert("There was an error sending your message. Please try again later.")
+  }
+}
+
 export default function SupportPage() {
   return (
     <>
@@ -267,7 +294,7 @@ export default function SupportPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form className="space-y-6">
+              <form className="space-y-6" onSubmit={handleSendMessage}>
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Name</label>
@@ -287,10 +314,10 @@ export default function SupportPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Priority</label>
                   <select className="w-full p-2 border border-gray-300 rounded-md">
-                    <option>Low - General question</option>
-                    <option>Medium - Feature request</option>
-                    <option>High - Technical issue</option>
-                    <option>Urgent - Service disruption</option>
+                    <option value="low">Low - General question</option>
+                    <option value="medium">Medium - Feature request</option>
+                    <option value="high">High - Technical issue</option>
+                    <option value="urgent">Urgent - Service disruption</option>
                   </select>
                 </div>
 
@@ -316,7 +343,7 @@ export default function SupportPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-8 text-center">Frequently Asked Questions</h2>
 
           <Tabs defaultValue="Getting Started" className="max-w-4xl mx-auto">
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5">
+            <TabsList className="grid w-full h-20 lg:h-auto grid-cols-2 lg:grid-cols-5">
               {faqs.map((category) => (
                 <TabsTrigger key={category.category} value={category.category} className="text-xs lg:text-sm">
                   {category.category}

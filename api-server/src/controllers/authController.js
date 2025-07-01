@@ -90,7 +90,10 @@ const registerUser = async (req, res) => {
     username: generatedUsername,
     linkedin_handle: null,
     profile_picture_url: null,
-    social_provider: 'email'
+    social_provider: 'email',
+    plan: 'free',
+    plan_started_at: new Date(),
+    plan_expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
   }, { onConflict: 'id' });
 
   /**

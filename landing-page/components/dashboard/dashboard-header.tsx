@@ -25,7 +25,9 @@ export default function DashboardHeader() {
     username: "",
     email: "",
     linkedin_handle: "",
-    profile_picture_url: ""
+    profile_picture_url: "",
+    plan: "",
+    plan_expires_at: ""
   })
 
   // Get the current pathname to highlight the active link
@@ -92,7 +94,16 @@ export default function DashboardHeader() {
             >
               Profile
             </Link>
+            <Link
+              href="/pricing"
+              className={`transition-colors hover:text-foreground ${
+                pathname === "/dashboard/profile" ? "text-foreground font-medium" : "text-muted-foreground"
+              }`}
+            >
+              Pricing
+            </Link>
           </nav>
+          <p className="font-bold ml-5">You are on <span className="text-blue-500">{user.plan}</span> plan</p>
         </div>
         <div className="flex items-center gap-4">
           <DropdownMenu>
@@ -124,8 +135,37 @@ export default function DashboardHeader() {
                   <span>Profile</span>
                 </Link>
               </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                <Link href="/pricing" className="flex items-center cursor-pointer">
+                  <span className="mr-2 h-4 w-4">💳</span>
+                  <span>Pricing</span>
+                </Link>
+                </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="cursor-pointer">
+                <DropdownMenuItem className="cursor-default">
+                <span className="flex flex-col">
+                  <span className="font-medium">Plan expires</span>
+                  <span className="text-xs text-muted-foreground">
+                  {user.plan_expires_at
+                    ? (() => {
+                      const expires = new Date(user.plan_expires_at)
+                      const now = new Date()
+                      const diff = expires.getTime() - now.getTime()
+                      if (diff <= 0) return "Expired"
+                      const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+                      if (days > 1) return `${days} days`
+                      if (days === 1) return "1 day"
+                      const hours = Math.floor(diff / (1000 * 60 * 60))
+                      if (hours > 1) return `${hours} hours`
+                      if (hours === 1) return "1 hour"
+                      return "Less than 1 hour"
+                    })()
+                    : "Unknown"}
+                  </span>
+                </span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="cursor-pointer">
                 <LogOut className="mr-2 h-4 w-4" />
                 <Link href={"/logout"} className="w-full h-full">Log out</Link>
               </DropdownMenuItem>

@@ -59,35 +59,6 @@ export function CheckoutButton({ plan, email, children, className, variant = "de
 
   const selectedPlan = planDetails[plan]
 
-  // For free trial, handle differently
-  const handleFreeTrialCheckout = async () => {
-    setIsLoading(true)
-    try {
-      // Handle free trial signup logic here
-      const response = await fetch("/api/free-trial", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, plan }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to start free trial")
-      }
-
-      const data = await response.json()
-      console.log("Free trial started:", data)
-
-      // Redirect to success page
-      window.location.href = "/welcome"
-    } catch (error) {
-      console.error("Error starting free trial:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   // PayPal configuration
   const initialOptions = {
     clientId: process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || "",
@@ -310,22 +281,6 @@ export function CheckoutButton({ plan, email, children, className, variant = "de
     
     // redirect to cancellation page
     window.location.href = '/billing/cancel'
-  }
-
-  // For free trial, show regular button
-  if (plan === "free-trial") {
-    return (
-      <Button onClick={handleFreeTrialCheckout} disabled={isLoading} className={className} variant={variant}>
-        {isLoading ? (
-          <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            Starting Trial...
-          </>
-        ) : (
-          children
-        )}
-      </Button>
-    )
   }
 
   // For paid plans, show PayPal buttons

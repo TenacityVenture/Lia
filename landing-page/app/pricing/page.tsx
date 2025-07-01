@@ -17,7 +17,9 @@ import {
   MessageSquare,
   FileText,
   CreditCard,
+  ArrowLeft
 } from "lucide-react"
+import Footer from "@/components/footer"
 
 export const metadata: Metadata = {
   title: "Pricing - LIA",
@@ -25,24 +27,6 @@ export const metadata: Metadata = {
 }
 
 const plans = [
-  {
-    name: "Free Trial",
-    price: "$0",
-    period: "for 14 days",
-    description: "Try all features of LIA for free. No credit card required.",
-    features: [
-      "Unlimited AI post suggestions",
-      "Smart comment assistance",
-      "Content improvement analysis",
-      "Multiple tone options",
-      "Email support",
-    ],
-    planKey: "free-trial" as const,
-    popular: false,
-    icon: Zap,
-    color: "text-green-600",
-    bgColor: "bg-green-50",
-  },
   {
     name: "Starter",
     price: "$5",
@@ -137,9 +121,16 @@ const faqs = [
 
 export default function PricingPage() {
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       {/* Header */}
       <div className="border-b bg-white/80 backdrop-blur-sm">
+      <Button asChild variant="ghost" className="mt-10 mx-auto container text-gray-600 hover:text-gray-900">
+        <Link href="/">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Home
+        </Link>
+      </Button>
         <div className="container mx-auto px-4 py-12">
           <div className="text-center max-w-3xl mx-auto">
             <Badge variant="secondary" className="mb-4 bg-blue-100 text-blue-800">
@@ -190,10 +181,10 @@ export default function PricingPage() {
               <CardContent className="space-y-6">
                 <CheckoutButton
                   plan={plan.planKey}
-                  className={`w-full ${plan.popular ? "bg-blue-600 hover:bg-blue-700" : ""}`}
+                  className={`w-full`}
                   variant={plan.popular ? "default" : "outline"}
                 >
-                  {plan.planKey === "free-trial" ? "Start Free Trial" : "Get Started"}
+                  Get Started
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </CheckoutButton>
 
@@ -317,5 +308,7 @@ export default function PricingPage() {
         </Card>
       </div>
     </div>
+    <Footer />
+    </>
   )
 }

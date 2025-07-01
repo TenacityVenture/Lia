@@ -36,6 +36,9 @@ export default function Home() {
             <Link href="#testimonials" className="text-sm font-medium transition-colors hover:text-primary">
               Testimonials
             </Link>
+            <Link href="#pricing" className="text-sm font-medium transition-colors hover:text-primary">
+              Pricing
+            </Link>
             <Link href="#faq" className="text-sm font-medium transition-colors hover:text-primary">
               FAQ
             </Link>

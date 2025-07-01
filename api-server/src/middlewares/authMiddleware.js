@@ -51,7 +51,7 @@ const getPaypalAccessToken = async () => {
   return data.access_token;
 }
 
-module.exports = function checkPlan(requiredPlan = 'free') {
+const checkPlan = (requiredPlan = 'free') => {
   return async (req, res, next) => {
     const user = req.user;
     const now = new Date();
@@ -93,4 +93,4 @@ module.exports = function checkPlan(requiredPlan = 'free') {
 };
 
 
-module.exports = { authenticate, getPaypalAccessToken };
+module.exports = { authenticate, getPaypalAccessToken, checkPlan };

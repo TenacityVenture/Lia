@@ -47,6 +47,15 @@ select, input[type="checkbox"] {
   border: none;
 }
 
+#plan {
+  font-size: 14px;
+  color: #087cf0;
+  margin-left: 8px;
+  position: absolute;
+  top: 5px;
+  right: 0px;
+}
+
 footer {
   text-align: center;
   font-size: 12px;

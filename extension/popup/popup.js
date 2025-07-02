@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const unauth = document.getElementById('unauthenticated');
   const auth = document.getElementById('authenticated');
+  const plan = document.getElementById('plan');
 
   const { access_token, refresh_token } = await chrome.storage.local.get(['access_token', 'refresh_token']);
 
@@ -34,6 +35,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const userData = await me.json();
   auth.style.display = 'flex';
   unauth.style.display = 'none';
+
+  // Set the user's plan
+  plan.textContent = userData.plan ? `${userData.plan}`.toUpperCase() : 'Free';
 
   // Show usage count
   const usage = await fetch('https://api.getlia.live/api/usage/stats', {

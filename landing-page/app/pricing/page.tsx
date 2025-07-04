@@ -126,9 +126,9 @@ export default function PricingPage() {
       {/* Header */}
       <div className="border-b bg-white/80 backdrop-blur-sm">
       <Button asChild variant="ghost" className="mt-10 mx-auto container text-gray-600 hover:text-gray-900">
-        <Link href="/">
+        <Link href="/dashboard">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Back to Home
+          Back to Dashboard
         </Link>
       </Button>
         <div className="container mx-auto px-4 py-12">

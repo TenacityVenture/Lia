@@ -212,7 +212,8 @@ const syncOAuthUser = async (req, res) => {
       username: null,
       linkedin_handle: null,
       profile_picture_url: picture || null,
-      social_provider: 'linkedin'
+      social_provider: 'linkedin',
+      plan_expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
     });
   }
 
@@ -272,7 +273,8 @@ const syncGoogleOAuthUser = async (req, res) => {
       username: null,
       linkedin_handle: null,
       profile_picture_url: picture || null,
-      social_provider: 'google'
+      social_provider: 'google',
+      plan_expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
     });
   }
 

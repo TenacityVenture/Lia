@@ -139,7 +139,6 @@ export default function Home() {
       </header>
 
       <main className="flex-1">
-        <h2>{user ? ('Welcome' + user) : '' }</h2>
         {/* Hero Section */}
         <section className="container py-24 space-y-8 md:py-32">
           <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">

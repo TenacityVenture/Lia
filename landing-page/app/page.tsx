@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
+import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { HeroDemo } from '@/components/hero-demo'
@@ -11,7 +12,74 @@ import { FaqItem } from '@/components/faq-item'
 import Footer from '@/components/footer'
 import { CheckoutButton } from '@/components/billing/checkout-button'
 
+// check if access_token is still valid by getting the user
+async function getMe(token: string) {
+  const me = await fetch('https://api.getlia.live/api/user/me', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  return me;
+}
+
+
+// refreshToken function
+const refreshToken = async () => {
+  try {
+    const response = await fetch('https://api.getlia.live/api/auth/refresh-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // include credentials to allow cookies to be sent
+      credentials: 'include',
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to refresh token');
+    }
+
+    // send token to the chrome extension
+    if (data.access_token && data.refresh_token) {
+      
+      window.postMessage({ type: "SEND_JWTs", 
+        access_token: data.access_token, 
+        refresh_token: data.refresh_token}, "*") // * means all domains (shoule be restricted to lia extension id)
+
+      // Save tokens to localStorage
+      localStorage.setItem("lia_access_token", data.access_token)
+    }
+
+    return data.access_token;
+    
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    return null;
+  }
+}
+
 export default function Home() {
+  const [user, setUser] = useState({})
+
+  // Check if the user is logged in by checking if the access token is in localStorage
+  const accessToken = localStorage.getItem('lia_access_token');
+  if (accessToken) {
+    // If the access token exists, get the user data
+    getMe(accessToken).then(data => {
+      if (data) {
+        setUser(data);
+      } else {
+        // If the access token is invalid, refresh it
+        refreshToken().then(newToken => {
+          if (newToken) {
+            getMe(newToken).then(userData => setUser(userData));
+          }
+        });
+      }
+    });
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -48,9 +116,14 @@ export default function Home() {
           </nav>
           <div className="flex items-center gap-4">
             <Button asChild variant="outline" size="sm">
-              <Link href="/signup">
-                Get Started
-              </Link>
+              {user ? (
+                <Link href="/dashboard">
+                  Dashboard
+                </Link>) : (
+                <Link href="/signup">
+                  Get Started
+                </Link>
+              )}
             </Button>
             <Button asChild size="sm" className="hidden sm:flex">
               <Link href="https://chrome.google.com/webstore" target="_blank">

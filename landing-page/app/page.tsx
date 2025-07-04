@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { HeroDemo } from '@/components/hero-demo'
@@ -64,23 +64,25 @@ const refreshToken = async () => {
 export default function Home() {
   const [user, setUser] = useState({})
 
-  // Check if the user is logged in by checking if the access token is in localStorage
-  const accessToken = localStorage.getItem('lia_access_token');
-  if (accessToken) {
-    // If the access token exists, get the user data
-    getMe(accessToken).then(data => {
-      if (data) {
-        setUser(data);
-      } else {
-        // If the access token is invalid, refresh it
-        refreshToken().then(newToken => {
-          if (newToken) {
-            getMe(newToken).then(userData => setUser(userData));
-          }
-        });
-      }
-    });
-  }
+  useEffect(() => {
+    // Check if the user is logged in by checking if the access token is in localStorage
+    const accessToken = localStorage.getItem('lia_access_token');
+    if (accessToken) {
+      // If the access token exists, get the user data
+      getMe(accessToken).then(data => {
+        if (data) {
+          setUser(data);
+        } else {
+          // If the access token is invalid, refresh it
+          refreshToken().then(newToken => {
+            if (newToken) {
+              getMe(newToken).then(userData => setUser(userData));
+            }
+          });
+        }
+      });
+    }
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col">

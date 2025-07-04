@@ -112,9 +112,9 @@ function CancelContent() {
             </div>
 
             <Button asChild variant="ghost" className="w-full text-gray-600 hover:text-gray-900">
-              <Link href="/">
+              <Link href="/dashboard">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Home
+                Back to Dashboard
               </Link>
             </Button>
           </div>

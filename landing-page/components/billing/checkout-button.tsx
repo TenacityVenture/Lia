@@ -94,7 +94,7 @@ export function CheckoutButton({ plan, email, className }: CheckoutButtonProps) 
 
     const userData = await response.json()
     console.log(userData)
-    if (userData.plan && userData.plan_expires_at && new Date(userData.plan_expires_at) > new Date()) {
+    if (userData.plan && userData.plan != 'free' && userData.plan_expires_at && new Date(userData.plan_expires_at) > new Date()) {
       // User already has an active subscription
       console.log("User already has an active subscription:", userData.plan)
       window.location.href = `/billing/complete?plan=${userData.plan}&status=active`

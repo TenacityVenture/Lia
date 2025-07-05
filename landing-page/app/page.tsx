@@ -62,21 +62,37 @@ const refreshToken = async () => {
 }
 
 export default function Home() {
-  const [user, setUser] = useState({})
+  const [user, setUser] = useState({
+    id: '',
+    name: '',
+    username: '',
+    email: '',
+    linkedin_handle: '',
+    profile_picture_url: '',
+    plan: '',
+    plan_started_at: '',
+    plan_expires_at: '',
+  })
 
   useEffect(() => {
     // Check if the user is logged in by checking if the access token is in localStorage
     const accessToken = localStorage.getItem('lia_access_token');
     if (accessToken) {
       // If the access token exists, get the user data
-      getMe(accessToken).then(data => {
-        if (data) {
+      getMe(accessToken).then(async response => {
+        if (response && response.ok) {
+          const data = await response.json();
           setUser(data);
         } else {
           // If the access token is invalid, refresh it
           refreshToken().then(newToken => {
             if (newToken) {
-              getMe(newToken).then(userData => setUser(userData));
+              getMe(newToken).then(async userResponse => {
+                if (userResponse && userResponse.ok) {
+                  const userData = await userResponse.json();
+                  setUser(userData);
+                }
+              });
             }
           });
         }
@@ -120,14 +136,15 @@ export default function Home() {
           </nav>
           <div className="flex items-center gap-4">
             <Button asChild variant="outline" size="sm">
-              {user ? (
+                {user && user.id ? (
                 <Link href="/dashboard">
                   Dashboard
-                </Link>) : (
+                </Link>
+                ) : (
                 <Link href="/signup">
                   Get Started
                 </Link>
-              )}
+                )}
             </Button>
             <Button asChild size="sm" className="hidden sm:flex">
               <Link href="https://chrome.google.com/webstore" target="_blank">

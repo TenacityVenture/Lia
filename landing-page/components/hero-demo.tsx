@@ -43,7 +43,7 @@ export function HeroDemo() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5, duration: 0.5 }}
-              className="absolute bottom-8 right-8 max-w-xs rounded-lg bg-white p-4 shadow-lg dark:bg-slate-800"
+              className="hidden sm:block absolute bottom-8 right-8 max-w-xs rounded-lg bg-white p-4 shadow-lg dark:bg-slate-800"
             >
               <div className="flex items-center gap-2 mb-2">
                 <Sparkles className="h-5 w-5 text-primary" />

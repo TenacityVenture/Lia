@@ -2,6 +2,7 @@ const supabase = require('../utils/supabaseClient');
 
 exports.getCurrentUser = async (req, res) => {
   const userId = req.user.sub;
+  console.log(req.user);
 
   if (!userId) {
     return res.status(400).json({ error: 'User ID is required' });
@@ -61,7 +62,15 @@ exports.updateProfile = async (req, res) => {
 };
 
 exports.getSubscription = async (req, res) => {
-  if (!req.user?.plan) {
+  const userId = req.user.sub;
+  
+  const { data, error } = await supabase
+    .from('users')
+    .select('plan, plan_expires_at')
+    .eq('id', userId)
+    .single();
+
+  if (error) {
     return res.status(400).json({ error: 'Failed to get user plan', details: error.message})
   }
 

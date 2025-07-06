@@ -1,3 +1,5 @@
+const supabase = require('../utils/supabaseClient');
+
 /**
  * 
  * @param {Object} req 

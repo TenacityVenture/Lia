@@ -13,6 +13,6 @@ router.post('/rewrite', authenticate, checkPlan('standard'), rewritePost);
 
 router.post('/suggest-reply', authenticate, checkPlan('standard'), suggestReply);
 
-router.post('/improve', checkPlan('standard'), authenticate, aiImprovePost);
+router.post('/improve', authenticate, checkPlan('standard'), aiImprovePost);
 
 module.exports = router;

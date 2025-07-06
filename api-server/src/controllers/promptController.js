@@ -17,7 +17,7 @@ exports.rewritePost = async (req, res) => {
   }
 
   try {
-    const {Content: rewritten, Usage: usage} = await openaiService.getCompletionPostRewrite(prompt);
+    const {Content: rewritten, Usage: usage} = await openaiService.getCompletionPostRewrite(req, prompt);
 
     // log usage to usage table in supabase
     await usageLogger.log({ 
@@ -48,7 +48,7 @@ exports.suggestReply = async (req, res) => {
   try {
     //const prompt = `Suggest a professional, thoughtful reply to this LinkedIn comment:\n\n"${comment_text}"`;
     const prompt = comment_text; // the comment text itself is the prompt -- structured in the extension
-    const {Content: suggestion, Usage: usage} = (await openaiService.getCompletion(prompt));
+    const {Content: suggestion, Usage: usage} = (await openaiService.getCompletion(req, prompt));
 
     // Log usage
     await usageLogger.log({
@@ -101,7 +101,7 @@ exports.aiImprovePost = async (req, res) => {
 
   try {
     // generate the AI response
-    const {Content: response, Usage: usage} = await openaiService.getCompletionPostImprovements(prompt);
+    const {Content: response, Usage: usage} = await openaiService.getCompletionPostImprovements(req, prompt);
     if (!response) {
       return res.status(400).json({ error: 'AI response is empty' });
     }

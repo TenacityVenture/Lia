@@ -61,15 +61,9 @@ exports.updateProfile = async (req, res) => {
 };
 
 exports.getSubscription = async (req, res) => {
-  const userId = req.user.sub;
-
-  const { data, error } = await supabase
-  .from('users')
-  .select('plan')
-  .eq('id', userId)
-  .single()
-
-  if (error) return res.status(400).json({ error: 'Failed to get user plan', details: error.message})
+  if (!req.user?.plan) {
+    return res.status(400).json({ error: 'Failed to get user plan', details: error.message})
+  }
 
   res.json({...data, isPro: data.plan === 'pro' ? true : false})
 }

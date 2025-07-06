@@ -1,4 +1,6 @@
 const OpenAI = require('openai');
+// getModel function to determine the OpenAI model based on user plan
+const { getModel } = require('../utils/helpers');
 require('dotenv').config();
 
 const openai = new OpenAI({
@@ -7,9 +9,9 @@ const openai = new OpenAI({
 
 exports.openai = openai; // Export the OpenAI instance for use in other modules
 
-exports.getCompletion = async (prompt) => {
+exports.getCompletion = async (req, prompt) => {
   const response = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: getModel(req), // Pass req to get the model based on user plan
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 500,
   });
@@ -31,9 +33,9 @@ exports.getCompletionSuggestPost = async (messages) => {
   return {"Content": completions, "Usage": response.usage};
 };
 
-exports.getCompletionPostImprovements = async (prompt) => {
+exports.getCompletionPostImprovements = async (req, prompt) => {
   const response = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: getModel(req), // Pass req
     messages: [
       {
         role: 'system',
@@ -62,9 +64,9 @@ exports.getCompletionPostImprovements = async (prompt) => {
 }
 
 
-exports.getCompletionPostRewrite = async (prompt) => {
+exports.getCompletionPostRewrite = async (req, prompt) => {
   const response = await openai.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: getModel(req), // Pass req
     messages: [
       {
         role: 'system',

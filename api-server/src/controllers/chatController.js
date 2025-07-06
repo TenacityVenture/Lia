@@ -130,7 +130,7 @@ exports.message = async (req, res) => {
       const titlePrompt = `Generate a concise title for a LinkedIn chat based on this message: "${message}". Maximum 4 words. Return only the title without any quotes or additional text.`;
       
       const { choices } = await openai.chat.completions.create({
-        model: getModel(req),
+        model: await getModel(req),
         messages: [{ role: 'system', content: titlePrompt }],
       });
 
@@ -197,12 +197,17 @@ exports.message = async (req, res) => {
         - Write a post inspired by the content
         - Provide comments, insights, or reaction prompts
         - or just general help with the referenced content, like rewriting or asking for details (like "what is this about?", "what is the main point?", "what are the key takeaways?", "how many likes does it have?", "who's the writer" etc.)
-        `
+        
+        Importantly, **avoid**:
+        - being overly creative or dramatic
+        - using emojis or Unicode characters unless specifically requested
+        
+        Just do you job and do it well.`
 
       });
-      
+
     const openaiRes = await openai.chat.completions.create({
-      model: getModel(req),
+      model: await getModel(req),
       messages: messages,
     });
 

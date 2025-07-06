@@ -49,7 +49,7 @@ exports.suggestReply = async (req, res) => {
   try {
     //const prompt = `Suggest a professional, thoughtful reply to this LinkedIn comment:\n\n"${comment_text}"`;
     const prompt = comment_text; // the comment text itself is the prompt -- structured in the extension
-    const {Content: suggestion, Usage: usage} = (await openaiService.getCompletion(req, prompt));
+    const {Content: suggestion, Usage: usage} = (await openaiService.getCompletionSuggestComment(req, prompt));
 
     // Log usage
     await usageLogger.log({

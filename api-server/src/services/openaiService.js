@@ -11,7 +11,7 @@ exports.openai = openai; // Export the OpenAI instance for use in other modules
 
 exports.getCompletion = async (req, prompt) => {
   const response = await openai.chat.completions.create({
-    model: getModel(req), // Pass req to get the model based on user plan
+    model: await getModel(req), // Pass req to get the model based on user plan
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 500,
   });
@@ -35,7 +35,7 @@ exports.getCompletionSuggestPost = async (messages) => {
 
 exports.getCompletionPostImprovements = async (req, prompt) => {
   const response = await openai.chat.completions.create({
-    model: getModel(req), // Pass req
+    model: await getModel(req), // Pass req
     messages: [
       {
         role: 'system',
@@ -66,7 +66,7 @@ exports.getCompletionPostImprovements = async (req, prompt) => {
 
 exports.getCompletionPostRewrite = async (req, prompt) => {
   const response = await openai.chat.completions.create({
-    model: getModel(req), // Pass req
+    model: await getModel(req), // Pass req
     messages: [
       {
         role: 'system',
@@ -104,7 +104,7 @@ exports.getCompletionPostRewrite = async (req, prompt) => {
 // assist with writing a message
 exports.getCompletionAiSendMessage = async (req, prompt) => {
   const response = await openai.chat.completions.create({
-    model: getModel(req), // Pass req
+    model: await getModel(req), // Pass req
     messages: [
       {
         role: 'system',
@@ -113,7 +113,7 @@ exports.getCompletionAiSendMessage = async (req, prompt) => {
             `
       },
       { 
-        role: 'user', 
+        role: 'user',
         content: prompt 
       }
     ], // conversation between user and AI

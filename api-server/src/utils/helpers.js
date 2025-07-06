@@ -7,7 +7,7 @@ const supabase = require('../utils/supabaseClient');
  * This function determines the OpenAI model to use based on the user's plan.
  * If the user has a 'pro' plan, it returns 'gpt-4.
  */
-exports.getModel = (req) => {
+exports.getModel = async (req) => {
     const userId = req.user.sub;
 
     const { data, error } = supabase

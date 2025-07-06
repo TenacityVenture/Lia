@@ -137,9 +137,9 @@ exports.aiSendMessage = async (req, res) => {
   }
 
   try {
-    let prompt = 'Here is a context of a LinkedIn user messaging: ' + context.messages.map(m => {
-      return `${m.time} : ${m.sender} : ${m.message}`; // Format each message as "role: message"
-    }).join('\n'); // Join messages into a single prompt
+    let prompt = 'Here is a context of a LinkedIn user messaging: || ' + context.messages.map(m => {
+      return `${m.time} : ${m.sender} : ${m.message} || `; // Format each message as "role: message"
+    }).join('\n'); // Join messages into a single prom
 
     prompt += `\n Suggest 3 LinkedIn messages to reply to the last message in the conversation.
     The messages should be relevant to the conversation and should not repeat the last message.`
@@ -151,20 +151,28 @@ exports.aiSendMessage = async (req, res) => {
     
     concise, relevant, and professional suggestions are preferred.
     Do not use markdown or HTML formatting, just plain text.
-    Do not use any special characters or formatting like **bold** or *italic*.`;
+    Do not use any special characters or formatting like **bold** or *italic*.
+    Avoid introducing new ideas or being overly creative.
+    Do not use emojis or Unicode characters.`;
   
     // generate the AI response
-    const {Content: suggestion, Usage: usage} = await openaiService.getCompletionAiSendMessage(req, context);
-    if (!response) {
+    const {Content: suggestion, Usage: usage} = await openaiService.getCompletionAiSendMessage(req, prompt);
+    if (!suggestion) {
       return res.status(400).json({ error: 'AI response is empty' });
+    }
+
+    // last message in the context is the one we are replying to
+    const lastMessage = context.messages[context.messages.length - 1];
+    if (!lastMessage || !lastMessage.message) {
+      return res.status(400).json({ error: 'Last message in context is empty' });
     }
 
     // log usage
     await usageLogger.log({
       userId,
-      type: 'ai_send_message',
+      type: 'send_message',
       original_text: context.messages[context.messages.length - 1]?.message || '', // Log the last message's content
-      suggested_text: response,
+      suggested_text: suggestion,
       token_used: usage.total_tokens || 0 // Fallback to 0 if not available
     });
 
@@ -172,7 +180,6 @@ exports.aiSendMessage = async (req, res) => {
       .split(/\d+\.\s+/) // Split by numbered list (e.g., "1. ", "2. ")
       .filter(s => s.trim()) // Remove empty entries
       .map(s => s.trim());
-
 
     // return the AI response
     res.status(200).json({ suggestions });

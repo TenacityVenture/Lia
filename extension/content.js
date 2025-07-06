@@ -3030,6 +3030,12 @@ const refreshToken = async () => {
       } catch (error) {
         console.error("Error generating chat response:", error)
 
+        if (response && response.error.includes('missing plan')) {
+          // Remove typing indicator
+          hideTypingIndicator()
+          addMessageToChat('assistant', 'Please upgrade your plan to use this feature. <a href="https://www.getlia.live/pricing" target="_blank" style="color: blue">Upgrade Now</a>')
+          return
+        }
         // try refreshing the token
         try {
           await refreshToken()

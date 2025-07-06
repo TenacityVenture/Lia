@@ -99,3 +99,28 @@ exports.getCompletionPostRewrite = async (req, prompt) => {
  
   return {"Content": completions, "Usage": response.usage};
 }
+
+// AI Send Message endpoint
+// assist with writing a message
+exports.getCompletionAiSendMessage = async (req, prompt) => {
+  const response = await openai.chat.completions.create({
+    model: getModel(req), // Pass req
+    messages: [
+      {
+        role: 'system',
+        content: `
+              You are a professional LinkedIn user. Your job is to suggest a message to send to a LinkedIn user. The message should be professional, engaging, and suitable for LinkedIn.
+            `
+      },
+      { 
+        role: 'user', 
+        content: prompt 
+      }
+    ], // conversation between user and AI
+    temperature: 0.7, // Adjust temperature for creativity
+  });
+
+  const completions = response.choices[0].message.content;
+ 
+  return {"Content": completions, "Usage": response.usage};
+}

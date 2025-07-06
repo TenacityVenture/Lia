@@ -1,6 +1,7 @@
 // src/controllers/promptController.js
 const openaiService = require('../services/openaiService');
 const usageLogger = require('../services/usageLogger');
+const { message } = require('./chatController');
 
 exports.rewritePost = async (req, res) => {
   const userId = req.user.sub; // Extract user ID from the request object
@@ -120,5 +121,63 @@ exports.aiImprovePost = async (req, res) => {
   } catch (error) {
     console.error('AI Improvement failed:', error.message);
     res.status(500).json({ error: 'AI Improvement failed' });
+  }
+}
+
+exports.aiSendMessage = async (req, res) => {
+  const userId = req.user.sub;
+  if (!req.body || !req.body.context) {
+    return res.status(400).json({ error: 'Context is required' });
+  }
+  
+  // the prompt has already been structured in the extension
+  const { context } = req.body; // Expecting a string prompt
+  if (!context || context.length === 0 || !context.messages || !Array.isArray(context.messages)) {
+    return res.status(400).json({ error: 'Invalid context format' });
+  }
+
+  try {
+    let prompt = 'Here is a context of a LinkedIn user messaging: ' + context.messages.map(m => {
+      return `${m.time} : ${m.sender} : ${m.message}`; // Format each message as "role: message"
+    }).join('\n'); // Join messages into a single prompt
+
+    prompt += `\n Suggest 3 LinkedIn messages to reply to the last message in the conversation.
+    The messages should be relevant to the conversation and should not repeat the last message.`
+    prompt += `The tone should be ${context.tone || 'professional'}. And industry should be ${context.industry || 'general'}.`
+    prompt += `\n\nEach suggestion should be a numbered list, like this:
+    1. First suggestion
+    2. Second suggestion
+    3. Third suggestion
+    
+    concise, relevant, and professional suggestions are preferred.
+    Do not use markdown or HTML formatting, just plain text.
+    Do not use any special characters or formatting like **bold** or *italic*.`;
+  
+    // generate the AI response
+    const {Content: suggestion, Usage: usage} = await openaiService.getCompletionAiSendMessage(req, context);
+    if (!response) {
+      return res.status(400).json({ error: 'AI response is empty' });
+    }
+
+    // log usage
+    await usageLogger.log({
+      userId,
+      type: 'ai_send_message',
+      original_text: context.messages[context.messages.length - 1]?.message || '', // Log the last message's content
+      suggested_text: response,
+      token_used: usage.total_tokens || 0 // Fallback to 0 if not available
+    });
+
+    const suggestions = suggestion
+      .split(/\d+\.\s+/) // Split by numbered list (e.g., "1. ", "2. ")
+      .filter(s => s.trim()) // Remove empty entries
+      .map(s => s.trim());
+
+
+    // return the AI response
+    res.status(200).json({ suggestions });
+  } catch (error) {
+    console.error('AI Send Message failed:', error.message);
+    res.status(500).json({ error: 'AI Send Message failed' });
   }
 }

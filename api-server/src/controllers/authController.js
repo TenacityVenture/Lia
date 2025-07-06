@@ -143,7 +143,12 @@ const refreshAccessToken = async (req, res) => {
   // fallback for extension if the refresh_token is not in cookies
   if (!refreshToken) {
     // If the refresh token is not in cookies, we can check the body for the refresh_token
-    const { refresh_token: bodyRefreshToken } = req.body;
+    // This is useful for the extension where we might sometimes not have cookies (90% of the time we do have cookies,
+    // so this is just a fallback).
+    let bodyRefreshToken = null;
+    if (req.body && req.body.refresh_token) {
+      bodyRefreshToken = req.body.refresh_token;
+    }
     if (bodyRefreshToken) {
       // If we got it from the body, we can use it
       refreshToken = bodyRefreshToken;

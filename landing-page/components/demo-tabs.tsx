@@ -24,10 +24,10 @@ export function DemoTabs() {
 
   return (
     <Tabs defaultValue="post-creation" className="w-full max-w-4xl mx-auto">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 h-20 sm:h-auto">
         <TabsTrigger value="post-creation">Post Creation</TabsTrigger>
         <TabsTrigger value="comment-reply">Comment Reply</TabsTrigger>
-        <TabsTrigger value="post-improvement">Post Improvement</TabsTrigger>
+        <TabsTrigger value="post-improvement" className="col-span-2 sm:col-span-1">Post Improvement</TabsTrigger>
       </TabsList>
 
       <TabsContent value="post-creation">

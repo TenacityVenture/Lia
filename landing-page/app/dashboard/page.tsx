@@ -341,23 +341,23 @@ export default function DashboardPage() {
                       <div className="text-sm text-muted-foreground">
                         Showing {startIndex + 1}-{Math.min(endIndex, activity.length)} of {activity.length} activities
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 w-full overflow-x-auto scrollbar-thin scrollbar-thumb-muted-foreground/30 scrollbar-track-transparent">
                         <button
                           onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                           disabled={currentPage === 1}
-                          className="px-3 py-1 text-sm border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-3 py-1 text-sm border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                         >
                           Previous
                         </button>
 
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                             <button
                               key={page}
                               onClick={() => setCurrentPage(page)}
                               className={`px-3 py-1 text-sm rounded-md transition-colors ${
                                 currentPage === page ? "bg-primary text-primary-foreground" : "hover:bg-accent"
-                              }`}
+                              } flex-shrink-0`}
                             >
                               {page}
                             </button>
@@ -367,7 +367,7 @@ export default function DashboardPage() {
                         <button
                           onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                           disabled={currentPage === totalPages}
-                          className="px-3 py-1 text-sm border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-3 py-1 text-sm border rounded-md hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                         >
                           Next
                         </button>

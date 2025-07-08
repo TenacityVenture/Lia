@@ -153,7 +153,12 @@ exports.aiSendMessage = async (req, res) => {
     Do not use markdown or HTML formatting, just plain text.
     Do not use any special characters or formatting like **bold** or *italic*.
     Avoid introducing new ideas or being overly creative.
-    Do not use emojis or Unicode characters.`;
+    Do not use emojis or Unicode characters.
+    
+    ${context.linkedInUser ? `This is the current LinkedIn User info:
+      Name: ${context.linkedInUser.name}
+      Headline: ${context.linkedInUser.headline}
+      Profile URL: ${context.linkedInUser.linkedinUrl}` : ''}`;
   
     // generate the AI response
     const {Content: suggestion, Usage: usage} = await openaiService.getCompletionAiSendMessage(req, prompt);

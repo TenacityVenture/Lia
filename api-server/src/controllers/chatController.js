@@ -117,7 +117,7 @@ exports.message = async (req, res) => {
       .select('*')
       .eq('chat_id', chatId)
       .order('created_at', { ascending: true })
-      .limit(10); // Adjust the limit as needed
+      .limit(20); // Adjust the limit as needed
 
     const messages = [...(history || [])]
       .map(m => ({ role: m.role, content: m.content }))
@@ -146,7 +146,7 @@ exports.message = async (req, res) => {
       
     // 2. GET AI response
     //first lets insert a key role to start of the messages array
-    messages.unshift(
+    const systemMessage =
       { role: 'system', 
         content: `You are **Lia** (https://getlia.live), a smart and helpful LinkedIn AI assistant.
 
@@ -204,11 +204,19 @@ exports.message = async (req, res) => {
         
         Just do you job and do it well.`
 
-      });
+      };
+
+    const theMessages = [
+      systemMessage,
+      ...messages
+    ]
 
     const openaiRes = await openai.chat.completions.create({
       model: await getModel(req),
-      messages: messages,
+      messages: [
+        systemMessage,
+        ...messages
+      ]
     });
 
     const aiResponse = openaiRes.choices[0].message.content || 'No response from AI';
@@ -234,6 +242,7 @@ exports.message = async (req, res) => {
       token_used: usage
     });
 
+    // 6. Return AI response
     res.json({ reply: aiResponse });
   } catch (err) {
     console.error('Error adding message:', err);

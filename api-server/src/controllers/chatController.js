@@ -159,7 +159,7 @@ exports.message = async (req, res) => {
 
         ---
 
-        ### 🧠 Behavior Guidelines:
+        ### 🧠 Behavior Guidelines (IMPORTANT -- FOLLOW BY ALL MEANS):
 
         - If the user refers to **existing content** (e.g., a post, comment, article):
           - Provide **specific insights**, **summaries**, or **constructive improvements**
@@ -200,9 +200,7 @@ exports.message = async (req, res) => {
         
         Importantly, **avoid**:
         - being overly creative or dramatic
-        - using emojis or Unicode characters unless specifically requested
-        
-        Just do you job and do it well.`
+        - using emojis or Unicode characters unless specifically requested`
 
       };
 
@@ -242,6 +240,7 @@ exports.message = async (req, res) => {
       token_used: usage
     });
 
+    console.log('AI response:', aiResponse);
     // 6. Return AI response
     res.json({ reply: aiResponse });
   } catch (err) {

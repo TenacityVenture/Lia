@@ -1,7 +1,6 @@
 // src/controllers/promptController.js
 const openaiService = require('../services/openaiService');
 const usageLogger = require('../services/usageLogger');
-const { message } = require('./chatController');
 
 exports.rewritePost = async (req, res) => {
   const userId = req.user.sub; // Extract user ID from the request object

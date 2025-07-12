@@ -103,10 +103,32 @@ exports.getChatMessages = async (req, res) => {
 exports.message = async (req, res) => {
   const userId = req.user.sub;
   const chatId = req.params.chatId;
-  const { message } = req.body;
+  const { message, reference } = req.body;
 
   if (!message) {
     return res.status(400).json({ error: 'Message content is required' });
+  }
+
+  if (reference) {
+    // check if already the exact reference content is not in db
+    const { data: referenceData, error: referenceError } = await supabase
+      .from('chat_messages')
+      .select('*')
+      .eq('content', JSON.stringify(reference))
+      .single();
+
+    if (referenceError) {
+      console.error('Error checking reference content:', referenceError);
+    }
+
+    if (referenceData) {
+      console.log('Reference content already exists in database');
+    }
+
+    // if reference content is not in db, then add it
+    if (!referenceData) {
+      await supabase.from('chat_messages').insert([{ chat_id: chatId, user_id: userId, role: 'reference', content: JSON.stringify(reference) }]);
+    }
   }
 
   try {
@@ -146,15 +168,14 @@ exports.message = async (req, res) => {
       
     // 2. GET AI response
     //first lets insert a key role to start of the messages array
-    // 
-    /*  Your job is to help users:
-      - ✍️ Create **engaging LinkedIn posts**
-      - 💬 Write **professional comments**
-      - ✨ Enhance, rewrite, or improve their content
-      */
     const systemMessage =
       { role: 'system', 
         content: `You are **Lia** (https://getlia.live), a smart and helpful LinkedIn AI assistant.
+
+        Your job is to help users:
+        - ✍️ Create **engaging LinkedIn posts**
+        - 💬 Write **professional comments**
+        - ✨ Enhance, rewrite, or improve their content
 
         Always respond in a **helpful**, **concise**, and **professional** tone.
 
@@ -204,11 +225,6 @@ exports.message = async (req, res) => {
         - using emojis or Unicode characters unless specifically requested`
 
       };
-
-    const theMessages = [
-      systemMessage,
-      ...messages
-    ]
 
     const openaiRes = await openai.chat.completions.create({
       model: await getModel(req),

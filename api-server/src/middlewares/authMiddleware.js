@@ -36,7 +36,7 @@ const checkPlan = (requiredPlan = 'free') => {
     const { data: userData, error } = await supabase // actual user in users table
       .from('users')
       .select('plan, plan_expires_at')
-      .eq('id', user.sub) // assuming user.sub is the user ID
+      .eq('id', user.sub) // user.sub is the user ID
       .single();
     
     if (error || !userData || userData.length === 0) {
@@ -62,7 +62,7 @@ const checkPlan = (requiredPlan = 'free') => {
 
     // 4. If expired, deny
     if (isExpired) {
-      return res.status(403).json({ error: 'Your expired.', message: 'Plan expired. Please upgrade.' });
+      return res.status(403).json({ error: 'Plan expired.', message: 'Plan expired. Please upgrade.' });
     }
 
     // 5. If user's plan is below required level, deny

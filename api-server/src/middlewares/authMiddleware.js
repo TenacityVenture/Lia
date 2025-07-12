@@ -50,11 +50,11 @@ const checkPlan = (requiredPlan = 'free') => {
     // 1. Expired plan?
     const isExpired = userData.plan_expires_at && new Date(userData.plan_expires_at) < now;
 
-    // 2. Trial logic: if free + not expired + requiredPlan is standard
+    // 2. Trial logic: if free + not expired + requiredPlan is pro
     const isTrialValid = (
       userData.plan === 'free' &&
       !isExpired &&
-      requiredPlan === 'standard'
+      requiredPlan === 'pro' // try full pro plan for 1 month free
     );
 
     // 3. If trial is valid, allow

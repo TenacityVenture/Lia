@@ -142,8 +142,8 @@ exports.message = async (req, res) => {
       .limit(20); // Adjust the limit as needed
 
     const messages = [...(history || [])]
-      .map(m => ({ role: m.role, content: m.content }))
-      .concat([{ role: 'user', content: message }]);
+      .map(m => ({ role: m.role === 'reference' ? 'user' : m.role, content: m.content }))
+      .concat([{ role: 'user', content: `User message: ${message}` }]);
 
     // if history is grater than or equal to 2
     // generate a title for the chat based on the first two messages

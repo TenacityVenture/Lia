@@ -1,5 +1,4 @@
 const supabase = require('../utils/supabaseClient');
-const { message } = require('./chatController');
 
 /**
  * Handles logging in a user with their email and password.
@@ -94,7 +93,7 @@ const registerUser = async (req, res) => {
     social_provider: 'email',
     plan: 'free',
     plan_started_at: new Date(),
-    plan_expires_at: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14 days from now
+    plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
   }, { onConflict: 'id' });
 
   /**

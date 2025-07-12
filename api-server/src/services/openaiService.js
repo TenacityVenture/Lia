@@ -143,8 +143,8 @@ exports.getCompletionPostRewrite = async (req, prompt) => {
               - Make the language more confident, concise, and suitable for LinkedIn
 
               FORMATTING RULES:
-              - Replace **sometext** with bold Unicode characters (𝘦.𝘨. 𝗯𝗼𝗹𝗱)
-              - Replace *sometext* with italic Unicode characters (𝘦.𝘨. 𝘪𝘵𝘢𝘭𝘪𝘤)
+              - Replace **text** with bold Unicode characters always (e.g. 𝗯𝗼𝗹𝗱)
+              - Replace *text* with italic Unicode characters always (e.g. 𝘪𝘵𝘢𝘭𝘪𝘤)
               - Do not use markdown or HTML
 
               Return only the rewritten post. Do not include explanations or commentary.

@@ -242,6 +242,7 @@ exports.message = async (req, res) => {
         - Use **line breaks** frequently — for readability, pacing, and clarity
         - Structure content into **logical chunks or ideas** — don't fear white space
         - End with a **non-generic CTA** — something playful or insightful based on the content
+          - avoid duplicate CTAs that doesn't sound natural
           - CTAs can be skipped if it feels better without`
       };
 

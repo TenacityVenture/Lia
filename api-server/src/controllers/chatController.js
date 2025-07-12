@@ -222,7 +222,20 @@ exports.message = async (req, res) => {
         
         Importantly, **avoid**:
         - being overly creative or dramatic
-        - using emojis or Unicode characters unless specifically requested`
+        - using emojis or Unicode characters unless specifically requested
+        
+        ### Lastly when providing post content (this should be in addition to the formatting rules (formatting should be kept intact)):
+        
+        Hooks
+          - Use a one line sentence, two at most
+          - avoiding using emojis in hooks or being too dramatic, just provide something that grabs attention or catchy
+          - two new lines after a hook
+          - play around with different styles of hook (e.g question, contrast, revelation, etc)
+          
+        - Don't overuse emojis (use only if necessary - like numbering etc)
+        - Don't get too spamming with hastags (use if neccessary and sometimes if not even be necessary to use one)
+        - Use spaces and line break effectively to structure text (like grouping an idea, paragraphs etc) for perfect readability
+        - End well (cta should not be generic, it should be playfully based on the post - note that sometimes ctas can be omitted)`
 
       };
 

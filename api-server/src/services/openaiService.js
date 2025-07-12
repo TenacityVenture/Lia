@@ -53,7 +53,9 @@ exports.getCompletionSuggestComment = async (req, prompt) => {
             - **Never** start with \`"Your"\` or use phrases like \`"Your [something] is..."\`
 
           If replying to a reply (i.e. sub-comments), take note of the added conversational nuance.
-          
+          - If replying to a comment (or a reply to a comment), your focus must be on the **comment**, not the original post — unless the comment refers to it directly.
+
+
           If previous comments are provided:
           - Use them as **source inspiration** or reference for tone/style (not direct copying), vide, and talking points
 

@@ -70,7 +70,7 @@ exports.getCompletionSuggestComment = async (req, prompt) => {
           ### 📄 Formatting Rules:
 
           - Respond in **plain text**
-          - Output only the 3 comment replies
+          - Output only the 3 comment replies, numbering each like 1. 2. 3. 
           - Do **not** include explanations or intro text
 
         `

@@ -50,7 +50,7 @@ window.addEventListener('message', (event) => {
 // uitlity functions
 
 // check if element exists in dom / waits for it to exist by keep trying
-function waitForElement(selector, maxAttempts = 40, interval = 500) {
+function waitForElement(selector, maxAttempts = 100, interval = 1000) {
   return new Promise((resolve, reject) => {
     let attempts = 0;
 
@@ -77,30 +77,30 @@ function initializeExtension() {
   setupCommentReplyAssistant()
   setuprewrite_enabledment()
   setupTextSelectionToolbar()
+  setupTextToSpeech() // Add this line
 
-  let mutationTimeout;
+  let mutationTimeout
 
   // Set up mutation observer to detect new elements
   const observer = new MutationObserver((mutations) => {
-
     mutations.forEach((mutation) => {
-      clearTimeout(mutationTimeout);
+      clearTimeout(mutationTimeout)
       mutationTimeout = setTimeout(() => {
         if (mutation.addedNodes.length) {
-            try {
-              //setupPostCreationAssistant()
-              setupCommentReplyAssistant()
-              setuprewrite_enabledment()
+          try {
+            setupCommentReplyAssistant()
+            setuprewrite_enabledment()
+            setupTextSelectionToolbar()
+            setupTextToSpeech() // Add this line
 
-              if (chatbotState.referenceMode) {
-                addReferenceListeners()
-              }
-
+            if (chatbotState.referenceMode) {
+              addReferenceListeners()
+            }
           } catch (error) {
-              console.error("MutationObserver Error:", error);
+            console.error("MutationObserver Error:", error)
           }
         }
-      }, 500);
+      }, 500)
     })
   })
 
@@ -111,6 +111,330 @@ function initializeExtension() {
   const commentsContainer = document.body.querySelector('.feed-shared-update-v2__comments-container')
   if (commentsContainer) {
     observer.observe(commentsContainer, { childList: true, subtree: true, characterData: true})
+  }
+}
+
+function setupTextToSpeech() {
+  // Find all LinkedIn posts
+  const posts = document.querySelectorAll('.feed-shared-update-v2, .feed-shared-update-detail-viewer__content')
+  
+  posts.forEach(post => {
+    // Check if we've already added the TTS button
+    if (post.querySelector('.lia-tts-button')) return
+    
+    // Find the post content
+    const postContent = post.querySelector('.feed-shared-update-v2__description, .reader-article-content')
+    if (!postContent) return
+    
+    // Create the TTS button
+    createTTSButton(post, postContent)
+  })
+}
+
+function createTTSButton(postContainer, contentElement) {
+  const ttsButton = document.createElement('button')
+  ttsButton.className = 'lia-tts-button'
+  ttsButton.innerHTML = `
+    <svg class="lia-tts-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
+    </svg>
+    <span class="lia-tts-text">Listen</span>
+  `
+  
+  ttsButton.style.cssText = `
+    position: absolute;
+    top: 3px;
+    right: 90px;
+    background: rgba(255, 255, 255, 0.95);
+    border: 1px solid #e0e0e0;
+    border-radius: 20px;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: #0a66c2;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    opacity: 0;
+    transform: translateY(-10px);
+  `
+  
+  // Position the post container relatively
+  postContainer.style.position = 'relative'
+  
+  // Show button on hover
+  postContainer.addEventListener('mouseenter', () => {
+    ttsButton.style.opacity = '1'
+    ttsButton.style.transform = 'translateY(0)'
+  })
+  
+  postContainer.addEventListener('mouseleave', () => {
+    if (!ttsButton.classList.contains('playing')) {
+      ttsButton.style.opacity = '0'
+      ttsButton.style.transform = 'translateY(-10px)'
+    }
+  })
+  
+  // Add click handler
+  ttsButton.addEventListener('click', (e) => {
+    e.stopPropagation()
+    handleTTSClick(ttsButton, contentElement)
+  })
+  
+  postContainer.appendChild(ttsButton)
+}
+
+async function handleTTSClick(button, contentElement) {
+  const text = extractTextContent(contentElement)
+  
+  if (!text || text.length < 10) {
+    showTTSError(button, 'No content to read')
+    return
+  }
+  
+  if (button.classList.contains('playing')) {
+    stopAudio(button)
+    return
+  }
+  
+  if (button.classList.contains('loading')) return
+  
+  try {
+    showTTSLoading(button)
+    const audioUrl = await generateSpeech(text)
+    playAudio(button, audioUrl, text)
+  } catch (error) {
+    console.error('TTS Error:', error)
+    showTTSError(button, 'Failed to generate speech')
+  }
+}
+
+function extractTextContent(element) {
+  // Get text content while preserving mentions
+  let text = ''
+  
+  const walker = document.createTreeWalker(
+    element,
+    NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+    {
+      acceptNode: (node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          return NodeFilter.FILTER_ACCEPT
+        }
+        if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('ql-mention')) {
+          return NodeFilter.FILTER_ACCEPT
+        }
+        return NodeFilter.FILTER_SKIP
+      }
+    }
+  )
+  
+  let node
+  while (node = walker.nextNode()) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      text += node.textContent
+    } else if (node.classList.contains('ql-mention')) {
+      text += node.textContent
+    }
+  }
+  
+  // Clean up the text
+  text = text.replace(/\s+/g, ' ').trim()
+  
+  // Remove URLs for better speech
+  text = text.replace(/https?:\/\/[^\s]+/g, '')
+  
+  // Replace hashtags with readable format
+  text = text.replace(/#(\w+)/g, 'hashtag $1')
+
+  console.log(text)
+  
+  return text
+}
+
+async function generateSpeech(text) {
+  // Check if we have access token
+  const accessToken = await getAccessToken()
+  if (!accessToken) {
+    throw new Error('Please sign in to use text-to-speech')
+  }
+  
+  const response = await fetch('https://api.getlia.live/api/tts/generate', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${accessToken}`
+    },
+    body: JSON.stringify({
+      text: text,
+      voice: 'Joanna', // AWS Polly voice
+      engine: 'neural'
+    })
+  })
+  
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(error.message || 'Failed to generate speech')
+  }
+  
+  const data = await response.json()
+  return data.audioUrl
+}
+
+function playAudio(button, audioUrl, originalText) {
+  // Create audio element
+  const audio = new Audio(audioUrl)
+  audio.crossOrigin = 'anonymous'
+  
+  // Update button to playing state
+  button.classList.add('playing')
+  button.innerHTML = `
+    <svg class="lia-tts-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="6" y="4" width="4" height="16"/>
+      <rect x="14" y="4" width="4" height="16"/>
+    </svg>
+    <span class="lia-tts-text">Pause</span>
+  `
+  button.style.background = 'rgba(10, 102, 194, 0.1)'
+  button.style.borderColor = '#0a66c2'
+  button.style.opacity = '1'
+  button.style.transform = 'translateY(0)'
+  
+  // Create progress bar
+  const progressBar = createProgressBar(button)
+  
+  // Store audio reference
+  button.audioElement = audio
+  button.progressBar = progressBar
+  
+  // Audio event listeners
+  audio.addEventListener('loadstart', () => {
+    console.log('Audio loading started')
+  })
+  
+  audio.addEventListener('canplay', () => {
+    console.log('Audio can start playing')
+  })
+  
+  audio.addEventListener('timeupdate', () => {
+    if (audio.duration) {
+      const progress = (audio.currentTime / audio.duration) * 100
+      progressBar.style.width = `${progress}%`
+    }
+  })
+  
+  audio.addEventListener('ended', () => {
+    stopAudio(button)
+  })
+  
+  audio.addEventListener('error', (e) => {
+    console.error('Audio error:', e)
+    showTTSError(button, 'Playback failed')
+  })
+  
+  // Start playing
+  audio.play().catch(error => {
+    console.error('Play error:', error)
+    showTTSError(button, 'Playback failed')
+  })
+}
+
+function stopAudio(button) {
+  if (button.audioElement) {
+    button.audioElement.pause()
+    button.audioElement = null
+  }
+  
+  if (button.progressBar) {
+    button.progressBar.remove()
+    button.progressBar = null
+  }
+  
+  button.classList.remove('playing', 'loading', 'error')
+  button.innerHTML = `
+    <svg class="lia-tts-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
+    </svg>
+    <span class="lia-tts-text">Listen</span>
+  `
+  button.style.background = 'rgba(255, 255, 255, 0.95)'
+  button.style.borderColor = '#e0e0e0'
+}
+
+function createProgressBar(button) {
+  const progressContainer = document.createElement('div')
+  progressContainer.style.cssText = `
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: rgba(10, 102, 194, 0.2);
+    border-radius: 0 0 20px 20px;
+    overflow: hidden;
+  `
+  
+  const progressBar = document.createElement('div')
+  progressBar.style.cssText = `
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #0a66c2, #004182);
+    transition: width 0.1s ease;
+  `
+  
+  progressContainer.appendChild(progressBar)
+  button.appendChild(progressContainer)
+  
+  return progressBar
+}
+
+function showTTSLoading(button) {
+  button.classList.add('loading')
+  button.innerHTML = `
+    <div class="lia-tts-spinner" style="
+      width: 16px;
+      height: 16px;
+      border: 2px solid #e0e0e0;
+      border-top: 2px solid #0a66c2;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    "></div>
+    <span class="lia-tts-text">Loading...</span>
+  `
+}
+
+function showTTSError(button, message) {
+  button.classList.add('error')
+  button.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="15" y1="9" x2="9" y2="15"/>
+      <line x1="9" y1="9" x2="15" y2="15"/>
+    </svg>
+    <span class="lia-tts-text" style="color: #ef4444;">${message}</span>
+  `
+  
+  setTimeout(() => {
+    if (button.classList.contains('error')) {
+      stopAudio(button)
+    }
+  }, 3000)
+}
+
+async function getAccessToken() {
+  try {
+    const { access_token } = await chrome.storage.local.get(['access_token'])
+    return access_token
+  } catch (error) {
+    console.error('Error getting access token:', error)
+    return null
   }
 }
 
@@ -154,7 +478,7 @@ function fromUnicodeToNormal(text, style = 'bold') {
 
   const italicMap = {
     '𝘢': 'a', '𝘣': 'b', '𝘤': 'c', '𝘥': 'd', '𝘦': 'e', '𝘧': 'f', '𝘨': 'g', '𝘩': 'h', '𝘪': 'i', '𝘫': 'j',
-    '𝘬': 'k', '𝘭': 'l', '𝘮': 'm', '𝘯': 'n', '𝘰': 'o', '𝘱': 'p', '𝘲': 'q', '𝘳': 'r', '𝘴': 's', '𝘵': 't',
+    '𝘬': 'k', '𝘭': 'l', '𝘮': 'm', '𝗻': 'n', '𝘰': 'o', '𝘱': 'p', '𝘲': 'q', '𝘳': 'r', '𝘴': 's', '𝘵': 't',
     '𝘶': 'u', '𝘷': 'v', '𝘸': 'w', '𝘹': 'x', '𝘺': 'y', '𝘻': 'z',
     '𝘈': 'A', '𝘉': 'B', '𝘊': 'C', '𝘋': 'D', '𝘌': 'E', '𝘍': 'F', '𝘎': 'G', '𝘏': 'H', '𝘐': 'I', '𝘑': 'J',
     '𝘒': 'K', '𝘓': 'L', '𝘔': 'M', '𝘕': 'N', '𝘖': 'O', '𝘗': 'P', '𝘘': 'Q', '𝘙': 'R', '𝘚': 'S', '𝘛': 'T',
@@ -831,11 +1155,11 @@ function setupPostCreationAssistant() {
 
     if (toolbar) {
       // post container
-      let aiPostContainer = document.createElement("form")
+      const aiPostContainer = document.createElement("form")
       aiPostContainer.className = "linkedin-ai-post-container"
 
       // ai post input
-      let aiPostInput = document.createElement("input")
+      const aiPostInput = document.createElement("input")
       aiPostInput.className = "linkedin-ai-post-input"
       aiPostInput.setAttribute("placeholder", "What do you want to post?")
       aiPostInput.setAttribute("spellcheck", "false")
@@ -1373,7 +1697,7 @@ function getCommentContext(commentInput) {
     /** we are in the articles page */
 
     // Try to get the original article content
-    let articleContainer = document.querySelector('.reader-article-content')
+    const articleContainer = document.querySelector('.reader-article-content')
     const articleHeaderTitle = document.querySelector('.reader-article-header__title')
     //const postCreatorContainer = articleContainer.querySelector(".update-components-actor__meta")
     
@@ -1777,30 +2101,41 @@ async function generateReplyToCommentSuggestions(context) {
   };
 
   // Prepare the prompt
-  let prompt = `Generate 3 playful but professional LinkedIn replies`
+  let prompt = `Generate 3 thoughtful and human-sounding LinkedIn replies`;
 
   if (context.commentReply) {
-    prompt += ` to this comment${context.isSubReplyingTo ? " that is a reply to a reply" : ""}: "${context.commentReply}"`
+    prompt += ` to this comment${context.isSubReplyingTo ? " (which is a reply to another comment)" : ""}: "${context.commentReply}"`;
   }
-
+  
   if (context.postContent) {
-    prompt += `. The original post is: "${context.postContent}"`
+    prompt += `. The original post is: "${context.postContent}"`;
   }
-
+  
   if (context.postWriter) {
-    //prompt += `. The post was written by "${context.postWriter}""`
-  }
-
-  if (context.postWriter) {
-    prompt += `. The original post was written by ${context.postWriter}`
+    prompt += `. The original post was written by ${context.postWriter}`;
   }
   
   if (context.previousRepliesOnComment && context.previousRepliesOnComment.length > 0) {
-    prompt += `. Consider these previous replies made on that comment: ${context.previousRepliesOnComment.join(" | ")}`
+    prompt += `. Consider these previous replies to that comment: ${context.previousRepliesOnComment.join(" | ")}`;
   }
-
-  prompt += `. The tone should be ${settings.tone} or Encouraging or Clarifying or Inviting Dialogue, conveying a different style (NOTE: It could be that it is the Author replying to a comment Or Just someone else replying to a comment -- convey bot views ). And industry should be ${settings.industry}`
-  prompt += ` Each reply suggestion should be concise (under 20 words), thoughtful (sounds like human), and add value to the conversation. Return only the suggestions. With absolutely no hastags and emojies.`
+  
+  prompt += `. The tone should be ${settings.tone}, but you may also use an encouraging, clarifying, or dialogue-inviting tone depending on context.`;
+  
+  prompt += ` Respond from either the perspective of the **author replying to a comment**, or a **regular user replying to another user** — whichever fits the situation. Vary the tone and style across the 3 replies.`;
+  
+  prompt += ` Each suggestion should:
+  - Be under 20 words
+  - Feel human and natural
+  - Add value to the conversation
+  - Include no hashtags
+  - Use no emojis
+  - Never start with "Your" or use "Your [something] is..."
+  - Avoid generic or robotic responses`;
+  
+  prompt += `
+  
+  Only return the 3 replies. No explanation or extra formatting.`;
+  
 
   async function generate() {
     const response = await fetch ("https://api.getlia.live/api/prompt/suggest-reply", {
@@ -2016,6 +2351,16 @@ const refreshToken = async () => {
     referenceMode: false,
     referencedContent: null,
   }
+  /*
+  referencedContent: {
+    type: "unknown",
+    author: "",
+    text: "",
+    engagement: {},
+    timestamp: "",
+    url: window.location.href,
+  }
+  */
 
   function initializeChatbot() {
     if (window.location.href.includes("linkedin.com")) {
@@ -2512,7 +2857,7 @@ const refreshToken = async () => {
     }
 
     .lia-message.user .lia-message-avatar {
-      color: white;
+      color: #0a66c2;
     }
 
     .lia-message.assistant .lia-message-avatar {
@@ -2535,11 +2880,11 @@ const refreshToken = async () => {
       word-wrap: break-word;
     }
 
-    .lia-message-content.user .lia-paragraph {
+    .lia-message.user .lia-message-content .lia-paragraph {
       color: #fff !important;
     }
 
-    .lia-message-content.assistant .lia-paragraph {
+    .lia-message.assistant .lia-message-content .lia-paragraph {
       color: #333 !important;
     }
 
@@ -3310,17 +3655,11 @@ const refreshToken = async () => {
     // check if post suggestion enabled
     if (!settings.post_enabled) return
 
-    // Include referenced content if available
-    if (chatbotState.referencedContent) {
-      message = `\n\nREFERENCED CONTENT:
-Type: ${chatbotState.referencedContent.type}
-Author: ${chatbotState.referencedContent.author}
-Content: "${chatbotState.referencedContent.text}"
-${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chatbotState.referencedContent.engagement)}` : ""}`
-  }
-
-    // Include user's message
-    message += `\n\nUser message: "${message}"`
+    // Create body for request
+    const body = {
+      message: message,
+      reference: chatbotState.referencedContent,
+    }
 
     const response = await fetch(`https://api.getlia.live/api/chat/${chatbotState.currentConversationId}/message`, {
       method: "POST",
@@ -3328,9 +3667,7 @@ ${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chat
         "Content-Type": "application/json",
         Authorization: `Bearer ${await accessToken()}`,
       },
-      body: JSON.stringify({
-        message,
-      }),
+      body: JSON.stringify(body),
     })
 
     const data = await response.json()
@@ -3742,23 +4079,42 @@ ${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chat
     messagesContainer.innerHTML = conversation.messages
       .map(
         (msg) => {
+          if (msg.role === "reference") {
+            const refContent = JSON.parse(msg.content)
+            return `
+                  <div class="lia-referenced-content">
+                    <div class="lia-referenced-content-header">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                      </svg>
+                      Referenced ${refContent.type}
+                      ${refContent.author ? `by ${refContent.author}` : ""}
+                      <button class="lia-clear-reference" onclick="clearReferencedContent()">×</button>
+                    </div>
+                    <div class="lia-referenced-content-preview">
+                      ${refContent.text.substring(0, 150)}${refContent.text.length > 150 ? "..." : ""}
+                    </div>
+                  </div>
+                `
+          } else {
           
-          return `
-              <div class="lia-message ${msg.role}">
-                <div class="lia-message-avatar">${msg.role === "user" ? "U" : `
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                    <rect x="2" y="9" width="4" height="12"/>
-                    <circle cx="4" cy="4" r="2"/>
-                    <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
-                    <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
-                  </svg>
-                `}</div>
-                <div class="lia-message-content">
-                  ${formatMessage(msg.content)}
+            return `
+                <div class="lia-message ${msg.role}">
+                  <div class="lia-message-avatar">${msg.role === "user" ? "U" : `
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+                      <rect x="2" y="9" width="4" height="12"/>
+                      <circle cx="4" cy="4" r="2"/>
+                      <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
+                      <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
+                    </svg>
+                  `}</div>
+                  <div class="lia-message-content" ${msg.role === "user" ? `style='color: #fff;'` : ""}>
+                    ${formatMessage(msg.content)}
+                  </div>
                 </div>
-              </div>
-            `
+              `
+          }
         },
       )
       .join("")
@@ -3784,7 +4140,7 @@ ${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chat
       toggleBtn.classList.add("reference-active")
       toggleBtn.title = "Reference Mode: ON (Click posts to reference)"
       initializeReferenceMode()
-      showTemporaryNotification(":paperclip: Reference Mode ON - Click any post to reference it", "success")
+      showTemporaryNotification("📎 Reference Mode ON - Click any post to reference it", "success")
     } else {
       toggleBtn.classList.remove("reference-active")
       toggleBtn.title = "Reference Mode (Pro)"
@@ -3792,6 +4148,7 @@ ${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chat
       showTemporaryNotification("Reference Mode OFF", "info")
     }
   }
+
   async function checkProAccess() {
     // For now, return true for demo. In production, check user's subscription status
     //return true
@@ -3799,13 +4156,28 @@ ${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chat
     // const { access_token } = await chrome.storage.local.get(['access_token'])
     // if (!access_token) return false
     //
-    const response = await fetch('https://api.getlia.live/api/user/subscription', {
+    let response = await fetch('https://api.getlia.live/api/user/subscription', {
       headers: { Authorization: `Bearer ${await accessToken()}` },
       credentials: "include"
     })
-    const data = await response.json()
+    let data = await response.json()
+
+    // try to refresh the token
+    if (data.error) {
+      await refreshToken()
+
+      // fetching again
+      response = await fetch('https://api.getlia.live/api/user/subscription', {
+        headers: { Authorization: `Bearer ${await accessToken()}` },
+        credentials: "include"
+      })
+      data = await response.json()
+    }
+
+    // return plan
     return data.isPro
   }
+
   function showProUpgradeModal() {
     const modal = document.createElement("div")
     modal.style.cssText = `
@@ -3914,13 +4286,23 @@ ${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chat
         })
       })
     })
+
+    // Add click listener to clear reference
+    const clearReferenceBtn = document.querySelector(".lia-clear-reference")
+    if (clearReferenceBtn) {
+      clearReferenceBtn.addEventListener("click", (e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        clearReferencedContent()
+      })
+    }
   }
   function capturePostReference(postElement) {
     const content = extractPostContent(postElement)
     if (content) {
       chatbotState.referencedContent = content
       showReferencedContent()
-      showTemporaryNotification(":white_check_mark: Content Referenced! Ask me about it.", "success")
+      showTemporaryNotification("✔ Content Referenced! Ask me about it.", "success")
       // Auto-focus chat input
       const chatInput = document.getElementById("lia-message-input")
       if (chatInput) {
@@ -3944,7 +4326,7 @@ ${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chat
         // Regular LinkedIn post
         content.type = "post"
         // Extract author
-        const authorElement = element.querySelector(".update-components-actor__title")
+        const authorElement = element.querySelector(".update-components-actor__title span span span:not(.visually-hidden)")
         if (authorElement) {
           content.author = authorElement.textContent.trim()
         }
@@ -3954,11 +4336,11 @@ ${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chat
           content.text = textElement.textContent.trim()
         }
         // Extract engagement
-        const likeElement = element.querySelector(".social-counts-reactions__count")
+        const likeElement = element.querySelector(".social-details-social-counts__reactions")
         if (likeElement) {
           content.engagement.likes = likeElement.textContent.trim()
         }
-        const commentElement = element.querySelector(".social-counts-comments__count")
+        const commentElement = element.querySelector(".social-details-social-counts__comments")
         if (commentElement) {
           content.engagement.comments = commentElement.textContent.trim()
         }
@@ -4007,15 +4389,15 @@ ${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chat
       </svg>
       Referenced ${chatbotState.referencedContent.type}
       ${chatbotState.referencedContent.author ? `by ${chatbotState.referencedContent.author}` : ""}
-      <button class="lia-clear-reference" onclick="clearReferencedContent()">×</button>
+      <button class="lia-clear-reference">×</button>
     </div>
     <div class="lia-referenced-content-preview">
       ${chatbotState.referencedContent.text.substring(0, 150)}${chatbotState.referencedContent.text.length > 150 ? "..." : ""}
-    </div>
-  `
+    </div>`
     messagesContainer.appendChild(refDiv)
     messagesContainer.scrollTop = messagesContainer.scrollHeight
   }
+
   function clearReferencedContent() {
     chatbotState.referencedContent = null
     const refDiv = document.querySelector(".lia-referenced-content")
@@ -4025,6 +4407,7 @@ ${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chat
       chatInput.placeholder = "What do you want to post?"
     }
   }
+
   function showReferenceIndicator() {
     const indicator = document.createElement("div")
     indicator.id = "lia-reference-indicator"
@@ -4043,7 +4426,7 @@ ${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chat
     box-shadow: 0 4px 12px rgba(10, 102, 194, 0.3);
     animation: slideInDown 0.3s ease;
   `
-    indicator.textContent = ":paperclip: Reference Mode Active - Click any post to analyze it"
+    indicator.textContent = "📎 Reference Mode Active - Click any post to analyze it"
     document.body.appendChild(indicator)
   }
   function hideReferenceIndicator() {
@@ -4131,8 +4514,7 @@ ${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chat
   // helper function for farmating chat conversations
   function formatMessage(message) {
     let formattedMessage = formatLinks(message)
-    formattedMessage = formatMarkdown(message)
-    formattedMessage = parseReferenceContent(message)
+    formattedMessage = formatMarkdown(formattedMessage)
 
     return formattedMessage
   }
@@ -4188,11 +4570,6 @@ ${chatbotState.referencedContent.engagement ? `Engagement: ${JSON.stringify(chat
     text = text.replace(/\n/g, '<br>');
 
     return text;
-  }
-
-  function parseReferenceContent(text) {
-
-    return text
   }
 
   function createCopyButton(content) {

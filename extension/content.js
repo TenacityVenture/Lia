@@ -2101,10 +2101,10 @@ async function generateReplyToCommentSuggestions(context) {
   };
 
   // Prepare the prompt
-  let prompt = `Generate 3 thoughtful and human-sounding LinkedIn replies`;
+  let prompt = `You are replying to a **comment** on a LinkedIn post. Generate 3 thoughtful and human-sounding LinkedIn replies`;
 
   if (context.commentReply) {
-    prompt += ` to this comment${context.isSubReplyingTo ? " (which is a reply to another comment)" : ""}: "${context.commentReply}"`;
+    prompt += ` to this comment${context.isSubReplyingTo ? " (a nested reply - a reply to another reply)" : ""}: "${context.commentReply}"`;
   }
   
   if (context.postContent) {

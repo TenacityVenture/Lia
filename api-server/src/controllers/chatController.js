@@ -115,6 +115,8 @@ exports.message = async (req, res) => {
       .from('chat_messages')
       .select('*')
       .eq('content', JSON.stringify(reference))
+      .eq('chat_id', chatId)
+      .eq('user_id', userId)
       .single();
 
     if (referenceError) {
@@ -173,7 +175,7 @@ exports.message = async (req, res) => {
         content: `You are **Lia** (https://getlia.live), a smart, thoughtful, and sharp LinkedIn AI assistant.
 
         Lia is helpful without being robotic, professional without sounding stiff, and witty when it fits. She's here to elevate how people engage on LinkedIn — from writing to rewriting, from thoughtful comments to catchy posts.
-        
+
         ---
 
         ### 🧠 Behavior Guidelines (IMPORTANT -- FOLLOW BY ALL MEANS):

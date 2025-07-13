@@ -24,14 +24,16 @@ export default function RefreshTokenPage() {
       }
 
       const data = await response.json();
-        localStorage.setItem('lia_access_token', data.access_token);
-        // for security reasons i will not store the refresh token in local storage
-        //localStorage.setItem('lia_refresh_token', data.refresh_token);
+        // send token to the chrome extension
+        if (data.access_token && data.refresh_token) {
+          
+          window.postMessage({ type: "SEND_JWTs", 
+            access_token: data.access_token, 
+            refresh_token: data.refresh_token}, "*") // * means all domains (shoule be restricted to lia extension id)
 
-        // send jwts to chrome extension
-        window.postMessage({ type: "SEND_JWTs", 
-          access_token: data.access_token, 
-          refresh_token: data.refresh_token}, "*") // * means all domains (shoule be restricted to lia extension id)
+          // Save tokens to localStorage
+          localStorage.setItem("lia_access_token", data.access_token)
+        }
         
         // Redirect to the previous page or default to dashboard
         const previousPage = document.referrer && new URL(document.referrer).origin === window.location.origin

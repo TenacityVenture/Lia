@@ -77,7 +77,7 @@ function initializeExtension() {
   setupCommentReplyAssistant()
   setuprewrite_enabledment()
   setupTextSelectionToolbar()
-  setupTextToSpeech() // Add this line
+  setupTextToSpeech()
 
   let mutationTimeout
 
@@ -211,7 +211,8 @@ async function handleTTSClick(button, contentElement) {
     playAudio(button, audioUrl, text)
   } catch (error) {
     console.error('TTS Error:', error)
-    showTTSError(button, 'Failed to generate speech')
+    //showTTSError(button, 'Failed to generate speech')
+    showTTSError(button, 'Feature coming soon!')
   }
 }
 
@@ -2124,7 +2125,7 @@ async function generateReplyToCommentSuggestions(context) {
   prompt += ` Respond from either the perspective of the **author replying to a comment**, or a **regular user replying to another user** — whichever fits the situation. Vary the tone and style across the 3 replies.`;
   
   prompt += ` Each suggestion should:
-  - Be under 20 words
+  - Be under 15 words
   - Feel human and natural
   - Add value to the conversation
   - Include no hashtags
@@ -2314,7 +2315,6 @@ const refreshToken = async () => {
     const data = await response.json();
 
     chrome.storage.local.set({ access_token: data.access_token, refresh_token: data.refresh_token });
-    document.cookie = `refresh_token=${data.refresh_token}; path=/; secure; samesite=strict`;
     return data.access_token;
 
   } catch (error) {

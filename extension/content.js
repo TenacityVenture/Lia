@@ -2077,12 +2077,11 @@ async function generateCommentSuggestions(context) {
 
   prompt += `. The tone should be ${settings.tone}. And industry should be ${settings.industry}`
   prompt += ` Write each reply:
-  - Under 30 words
+  - Under 20 words
   - Distinct in voice or viewpoint
   - Without hastags
   - Without starting with "Your"
   - Without sounding like an AI or bot
-  - Avoid generic praise
   - Feel free to be slightly opinionated, clever, or relatable`
 
   async function generate() {

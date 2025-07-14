@@ -105,7 +105,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 // Sign-in button redirect
 document.getElementById('signin-btn')?.addEventListener('click', () => {
-  chrome.tabs.create({ url: 'https://www.getlia.live/login' });
+  chrome.tabs.create({ url: 'https://www.getlia.live/login?src=extension' });
 });
 
 // refreshToken function

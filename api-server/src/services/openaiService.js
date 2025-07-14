@@ -61,7 +61,6 @@ exports.getCompletionSuggestComment = async (req, prompt, userInfo) => {
             - Show **personality**, like a smart professional genuinely engaging on LinkedIn, but avoid being too sentimental
             - Use emojis sparingly and appropriately (or skip them entirely)
             - Never begin with “Your…” or phrases like “Your X is…”
-            - **Avoid generic phrases** like “Great insight” or “Thanks for sharing”
             - Don’t be afraid to sound **thoughtful**, **quirky**, or slightly **contrarian** if relevant
             - Contain **no hashtags**
             - **Never** start with \`"Your"\` or use phrases like \`"Your [something] is..."\`
@@ -96,6 +95,8 @@ exports.getCompletionSuggestComment = async (req, prompt, userInfo) => {
     ],
     max_tokens: 500,
   });
+
+  //- **Avoid generic phrases** like “Great insight” or “Thanks for sharing”
 
   const completions = response.choices[0].message.content.trim();
  

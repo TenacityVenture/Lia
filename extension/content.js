@@ -252,7 +252,24 @@ function extractTextContent(element) {
   text = text.replace(/https?:\/\/[^\s]+/g, '')
   
   // Replace hashtags with readable format
-  text = text.replace(/#(\w+)/g, 'hashtag $1')
+  text = text.replace(/#(\w+)/g, ' hashtag $1')
+
+  // Replace commonly used emojies with their meaning and remove the rest
+  // Replace commonly used emojis with words (their meaning), remove the rest
+  const emojiMap = {
+    '🔥': 'fire ',
+    '😊': 'smiling face ',
+    '❤️': 'heart ',
+    '✅': 'checkmark ',
+    '🚀': 'rocket ',
+    '🌍': 'world'
+  };
+
+  text = text.replace(
+    /[\p{Emoji_Presentation}\u200d\uFE0F]/gu,
+    (match) => emojiMap[match] || ''
+  );
+
 
   console.log(text)
   

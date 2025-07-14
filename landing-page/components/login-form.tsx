@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -154,6 +154,17 @@ export function LoginForm() {
     });
 
   }
+
+  // check if src == extension in url string
+  // ie https://www.getlia.live/login?src=extension
+  // and immediately call the handleSignInWithLinkedin
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const src = urlParams.get('src');
+    if (src === 'extension') {
+      handleSignInWithLinkedin();
+    }
+  }, []);
 
   return (
     <Form {...form}>

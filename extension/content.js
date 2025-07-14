@@ -12,7 +12,7 @@ let settings = {
 let linkedinUserInfo = {
   name: "",
   headline: "",
-  linkedinUrl: ""
+  linkToProfile: ""
 }
 
 // Load settings when content script initializes
@@ -984,7 +984,7 @@ async function generateRewrittenText(text, type) {
       Authorization: `Bearer ${await accessToken()}`,
     },
     credentials: 'include',
-    body: JSON.stringify({prompt, type}),
+    body: JSON.stringify({prompt, type, userInfo: {...userInfo}}),
   })
 
   const data = await response.json()

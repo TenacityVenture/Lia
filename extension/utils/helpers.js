@@ -5,27 +5,27 @@ function getLinkedinUserInfo () {
   if (detailsContainer) {
     const name = detailsContainer.querySelector('.profile-card-name').textContent
     const headline = detailsContainer.querySelector('.profile-card-headline').textContent
-    const linkedinUrl = `https://www.linkedin.com${detailsContainer.querySelector('a').getAttribute('href')}`
+    const linkToProfile = `https://www.linkedin.com${detailsContainer.querySelector('a').getAttribute('href')}`
 
     // store in chrome storage
-    chrome.storage.local.set({ name, headline, linkedinUrl }, () => {
-      console.log('name, headline, linkedinUrl saved in storage.')
+    chrome.storage.local.set({ name, headline, linkToProfile }, () => {
+      console.log('name, headline, linkToProfile saved in storage.')
     })
     return {
       name,
       headline,
-      linkedinUrl
+      linkToProfile
     }
   } else { // if we can't get the user info - maybe because the actualy dom is not available,
       // then we use the one from storage
       let userInfo = {
         name: "",
         headline: "",
-        linkedinUrl: ""
+        linkToProfile: ""
       }
 
       // get from chrome storage
-      chrome.storage.local.get(['name', 'headline', 'linkedinUrl'], (data) => {
+      chrome.storage.local.get(['name', 'headline', 'linkToProfile'], (data) => {
         userInfo = {...userInfo, ...data}
       })
 

@@ -74,5 +74,14 @@ exports.getSubscription = async (req, res) => {
     return res.status(400).json({ error: 'Failed to get user plan', details: error.message})
   }
 
-  res.json({...data, isPro: data.plan === 'pro' ? true : false})
+  // Determine if the user should be treated as "pro"
+  // - If plan is already "pro" → isPro = true
+  // - If plan is "free" but their free trial (plan_expires_at) is still valid → isPro = true
+  // - Else → isPro = false
+
+  const now = new Date();
+  const isTrialActive = data.plan === 'free' && data.plan_expires_at && new Date(data.plan_expires_at) > now;
+  const isPro = data.plan === 'pro' || isTrialActive; 
+
+  res.json({...data, isPro})
 }

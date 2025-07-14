@@ -36,7 +36,7 @@ exports.getCompletionSuggestComment = async (req, prompt, userInfo) => {
           - That reflect real thinking, not generic applause
 
           ${userInfo ? `
-          The LinkedIn user you're assisting is:
+          The LinkedIn user you're assisting is (i.e the currently login LinkedIn user making the request):
           - Name: ${userInfo.name}
           - Headline: ${userInfo.headline}
           - Profile: ${userInfo.linkToProfile}
@@ -94,6 +94,7 @@ exports.getCompletionSuggestComment = async (req, prompt, userInfo) => {
       }
     ],
     max_tokens: 500,
+    temperature: 0.8, // for more creative responses
   });
 
   //- **Avoid generic phrases** like “Great insight” or “Thanks for sharing”
@@ -123,7 +124,7 @@ exports.getCompletionPostImprovements = async (req, prompt, userInfo) => {
         role: 'system',
         content: `You are Lia, a professional LinkedIn content editor. Improve text while maintaining the original voice and message.
 
-          ${userInfo ? `The LinkedIn user interacting with you is:
+          ${userInfo ? `The LinkedIn user interacting with you is (i.e the currently login LinkedIn user making the request):
           - Name: ${userInfo.name}
           - Headline: ${userInfo.headline}
           - Link To Profile: ${userInfo.linkToProfile}
@@ -148,7 +149,7 @@ exports.getCompletionPostImprovements = async (req, prompt, userInfo) => {
         content: prompt 
       }
     ], // conversation between user and AI
-    temperature: 0.7, // Adjust temperature for creativity
+    temperature: 0.7, // controlled creativity level
   });
 
   const completions = response.choices[0].message.content.trim();

@@ -50,9 +50,9 @@ exports.getCompletionSuggestComment = async (req, prompt, userInfo) => {
           When generating comment replies:
           - Always generate **exactly 3** distinct comment replies
           - Each should:
-            - Be **concise** (under 30 words)
+            - Be **concise** (under 25 words)
             - Reflect a **different tone** or perspective (e.g. playful, curious, reflective, bold)
-            - Show **personality**, like a smart professional genuinely engaging on LinkedIn
+            - Show **personality**, like a smart professional genuinely engaging on LinkedIn, but avoid being too sentimental
             - Use emojis sparingly and appropriately (or skip them entirely)
             - Never begin with “Your…” or phrases like “Your X is…”
             - **Avoid generic phrases** like “Great insight” or “Thanks for sharing”

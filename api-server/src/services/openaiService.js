@@ -35,13 +35,19 @@ exports.getCompletionSuggestComment = async (req, prompt, userInfo) => {
           - That fell **playful**, **smart**, and occasionally **opinionated** -- not robotic
           - That reflect real thinking, not generic applause
 
-          ${userInfo ? `The LinkedIn user interacting with you is:
+          ${userInfo ? `
+          The LinkedIn user you're assisting is:
           - Name: ${userInfo.name}
           - Headline: ${userInfo.headline}
-          - Profile Url: ${userInfo.linkToProfile}
-
-          Tailor your tone, comments, and suggestions to match their professional voice and audience.`
-          : ``}
+          - Profile: ${userInfo.linkToProfile}
+          
+          Use this information to match the user's professional tone and audience. Based on the conversation, you should be able to detect:
+          - If the user is replying to a comment on their own post
+          - If they are replying to someone else's comment
+          - If they are replying to their own comment
+          - Or if they are commenting on someone else's post
+          
+          Adjust your suggestions accordingly.` : ''}
 
           ---
 
@@ -121,7 +127,7 @@ exports.getCompletionPostImprovements = async (req, prompt, userInfo) => {
           - Headline: ${userInfo.headline}
           - Link To Profile: ${userInfo.linkToProfile}
 
-          Tailor your tone, comments, and suggestions to match their professional voice and audience.`
+          Tailor your tone to match their professional voice and audience.`
           : ``}
 
           --- 

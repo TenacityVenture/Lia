@@ -191,7 +191,8 @@ exports.message = async (req, res) => {
       messages: [
         systemMessage,
         ...messages
-      ]
+      ],
+      temperature: 0.7, // controlled creativity
     });
 
     const aiResponse = openaiRes.choices[0].message.content || 'No response from AI';

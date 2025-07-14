@@ -9,21 +9,20 @@ export default function RefreshTokenPage() {
   // This is a placeholder function, you can implement your own logic here
   const refreshToken = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/auth/refresh-token`, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/auth/refresh-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         credentials: 'include',
-      });
+      })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.error) {
+          console.error('Failed to refresh token:', data.message);
+          throw new Error(data.error)
+        }
 
-      if (!response.ok) {
-        setLoading(false);
-        console.error('Failed to refresh token:', response.statusText);
-        throw new Error('Failed to refresh token');
-      }
-
-      const data = await response.json();
         // send token to the chrome extension
         if (data.access_token && data.refresh_token) {
           
@@ -33,13 +32,21 @@ export default function RefreshTokenPage() {
 
           // Save tokens to localStorage
           localStorage.setItem("lia_access_token", data.access_token)
-        }
-        
-        // Redirect to the previous page or default to dashboard
-        const previousPage = document.referrer && new URL(document.referrer).origin === window.location.origin
+
+          // Redirect to the previous page or default to dashboard
+          const previousPage = document.referrer && new URL(document.referrer).origin === window.location.origin
           ? new URL(document.referrer).pathname
           : '/dashboard';
-        window.location.href = previousPage;
+
+          window.location.href = previousPage;
+        }
+      })
+      .catch((error) => {
+        setLoading(false);
+        console.error('Failed to refresh token:', error.message);
+        throw new Error('Failed to refresh token');
+      });
+
     } catch (error) {
       setLoading(false);
       console.error('Error refreshing token:', error);
@@ -81,7 +88,16 @@ export default function RefreshTokenPage() {
   }*/
   // Call the refresh token function when the component mounts
   useEffect(() => {
-    refreshToken();
+    const doRefresh = async () => {
+      try {
+        await refreshToken(); // This will properly await the async call of refreshToken
+      } catch (err) {
+        console.error('Token refresh failed:', err);
+      }
+    };
+  
+    doRefresh();
+
     //refreshTokenDirectly();
   }, []);
 

@@ -104,7 +104,7 @@ exports.message = async (req, res) => {
   const userId = req.user.sub;
   const chatId = req.params.chatId;
   const { message, reference } = req.body;
-  const { userInfo } = req.body;
+  let { userInfo } = req.body;
 
   if (!message) {
     return res.status(400).json({ error: 'Message content is required' });

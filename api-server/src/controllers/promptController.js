@@ -39,8 +39,8 @@ exports.rewritePost = async (req, res) => {
 
 exports.suggestReply = async (req, res) => {
   const { comment_text } = req.body;
-  const { userInfo } = req.body;
   const userId = req.user.sub;
+  let { userInfo } = req.body;
 
   if (!comment_text) {
     return res.status(400).json({ error: 'Missing comment_text' });
@@ -103,8 +103,8 @@ exports.aiImprovePost = async (req, res) => {
   
   // the prompt has already been structured in the extension
   const { prompt, type } = req.body; // Expecting a string prompt
-  const { userInfo } = req.body;
-  
+  let { userInfo } = req.body;
+
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'Invalid prompt format' });
   }
@@ -124,7 +124,7 @@ exports.aiImprovePost = async (req, res) => {
 
   try {
     // generate the AI response
-    const {Content: response, Usage: usage} = await openaiService.getCompletionPostImprovements(req, prompt);
+    const {Content: response, Usage: usage} = await openaiService.getCompletionPostImprovements(req, prompt, userInfo);
     if (!response) {
       return res.status(400).json({ error: 'AI response is empty' });
     }

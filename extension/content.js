@@ -3,11 +3,16 @@
 let settings = {
   tone: "professional",
   industry: "technology",
-  apiKey: "",
   post_enabled: true,
   reply_enabled: true,
   rewrite_enabled: true,
-  isRewriting: false
+  isRewriting: false,
+}
+
+let linkedinUserInfo = {
+  name: "",
+  headline: "",
+  linkedinUrl: ""
 }
 
 // Load settings when content script initializes
@@ -79,6 +84,8 @@ function initializeExtension() {
   setupTextSelectionToolbar()
   setupTextToSpeech()
 
+  linkedinUserInfo = {...window.getLinkedinUserInfo()}
+
   let mutationTimeout
 
   // Set up mutation observer to detect new elements
@@ -91,7 +98,9 @@ function initializeExtension() {
             setupCommentReplyAssistant()
             setuprewrite_enabledment()
             setupTextSelectionToolbar()
-            setupTextToSpeech() // Add this line
+            setupTextToSpeech() 
+            
+            linkedinUserInfo = {...window.getLinkedinUserInfo()}
 
             if (chatbotState.referenceMode) {
               addReferenceListeners()
@@ -2051,10 +2060,10 @@ async function generateCommentSuggestions(context) {
   };
 
   // Prepare the prompt
-  let prompt = `Generate 3 playful but professional LinkedIn comment replies`
+  let prompt = `Generate 3 LinkedIn comment replies that are playful, smart, and thoughtful, they should feel natural - like something a sharp professional would say in public:`
 
   if (context.postContent) {
-    prompt += ` to this post: "${context.postContent}"`
+    prompt += ` The post says: "${context.postContent}"`
   }
 
   if (context.postWriter) {
@@ -2063,11 +2072,18 @@ async function generateCommentSuggestions(context) {
 
 
   if (context.previousComments && context.previousComments.length > 0) {
-    prompt += `. Consider these previous comments and use them as source inspiration: ${context.previousComments.join(" | ")}`
+    prompt += `. Look at these previous comments as inspiration for tone, vibe, or topic: ${context.previousComments.join(" | ")}`
   }
 
   prompt += `. The tone should be ${settings.tone}. And industry should be ${settings.industry}`
-  prompt += ` Each reply should be concise (under 30 words), thoughtful, and each conveying a different tone or style of speaking. With no hastags. Don't start the content with 'your', and don't write like 'your [text] is' -- don't write like that.`
+  prompt += ` Write each reply:
+  - Under 30 words
+  - Distinct in voice or viewpoint
+  - Without hastags
+  - Without starting with "Your"
+  - Without sounding like an AI or bot
+  - Avoid generic praise
+  - Feel free to be slightly opinionated, clever, or relatable`
 
   async function generate() {
     const response = await fetch ("https://api.getlia.live/api/prompt/suggest-reply", {
@@ -2077,7 +2093,8 @@ async function generateCommentSuggestions(context) {
         Authorization: `Bearer ${await accessToken()}`,
       },
       body: JSON.stringify({
-        comment_text: prompt
+        comment_text: prompt,
+        userInfo: {...linkedinUserInfo}
       })
     })
 
@@ -2163,7 +2180,8 @@ async function generateReplyToCommentSuggestions(context) {
         Authorization: `Bearer ${await accessToken()}`,
       },
       body: JSON.stringify({
-        comment_text: prompt
+        comment_text: prompt,
+        userInfo: {...linkedinUserInfo}
       })
     })
 
@@ -3676,6 +3694,7 @@ const refreshToken = async () => {
     const body = {
       message: message,
       reference: chatbotState.referencedContent,
+      userInfo: {...linkedinUserInfo}
     }
 
     const response = await fetch(`https://api.getlia.live/api/chat/${chatbotState.currentConversationId}/message`, {

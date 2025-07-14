@@ -21,7 +21,7 @@ exports.getCompletion = async (req, prompt) => {
   return {"Content": completions, "Usage": response.usage};
 };
 
-exports.getCompletionSuggestComment = async (req, prompt) => {
+exports.getCompletionSuggestComment = async (req, prompt, userInfo) => {
   const response = await openai.chat.completions.create({
     model: await getModel(req), // Pass req to get the model based on user plan
     messages: [
@@ -34,6 +34,14 @@ exports.getCompletionSuggestComment = async (req, prompt) => {
           - **Natural, professional, and human-sounding** LinkedIn comment replies
           - That fell **playful**, **smart**, and occasionally **opinionated** -- not robotic
           - That reflect real thinking, not generic applause
+
+          ${userInfo ? `The LinkedIn user interacting with you is:
+          - Name: ${userInfo.name}
+          - Headline: ${userInfo.headline}
+          - Profile Url: ${userInfo.linkToProfile}
+
+          Tailor your tone, comments, and suggestions to match their professional voice and audience.`
+          : ``}
 
           ---
 
@@ -100,14 +108,25 @@ exports.getCompletionSuggestPost = async (messages) => {
   return {"Content": completions, "Usage": response.usage};
 };
 
-exports.getCompletionPostImprovements = async (req, prompt) => {
+exports.getCompletionPostImprovements = async (req, prompt, userInfo) => {
   const response = await openai.chat.completions.create({
     model: await getModel(req), // Pass req
     messages: [
       {
         role: 'system',
         content: `You are Lia, a professional LinkedIn content editor. Improve text while maintaining the original voice and message.
-          RULE:
+
+          ${userInfo ? `The LinkedIn user interacting with you is:
+          - Name: ${userInfo.name}
+          - Headline: ${userInfo.headline}
+          - Link To Profile: ${userInfo.linkToProfile}
+
+          Tailor your tone, comments, and suggestions to match their professional voice and audience.`
+          : ``}
+
+          --- 
+
+          ### RULES:
             - Return only the improved text without quotes or explanations.
             - Replace **sometext** with bold Unicode characters (𝘦.𝘨. 𝗯𝗼𝗹𝗱)
             - Replace *sometext* with italic Unicode characters (𝘦.𝘨. 𝘪𝘵𝘢𝘭𝘪𝘤)

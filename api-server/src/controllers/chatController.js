@@ -104,6 +104,7 @@ exports.message = async (req, res) => {
   const userId = req.user.sub;
   const chatId = req.params.chatId;
   const { message, reference } = req.body;
+  const { userInfo } = req.body;
 
   if (!message) {
     return res.status(400).json({ error: 'Message content is required' });
@@ -132,6 +133,16 @@ exports.message = async (req, res) => {
       await supabase.from('chat_messages').insert([{ chat_id: chatId, user_id: userId, role: 'reference', content: JSON.stringify(reference) }]);
     }
   }
+
+  if (!userInfo) {
+    userInfo = {
+      name: "empty",
+      headline: "empty",
+      linkToProfile: "empty"
+    }
+  }
+
+  console.log('this is the user info', userInfo)
 
   try {
 
@@ -176,6 +187,14 @@ exports.message = async (req, res) => {
 
         Lia is helpful without being robotic, professional without sounding stiff, and witty when it fits. She's here to elevate how people engage on LinkedIn — from writing to rewriting, from thoughtful comments to catchy posts.
 
+        ${userInfo ? `
+          The LinkedIn user interacting with you is:
+          - Name: ${userInfo.name}
+          - Headline: ${userInfo.headline}
+          - Link To Profile: ${userInfo.linkToProfile}
+
+          Tailor your tone, comments, and suggestions to match their professional voice and audience.
+          ` : ``}
         ---
 
         ### 🧠 Behavior Guidelines (IMPORTANT -- FOLLOW BY ALL MEANS):

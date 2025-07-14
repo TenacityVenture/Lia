@@ -39,16 +39,27 @@ exports.rewritePost = async (req, res) => {
 
 exports.suggestReply = async (req, res) => {
   const { comment_text } = req.body;
+  const { userInfo } = req.body;
   const userId = req.user.sub;
 
   if (!comment_text) {
     return res.status(400).json({ error: 'Missing comment_text' });
   }
 
+  if (!userInfo) {
+    userInfo = {
+      name: "empty",
+      headline: "empty",
+      linkToProfile: "empty"
+    }
+  }
+
+  console.log('this is the user info', userInfo)
+
   try {
     //const prompt = `Suggest a professional, thoughtful reply to this LinkedIn comment:\n\n"${comment_text}"`;
     const prompt = comment_text; // the comment text itself is the prompt -- structured in the extension
-    const {Content: suggestion, Usage: usage} = (await openaiService.getCompletionSuggestComment(req, prompt));
+    const {Content: suggestion, Usage: usage} = (await openaiService.getCompletionSuggestComment(req, prompt, userInfo));
 
     // Log usage
     await usageLogger.log({
@@ -92,12 +103,24 @@ exports.aiImprovePost = async (req, res) => {
   
   // the prompt has already been structured in the extension
   const { prompt, type } = req.body; // Expecting a string prompt
+  const { userInfo } = req.body;
+  
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'Invalid prompt format' });
   }
   if (!type || typeof type !== 'string') {
     return res.status(400).json({ error: 'Invalid type format' });
   }
+
+  if (!userInfo) {
+    userInfo = {
+      name: "empty",
+      headline: "empty",
+      linkToProfile: "empty"
+    }
+  }
+
+  console.log('this is the user info', userInfo)
 
   try {
     // generate the AI response

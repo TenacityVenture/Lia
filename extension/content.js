@@ -2153,7 +2153,7 @@ async function generateReplyToCommentSuggestions(context) {
     prompt += `. Consider these previous replies to that comment: ${context.previousRepliesOnComment.join(" | ")}`;
   }
   
-  prompt += `. The tone should be ${settings.tone}, but you may also use an encouraging, clarifying, or dialogue-inviting tone depending on context.`;
+  prompt += `. The tone should be ${settings.tone} and industry should be ${settings.industry}`;
   
   prompt += ` Respond from either the perspective of the **author replying to a comment**, or a **regular user replying to another user** — whichever fits the situation. Vary the tone and style across the 3 replies.`;
   

@@ -687,7 +687,7 @@ function setupTextSelectionToolbar() {
   // Hide toolbar when clicking outside
   document.addEventListener('mousedown', (e) => {
     if (!toolbar.contains(e.target)) {
-      toolbar.style.display = 'none'
+      //toolbar.style.display = 'none'
     }
   })
 }
@@ -3556,18 +3556,6 @@ const refreshToken = async () => {
     const messageDiv = document.createElement("div")
     messageDiv.className = `lia-message ${role}`
 
-    // Enhanced helpers
-    function formatLinks(text) {
-    // Avoid touching existing anchor tags by splitting on them
-      return text.replace(/(<a [^>]+>.*?<\/a>)|(\bhttps?:\/\/[^\s<]+)/g, (match, anchor, url) => {
-        if (anchor) return anchor; // return existing anchor tags untouched
-        if (url) {
-          return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="lia-link">${url} <span class="lia-link-icon">🔗</span></a>`;
-        }
-        return match;
-      });
-    }
-
     if (role === "assistant") {
       // Process content with formatting
       let processedContent = formatLinks(content);
@@ -4379,6 +4367,14 @@ const refreshToken = async () => {
         if (commentElement) {
           content.engagement.comments = commentElement.textContent.trim()
         }
+        // Extract url/link to post
+        if (window.location.href.includes("feed")) {
+          const postUrn = element?.getAttribute("data-urn")
+          const linkToPost = postUrn ? `https://www.linkedin.com/feed/update/${postUrn}/` : window.location.href
+          content.url = linkToPost
+
+        }
+
       } else if (element.classList.contains("reader-article-content")) {
         // LinkedIn article
         content.type = "article"
@@ -4403,6 +4399,7 @@ const refreshToken = async () => {
           content.text = textElement.textContent.trim()
         }
       }
+      
       return content
     } catch (error) {
       console.error("Error extracting post content:", error)
@@ -4554,15 +4551,20 @@ const refreshToken = async () => {
     return formattedMessage
   }
 
+  // Enhanced helpers
   // format links
   function formatLinks(text) {
+    // Handle markdown-style links [text](url)
+    text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, linkText, url) => {
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="lia-link">${linkText} <span class="lia-link-icon">🔗</span></a>`;
+    });
     // Avoid touching existing anchor tags by splitting on them
     return text.replace(/(<a [^>]+>.*?<\/a>)|(\bhttps?:\/\/[^\s<]+)/g, (match, anchor, url) => {
-      if (anchor) return anchor; // return existing anchor tags untouched
-      if (url) {
-        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="lia-link">${url} <span class="lia-link-icon">🔗</span></a>`;
-      }
-      return match;
+    if (anchor) return anchor; // return existing anchor tags untouched
+    if (url) {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="lia-link">${url} <span class="lia-link-icon">🔗</span></a>`;
+    }
+    return match;
     });
   }
 

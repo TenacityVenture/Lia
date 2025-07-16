@@ -1,4 +1,4 @@
-function getLinkedinUserInfo () {
+async function getLinkedinUserInfo () {
   const container = document.querySelector('.artdeco-card')
   let detailsContainer = null
   if (container) {
@@ -11,7 +11,7 @@ function getLinkedinUserInfo () {
     const linkToProfile = `https://www.linkedin.com${detailsContainer.querySelector('a').getAttribute('href')}`
 
     // store in chrome storage
-    chrome.storage.local.set({ name, headline, linkToProfile }, () => {
+    await chrome.storage.local.set({ name, headline, linkToProfile }, () => {
       console.log('name, headline, linkToProfile saved in storage.')
     })
     return {
@@ -21,18 +21,11 @@ function getLinkedinUserInfo () {
     }
   } else { // if we can't get the user info - maybe because the actualy dom is not available,
       // then we use the one from storage
-      let userInfo = {
-        name: "",
-        headline: "",
-        linkToProfile: ""
-      }
 
       // get from chrome storage
-      chrome.storage.local.get(['name', 'headline', 'linkToProfile'], (data) => {
-        userInfo = {...userInfo, ...data}
-      })
+      const { name, headline, linkToProfile } = await chrome.storage.local.get(['name', 'headline', 'linkToProfile'])
 
-      return userInfo
+      return { name, headline, linkToProfile }
   }
 }
 

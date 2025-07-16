@@ -76,7 +76,7 @@ function waitForElement(selector, maxAttempts = 100, interval = 1000) {
 }
 
 
-function initializeExtension() {
+async function initializeExtension() {
   // Initialize the extension functionality
   //setupPostCreationAssistant()
   setupCommentReplyAssistant()
@@ -84,7 +84,7 @@ function initializeExtension() {
   setupTextSelectionToolbar()
   setupTextToSpeech()
 
-  linkedinUserInfo = {...window.getLinkedinUserInfo()}
+  linkedinUserInfo = await window.getLinkedinUserInfo()
 
   let mutationTimeout
 
@@ -92,15 +92,15 @@ function initializeExtension() {
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
       clearTimeout(mutationTimeout)
-      mutationTimeout = setTimeout(() => {
+      mutationTimeout = setTimeout(async () => {
         if (mutation.addedNodes.length) {
           try {
             setupCommentReplyAssistant()
             setuprewrite_enabledment()
             setupTextSelectionToolbar()
-            setupTextToSpeech() 
-            
-            linkedinUserInfo = {...window.getLinkedinUserInfo()}
+            setupTextToSpeech()
+
+            linkedinUserInfo = await window.getLinkedinUserInfo()
 
             if (chatbotState.referenceMode) {
               addReferenceListeners()
@@ -278,9 +278,6 @@ function extractTextContent(element) {
     /[\p{Emoji_Presentation}\u200d\uFE0F]/gu,
     (match) => emojiMap[match] || ''
   );
-
-
-  console.log(text)
   
   return text
 }
@@ -687,7 +684,7 @@ function setupTextSelectionToolbar() {
   // Hide toolbar when clicking outside
   document.addEventListener('mousedown', (e) => {
     if (!toolbar.contains(e.target)) {
-      //toolbar.style.display = 'none'
+      toolbar.style.display = 'none'
     }
   })
 }
@@ -1803,7 +1800,7 @@ function getCommentContext(commentInput) {
       replyContext.isReplyingTo = uniqueCurrentContent.trim()
 
       const commentReplyContext = `
-      ${commentContentElement.innerText} -- replied by ${commenterName}
+      ${commentContentElement.innerText} -- by ${commenterName}
       `
 
       // push to context
@@ -2079,9 +2076,11 @@ async function generateCommentSuggestions(context) {
   prompt += ` Write each reply:
   - Under 20 words
   - Distinct in voice or viewpoint
-  - Without hastags
+  - Without hashtags
   - Without starting with "Your"
+  - Use emojis cautiously so it doesn't sound too robotic
   - Without sounding like an AI or bot
+  - Avoid generic responses
   - Feel free to be slightly opinionated, clever, or relatable`
 
   async function generate() {

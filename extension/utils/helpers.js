@@ -1,6 +1,9 @@
 function getLinkedinUserInfo () {
   const container = document.querySelector('.artdeco-card')
-  const detailsContainer = container.querySelector('.profile-card-member-details')
+  let detailsContainer = null
+  if (container) {
+    detailsContainer = container.querySelector('.profile-card-member-details')
+  }
 
   if (detailsContainer) {
     const name = detailsContainer.querySelector('.profile-card-name').textContent

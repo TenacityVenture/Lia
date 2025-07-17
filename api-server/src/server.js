@@ -62,6 +62,10 @@ app.use('/api/paypal', paypalRoutes);
 const supportRoutes = require('./routes/supportRoutes');
 app.use('/api/support', supportRoutes);
 
+// tts - aws text to speech routes
+const ttsRoutes = require('./routes/ttsRoutes');
+app.use('/api/tts', ttsRoutes);
+
 // Default route
 app.get('/', (req, res) => {
   res.send('LIA API is live 🔥');

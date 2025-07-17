@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-polly": "^3.846.0",
     "@supabase/supabase-js": "^2.49.4",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

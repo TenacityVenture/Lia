@@ -981,7 +981,7 @@ async function generateRewrittenText(text, type) {
       Authorization: `Bearer ${await accessToken()}`,
     },
     credentials: 'include',
-    body: JSON.stringify({prompt, type, userInfo: {...userInfo}}),
+    body: JSON.stringify({prompt, type, userInfo: linkedinUserInfo}),
   })
 
   const data = await response.json()
@@ -2971,10 +2971,15 @@ const refreshToken = async () => {
       outline: none;
       background: transparent;
       font-family: inherit;
-
+      color: #333333;
+      
       scrollbar-width: thin;
       scrollbar-color: #0a66c2 #e9ecef;
 
+      &::placeholder {
+        color: #888888;
+      }
+      
       &::-webkit-scrollbar {
         width: 2px;
         height: 2px;

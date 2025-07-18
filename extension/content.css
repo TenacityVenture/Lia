@@ -91,6 +91,7 @@
     margin-bottom: 8px;
     cursor: pointer;
     transition: background-color 0.2s;
+    color: #888;
   }
   
   .linkedin-ai-suggestion:hover {
@@ -126,6 +127,7 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
+    color: #888;
   }
   
   .linkedin-ai-loading-spinner {

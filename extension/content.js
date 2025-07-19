@@ -75,6 +75,26 @@ function waitForElement(selector, maxAttempts = 100, interval = 1000) {
   });
 }
 
+function detectLinkedInTheme() {
+  const container = document.querySelector('.feed-shared-update-v2'); // or any reliable element
+  if (!container) return null;
+
+  const style = getComputedStyle(container);
+  const bgColor = style.backgroundColor;
+
+  // Function to check brightness
+  const isDark = (color) => {
+    const [r, g, b] = color.match(/\d+/g).map(Number);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness < 128; // below this is considered dark
+  };
+
+  // save to storage if theme is dark or light
+  chrome.storage.local.set({ linkedinTheme: isDark(bgColor) ? 'dark' : 'light' });
+
+  return isDark(bgColor) ? 'dark' : 'light';
+}
+
 
 async function initializeExtension() {
   // Initialize the extension functionality
@@ -83,6 +103,11 @@ async function initializeExtension() {
   setuprewrite_enabledment()
   setupTextSelectionToolbar()
   setupTextToSpeech()
+
+  detectLinkedInTheme();
+
+  //const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  //console.log('Dark mode: 1', isDarkMode);
   //injectProfileNotesSidebar()
 
   linkedinUserInfo = await window.getLinkedinUserInfo()
@@ -100,6 +125,11 @@ async function initializeExtension() {
             setuprewrite_enabledment()
             setupTextSelectionToolbar()
             setupTextToSpeech()
+            detectLinkedInTheme()
+            //const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            //console.log('Dark mode: 2', isDarkMode);
+
+            console.log('linkedin theme detected:', theme);
             //injectProfileNotesSidebar()
 
             linkedinUserInfo = await window.getLinkedinUserInfo()

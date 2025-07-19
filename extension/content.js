@@ -83,6 +83,7 @@ async function initializeExtension() {
   setuprewrite_enabledment()
   setupTextSelectionToolbar()
   setupTextToSpeech()
+  //injectProfileNotesSidebar()
 
   linkedinUserInfo = await window.getLinkedinUserInfo()
 
@@ -99,6 +100,7 @@ async function initializeExtension() {
             setuprewrite_enabledment()
             setupTextSelectionToolbar()
             setupTextToSpeech()
+            //injectProfileNotesSidebar()
 
             linkedinUserInfo = await window.getLinkedinUserInfo()
 
@@ -523,9 +525,6 @@ function isUnicode(text) {
 function setupTextSelectionToolbar() {
   // Remove existing popup if it exists
   const existingPopup = document.getElementById('linkedin-ai-text-toolbar')
-  if (existingPopup) {
-    existingPopup.remove()
-  }
 
   // Create the enhanced toolbar
   const toolbar = document.createElement('div')
@@ -1655,40 +1654,166 @@ async function animateTextRewrite(editor, originalText, newText) {
  * @param {"info"|"success"|"error"} [type="info"] - The type of message to display.
  *   Determines the background color of the message.
  */
+
+
 function showTemporaryMessage(editor, message, type = "info") {
-  const messageEl = document.createElement("div")
-  messageEl.style.cssText = `
+  const container = document.createElement("div")
+  container.style.cssText = `
     position: absolute;
-    top: -5px;
+    top: 80px;
     left: 50%;
     transform: translateX(-50%);
-    background: ${type === "success" ? "#10b981" : type === "error" ? "#ef4444" : "#0a66c2"};
-    color: white;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-size: 12px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
     z-index: 10001;
-    opacity: 0;
-    transition: opacity 0.3s ease;
     pointer-events: none;
-    white-space: nowrap;
   `
-  messageEl.textContent = message
 
-  // Position relative to editor
-  const editorParent = editor.parentElement
+  // Color schemes
+  const colors = {
+    success: { avatar: "#10b981", bubble: "#f0fdf4", text: "#166534", border: "#bbf7d0" },
+    error: { avatar: "#ef4444", bubble: "#fef2f2", text: "#991b1b", border: "#fecaca" },
+    info: { avatar: "#0a66c2", bubble: "#eff6ff", text: "#1e40af", border: "#bfdbfe" },
+    warning: { avatar: "#f59e0b", bubble: "#fffbeb", text: "#92400e", border: "#fed7aa" },
+  }
+
+  const colorScheme = colors[type] || colors.info
+
+  // Avatar with pulsing effect
+  const avatarContainer = document.createElement("div")
+  avatarContainer.style.cssText = `
+    width: 44px;
+    height: 44px;
+    background: ${colorScheme.avatar};
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px ${colorScheme.avatar}40;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    flex-shrink: 0;
+    position: relative;
+  `
+
+  // Add pulsing ring
+  const pulseRing = document.createElement("div")
+  pulseRing.style.cssText = `
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 2px solid ${colorScheme.avatar};
+    border-radius: 50%;
+    opacity: 0;
+    animation: pulse 2s infinite;
+  `
+
+  const pulseStyle = document.createElement("style")
+  pulseStyle.textContent = `
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 0.7; }
+      100% { transform: scale(1.2); opacity: 0; }
+    }
+  `
+  document.head.appendChild(pulseStyle)
+
+  avatarContainer.appendChild(pulseRing)
+  avatarContainer.innerHTML += `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+      <rect x="2" y="9" width="4" height="12"/>
+      <circle cx="4" cy="4" r="2"/>
+      <circle cx="16" cy="4" r="2" fill="white"/>
+      <path d="M12 8a4 4 0 0 1 4-4" stroke="white"/>
+    </svg>
+  `
+
+  // Modern speech bubble
+  const speechBubble = document.createElement("div")
+  speechBubble.style.cssText = `
+    position: relative;
+    background: ${colorScheme.bubble};
+    color: ${colorScheme.text};
+    padding: 14px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    border: 1px solid ${colorScheme.border};
+    max-width: 280px;
+    opacity: 0;
+    transform: scale(0.7) translateY(15px);
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    backdrop-filter: blur(10px);
+  `
+
+  // Curved tail for modern look
+  const bubbleTail = document.createElement("div")
+  bubbleTail.style.cssText = `
+    position: absolute;
+    left: -8px;
+    top: 15px;
+    width: 20px;
+    height: 20px;
+    background: ${colorScheme.bubble};
+    border: 1px solid ${colorScheme.border};
+    border-right: none;
+    border-bottom: none;
+    transform: rotate(-45deg);
+    border-radius: 4px 0 0 0;
+  `
+
+  const messageText = document.createElement("span")
+  speechBubble.appendChild(bubbleTail)
+  speechBubble.appendChild(messageText)
+
+  container.appendChild(avatarContainer)
+  container.appendChild(speechBubble)
+
+  const editorParent = editor.closest('.share-box')
   editorParent.style.position = "relative"
-  editorParent.appendChild(messageEl)
+  editorParent.appendChild(container)
 
-  // Animate in
-  setTimeout(() => (messageEl.style.opacity = "1"), 10)
-
-  // Remove after delay
+  // Animation sequence
   setTimeout(() => {
-    messageEl.style.opacity = "0"
-    setTimeout(() => messageEl.remove(), 300)
-  }, 3000)
+    avatarContainer.style.opacity = "1"
+    avatarContainer.style.transform = "scale(1)"
+  }, 100)
+
+  setTimeout(() => {
+    speechBubble.style.opacity = "1"
+    speechBubble.style.transform = "scale(1) translateY(0)"
+  }, 400)
+
+  setTimeout(() => {
+    let i = 0
+    const typeMessage = () => {
+      if (i <= message.length) {
+        messageText.textContent = message.substring(0, i) + (i < message.length ? "▋" : "")
+        i++
+        setTimeout(typeMessage, 40)
+      }
+    }
+    typeMessage()
+  }, 700)
+
+  // Cleanup
+  setTimeout(() => {
+    container.style.transform = "translateX(-50%) scale(0.8)"
+    container.style.opacity = "0"
+    setTimeout(() => {
+      container.remove()
+      pulseStyle.remove()
+    }, 1500)
+  }, 4500)
 }
+
+
 
 function getPostContext() {
   // Try to get context from the page (like hashtags, trending topics, etc.)
@@ -3589,13 +3714,13 @@ const refreshToken = async () => {
         let i = 0;
         const plainContent = content; // Keep original for typewriter
         
-        function typeWriter() {
+        async function typeWriter() {
           if (i <= plainContent.length) {
             const currentText = plainContent.slice(0, i);
             const formattedText = formatMarkdown(formatLinks(currentText));
             contentDiv.innerHTML = formattedText + (i < plainContent.length ? '<span class="lia-cursor">|</span>' : '');
             i++;
-            setTimeout(typeWriter, 20);
+            setTimeout(typeWriter, 10);
           } else {
             // Final formatting
             contentDiv.innerHTML = processedContent;
@@ -4116,7 +4241,6 @@ const refreshToken = async () => {
                       </svg>
                       Referenced ${refContent.type}
                       ${refContent.author ? `by ${refContent.author}` : ""}
-                      <button class="lia-clear-reference" onclick="clearReferencedContent()">×</button>
                     </div>
                     <div class="lia-referenced-content-preview">
                       ${refContent.text.substring(0, 150)}${refContent.text.length > 150 ? "..." : ""}
@@ -4315,12 +4439,15 @@ const refreshToken = async () => {
     })
 
     // Add click listener to clear reference
-    const clearReferenceBtn = document.querySelector(".lia-clear-reference")
-    if (clearReferenceBtn) {
-      clearReferenceBtn.addEventListener("click", (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        clearReferencedContent()
+    const clearReferenceBtns = document.querySelectorAll(".lia-clear-reference")
+    if (clearReferenceBtns) {
+      clearReferenceBtns.forEach(clearReferenceBtn => {
+        console.log('reference btns', clearReferenceBtn)
+        clearReferenceBtn.addEventListener("click", (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          clearReferencedContent(clearReferenceBtn)
+        })
       })
     }
   }
@@ -4434,9 +4561,9 @@ const refreshToken = async () => {
     messagesContainer.scrollTop = messagesContainer.scrollHeight
   }
 
-  function clearReferencedContent() {
+  function clearReferencedContent(clearReferenceBtn) {
     chatbotState.referencedContent = null
-    const refDiv = document.querySelector(".lia-referenced-content")
+    const refDiv = clearReferenceBtn.closest(".lia-referenced-content")
     if (refDiv) refDiv.remove()
     const chatInput = document.getElementById("lia-message-input")
     if (chatInput) {
@@ -4704,4 +4831,142 @@ const refreshToken = async () => {
   
   // Initialize chatbot when extension loads
   initializeChatbot()
+
+  // === Profile Notes Sidebar Injection ===
+  function injectProfileNotesSidebar() {
+    console.log('injected')
+    // Only run on LinkedIn profile pages
+    if (!/linkedin\.com\/in\//.test(window.location.href)) return;
+
+    // Avoid duplicate injection
+    if (document.getElementById('lia-profile-notes-sidebar')) return;
+
+    // Extract profile segment from URL
+    const match = window.location.pathname.match(/\/in\/([^\/]+)/);
+    const profileSegment = match ? match[1] : null;
+    if (!profileSegment) return;
+
+    // Sidebar HTML
+    const sidebar = document.createElement('div');
+    sidebar.id = 'lia-profile-notes-sidebar';
+    sidebar.style.cssText = `
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 340px;
+      height: 100vh;
+      background: #fff;
+      box-shadow: -2px 0 16px rgba(0,0,0,0.08);
+      border-left: 1px solid #e5e7eb;
+      z-index: 100000;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      font-family: 'Inter', Arial, sans-serif;
+      overflow-y: auto;
+    `;
+    sidebar.innerHTML = `
+      <div style="padding: 1.25rem 1.25rem 0.5rem 1.25rem; border-bottom: 1px solid #f1f1f1; background: #f9fafb;">
+        <h2 style="font-size: 1.2rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+          <span>📝</span> Profile Notes
+        </h2>
+        <div style="font-size: 0.95rem; color: #666; margin-top: 0.25rem;">${profileSegment}</div>
+      </div>
+      <div id="lia-notes-form-section" style="padding: 1rem 1.25rem 0.5rem 1.25rem; border-bottom: 1px solid #f1f1f1;">
+        <textarea id="lia-note-input" rows="3" placeholder="Type your note..." style="width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.75rem; resize: vertical; font-size: 1rem; margin-bottom: 0.5rem;"></textarea>
+        <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
+          <select id="lia-note-tags" multiple style="flex: 1; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.4rem; font-size: 0.95rem;">
+            <option value="Investor">Investor</option>
+            <option value="Follow-up">Follow-up</option>
+            <option value="Hiring">Hiring</option>
+          </select>
+          <button id="lia-ai-suggest" style="background: #f3f4f6; border: none; border-radius: 6px; padding: 0.4rem 0.7rem; font-size: 0.95rem; color: #0a66c2; cursor: pointer;">AI Suggest</button>
+        </div>
+        <button id="lia-save-note" style="background: #0a66c2; color: #fff; border: none; border-radius: 8px; padding: 0.6rem 1.2rem; font-size: 1rem; font-weight: 500; cursor: pointer; width: 100%;">Save Note</button>
+      </div>
+      <div id="lia-notes-list-section" style="flex: 1; padding: 1rem 1.25rem; overflow-y: auto;"></div>
+    `;
+    document.body.appendChild(sidebar);
+
+    // Helper: get notes from storage
+    function getNotes(cb) {
+      console.log('xyz')
+      chrome.storage.local.get([`profile_notes_${profileSegment}`], (result) => {
+        cb(result[`profile_notes_${profileSegment}`] || []);
+      });
+    }
+    // Helper: save notes to storage
+    function saveNotes(notes, cb) {
+      chrome.storage.local.set({ [`profile_notes_${profileSegment}`]: notes }, cb);
+    }
+
+    // Render notes list
+    function renderNotes() {
+      getNotes((notes) => {
+        const listSection = document.getElementById('lia-notes-list-section');
+        if (!notes.length) {
+          listSection.innerHTML = `<div style='color:#888; text-align:center; margin-top:2rem;'>No notes yet for this profile</div>`;
+          return;
+        }
+        listSection.innerHTML = notes.map((note, idx) => `
+          <div style="background: #f3f4f6; border-radius: 8px; padding: 0.75rem 0.9rem; margin-bottom: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); position: relative;">
+            <div style="font-size: 0.97rem; margin-bottom: 0.4rem; white-space: pre-line;">${note.text.replace(/</g, '&lt;')}</div>
+            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: #666;">
+              <span>${new Date(note.timestamp).toLocaleString()}</span>
+              <span>${(note.tags||[]).map(tag => `<span style='background:#e0e7ef; color:#0a66c2; border-radius:4px; padding:2px 7px; margin-left:3px;'>${tag}</span>`).join('')}</span>
+            </div>
+            <div style="position: absolute; top: 0.7rem; right: 0.7rem; display: flex; gap: 0.3rem;">
+              <button data-edit="${idx}" style="background: none; border: none; color: #0a66c2; font-size: 1rem; cursor: pointer;">✏️</button>
+              <button data-delete="${idx}" style="background: none; border: none; color: #ef4444; font-size: 1rem; cursor: pointer;">🗑️</button>
+            </div>
+          </div>
+        `).join('');
+      });
+    }
+
+    // Save note handler
+    sidebar.querySelector('#lia-save-note').onclick = function() {
+      const textarea = sidebar.querySelector('#lia-note-input');
+      const tagsSelect = sidebar.querySelector('#lia-note-tags');
+      const text = textarea.value.trim();
+      if (!text) return;
+      const tags = Array.from(tagsSelect.selectedOptions).map(opt => opt.value);
+      getNotes((notes) => {
+        notes.unshift({ text, tags, timestamp: Date.now() });
+        saveNotes(notes, () => {
+          textarea.value = '';
+          tagsSelect.selectedIndex = -1;
+          renderNotes();
+        });
+      });
+    };
+
+    // Edit/delete handlers
+    sidebar.addEventListener('click', function(e) {
+      if (e.target.hasAttribute('data-delete')) {
+        const idx = +e.target.getAttribute('data-delete');
+        getNotes((notes) => {
+          notes.splice(idx, 1);
+          saveNotes(notes, renderNotes);
+        });
+      } else if (e.target.hasAttribute('data-edit')) {
+        const idx = +e.target.getAttribute('data-edit');
+        getNotes((notes) => {
+          const note = notes[idx];
+          sidebar.querySelector('#lia-note-input').value = note.text;
+          const tagsSelect = sidebar.querySelector('#lia-note-tags');
+          Array.from(tagsSelect.options).forEach(opt => {
+            opt.selected = note.tags.includes(opt.value);
+          });
+          // Remove the note being edited
+          notes.splice(idx, 1);
+          saveNotes(notes, renderNotes);
+        });
+      }
+    });
+
+    // Initial render
+    renderNotes();
+  };
+
 })()

@@ -177,41 +177,161 @@ class LinkedInMentionHandler {
 // Create global instance
 const linkedInMentionHandler = new LinkedInMentionHandler()
 
-/**
- * Show a temporary message in the editor
- */
 function showTemporaryMessage(editor, message, type = "info") {
-  const messageElement = document.createElement("div")
-  messageElement.textContent = message
-  messageElement.style.cssText = `
+  const container = document.createElement("div")
+  container.style.cssText = `
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background-color: ${type === "success" ? "#4CAF50" : "#2196F3"};
-    color: white;
-    text-align: center;
-    padding: 8px;
-    border-radius: 4px;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    z-index: 10001;
+    pointer-events: none;
   `
 
-  editor.parentNode.style.position = "relative"
-  editor.parentNode.appendChild(messageElement)
+  // Color schemes
+  const colors = {
+    success: { avatar: "#10b981", bubble: "#f0fdf4", text: "#166534", border: "#bbf7d0" },
+    error: { avatar: "#ef4444", bubble: "#fef2f2", text: "#991b1b", border: "#fecaca" },
+    info: { avatar: "#0a66c2", bubble: "#eff6ff", text: "#1e40af", border: "#bfdbfe" },
+    warning: { avatar: "#f59e0b", bubble: "#fffbeb", text: "#92400e", border: "#fed7aa" },
+  }
 
-  // Fade in
-  setTimeout(() => {
-    messageElement.style.opacity = "1"
-  }, 10)
+  const colorScheme = colors[type] || colors.info
 
-  // Fade out and remove
+  // Avatar with pulsing effect
+  const avatarContainer = document.createElement("div")
+  avatarContainer.style.cssText = `
+    width: 44px;
+    height: 44px;
+    background: ${colorScheme.avatar};
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px ${colorScheme.avatar}40;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    flex-shrink: 0;
+    position: relative;
+  `
+
+  // Add pulsing ring
+  const pulseRing = document.createElement("div")
+  pulseRing.style.cssText = `
+    position: absolute;
+    top: -4px;
+    left: -4px;
+    right: -4px;
+    bottom: -4px;
+    border: 2px solid ${colorScheme.avatar};
+    border-radius: 50%;
+    opacity: 0;
+    animation: pulse 2s infinite;
+  `
+
+  const pulseStyle = document.createElement("style")
+  pulseStyle.textContent = `
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 0.7; }
+      100% { transform: scale(1.2); opacity: 0; }
+    }
+  `
+  document.head.appendChild(pulseStyle)
+
+  avatarContainer.appendChild(pulseRing)
+  avatarContainer.innerHTML += `
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+      <rect x="2" y="9" width="4" height="12"/>
+      <circle cx="4" cy="4" r="2"/>
+      <circle cx="16" cy="4" r="2" fill="white"/>
+      <path d="M12 8a4 4 0 0 1 4-4" stroke="white"/>
+    </svg>
+  `
+
+  // Modern speech bubble
+  const speechBubble = document.createElement("div")
+  speechBubble.style.cssText = `
+    position: relative;
+    background: ${colorScheme.bubble};
+    color: ${colorScheme.text};
+    padding: 14px 18px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+    border: 1px solid ${colorScheme.border};
+    max-width: 280px;
+    opacity: 0;
+    transform: scale(0.7) translateY(15px);
+    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    backdrop-filter: blur(10px);
+  `
+
+  // Curved tail for modern look
+  const bubbleTail = document.createElement("div")
+  bubbleTail.style.cssText = `
+    position: absolute;
+    left: -8px;
+    top: 15px;
+    width: 20px;
+    height: 20px;
+    background: ${colorScheme.bubble};
+    border: 1px solid ${colorScheme.border};
+    border-right: none;
+    border-bottom: none;
+    transform: rotate(-45deg);
+    border-radius: 4px 0 0 0;
+  `
+
+  const messageText = document.createElement("span")
+  speechBubble.appendChild(bubbleTail)
+  speechBubble.appendChild(messageText)
+
+  container.appendChild(avatarContainer)
+  container.appendChild(speechBubble)
+
+  const editorParent = editor.closest('.share-box')
+  editorParent.style.position = "relative"
+  editorParent.appendChild(container)
+
+  // Animation sequence
   setTimeout(() => {
-    messageElement.style.opacity = "0"
+    avatarContainer.style.opacity = "1"
+    avatarContainer.style.transform = "scale(1)"
+  }, 100)
+
+  setTimeout(() => {
+    speechBubble.style.opacity = "1"
+    speechBubble.style.transform = "scale(1) translateY(0)"
+  }, 400)
+
+  setTimeout(() => {
+    let i = 0
+    const typeMessage = () => {
+      if (i <= message.length) {
+        messageText.textContent = message.substring(0, i) + (i < message.length ? "▋" : "")
+        i++
+        setTimeout(typeMessage, 40)
+      }
+    }
+    typeMessage()
+  }, 700)
+
+  // Cleanup
+  setTimeout(() => {
+    container.style.transform = "translateX(-50%) scale(0.8)"
+    container.style.opacity = "0"
     setTimeout(() => {
-      editor.parentNode.removeChild(messageElement)
-    }, 300)
-  }, 3000)
+      container.remove()
+      pulseStyle.remove()
+    }, 1500)
+  }, 4500)
 }
 
 /**
@@ -254,6 +374,12 @@ async function animateTextRewriteWithMentions(editor, originalText, newText) {
           editor.textContent = partialText + (currentIndex < newText.length ? "|" : "")
 
           currentIndex++
+
+          // scroll to the bottom of the editor
+          editor.closest('.share-box').scrollTo({
+            top: editor.scrollHeight,
+            behavior: 'smooth'
+          })
         } else {
           // Animation complete
           clearInterval(typewriterInterval)
@@ -291,7 +417,8 @@ async function animateTextRewriteWithMentions(editor, originalText, newText) {
             resolve()
           }, 300)
         }
-      }, 30) // Adjust speed here (lower = faster)
+
+      }, 15) // Adjust speed here (lower = faster)
     }, 300)
   })
 }

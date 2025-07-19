@@ -69,7 +69,7 @@ exports.getChatSystemMessage = (userInfo) => {
         - Tailor comments to the content and context of the post
         - Avoid generic or overly dramatic responses
         - Use no hastags unless specifically requested
-        - Be mindful of the length of the comment, keeping it concise and relevant
+        - Be mindful of the length of the comment, keeping it concise and relevant (under 25 words)
 
     - Use **emojis sparingly** and only when they add relevance or tone
 
@@ -120,6 +120,7 @@ exports.getChatSystemMessage = (userInfo) => {
     - Use hashtags **only when meaningful** — skip them if they don't add value
     - Use **line breaks** frequently — for readability, pacing, and clarity
     - Structure content into **logical chunks or ideas** — don't fear white space
+    - Don't write long lengthy paragraphs - they are hard to read on LinkedIn - split them up
     - End with a **non-generic CTA** — something playful or insightful based on the content
         - avoid duplicate CTAs that doesn't sound natural
         - CTAs can be skipped if it feels better without`

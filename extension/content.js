@@ -1,870 +1,870 @@
 (() => {
 
-let settings = {
-  tone: "professional",
-  industry: "technology",
-  post_enabled: true,
-  reply_enabled: true,
-  rewrite_enabled: true,
-  isRewriting: false,
-}
-
-let linkedinUserInfo = {
-  name: "",
-  headline: "",
-  linkToProfile: ""
-}
-
-// Load settings when content script initializes
-chrome.storage.sync.get(["tone", "industry", "post_enabled", "reply_enabled", "rewrite_enabled"], (data) => {
-  settings = { ...settings, ...data }
-  initializeExtension()
-})
-
-// Listen for settings updates
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.action === "settingsUpdated") {
-    chrome.storage.sync.get(["tone", "industry", "post_enabled", "reply_enabled", "rewrite_enabled"], (data) => {
-      settings = { ...settings, ...data }
-    })
+  let settings = {
+    tone: "professional",
+    industry: "technology",
+    post_enabled: true,
+    reply_enabled: true,
+    rewrite_enabled: true,
+    isRewriting: false,
   }
-})
 
-// Listen for auth tokens after sign-in or signup on the website
-window.addEventListener('message', (event) => {
-  if (event.origin !== 'https://www.getlia.live') return;
-  if (event.source !== window) return;
+  let linkedinUserInfo = {
+    name: "",
+    headline: "",
+    linkToProfile: ""
+  }
 
-  if (event.data.type === 'SEND_JWTs') {
-    chrome.runtime.sendMessage({
-      type: 'STORE_JWTs',
-      access_token: event.data.access_token,
-      refresh_token: event.data.refresh_token
+  // Load settings when content script initializes
+  chrome.storage.sync.get(["tone", "industry", "post_enabled", "reply_enabled", "rewrite_enabled"], (data) => {
+    settings = { ...settings, ...data }
+    initializeExtension()
+  })
+
+  // Listen for settings updates
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "settingsUpdated") {
+      chrome.storage.sync.get(["tone", "industry", "post_enabled", "reply_enabled", "rewrite_enabled"], (data) => {
+        settings = { ...settings, ...data }
+      })
+    }
+  })
+
+  // Listen for auth tokens after sign-in or signup on the website
+  window.addEventListener('message', (event) => {
+    if (event.origin !== 'https://www.getlia.live') return;
+    if (event.source !== window) return;
+
+    if (event.data.type === 'SEND_JWTs') {
+      chrome.runtime.sendMessage({
+        type: 'STORE_JWTs',
+        access_token: event.data.access_token,
+        refresh_token: event.data.refresh_token
+      });
+      initializeChatbot()
+    }
+
+    // clear tokens when logout on the website
+    if (event.data.type === 'CLEAR_JWTs') {
+      chrome.storage.local.remove(['access_token', 'refresh_token'], () => {
+        console.log('Access token and refresh token cleared from storage.');
+      });
+    }
+  });
+
+  // uitlity functions
+
+  // check if element exists in dom / waits for it to exist by keep trying
+  function waitForElement(selector, maxAttempts = 100, interval = 1000) {
+    return new Promise((resolve, reject) => {
+      let attempts = 0;
+
+      const check = () => {
+        const el = document.querySelector(selector);
+        if (el) return resolve(el);
+
+        attempts++;
+        if (attempts >= maxAttempts) {
+          return reject(`Element ${selector} not found after ${maxAttempts} attempts`);
+        }
+
+        setTimeout(check, interval);
+      };
+
+      check();
     });
-    initializeChatbot()
   }
 
-  // clear tokens when logout on the website
-  if (event.data.type === 'CLEAR_JWTs') {
-    chrome.storage.local.remove(['access_token', 'refresh_token'], () => {
-      console.log('Access token and refresh token cleared from storage.');
-    });
-  }
-});
+  function detectLinkedInTheme() {
+    const container = document.querySelector('.feed-shared-update-v2'); // or any reliable element
+    if (!container) return null;
 
-// uitlity functions
+    const style = getComputedStyle(container);
+    const bgColor = style.backgroundColor;
 
-// check if element exists in dom / waits for it to exist by keep trying
-function waitForElement(selector, maxAttempts = 100, interval = 1000) {
-  return new Promise((resolve, reject) => {
-    let attempts = 0;
-
-    const check = () => {
-      const el = document.querySelector(selector);
-      if (el) return resolve(el);
-
-      attempts++;
-      if (attempts >= maxAttempts) {
-        return reject(`Element ${selector} not found after ${maxAttempts} attempts`);
-      }
-
-      setTimeout(check, interval);
+    // Function to check brightness
+    const isDark = (color) => {
+      const [r, g, b] = color.match(/\d+/g).map(Number);
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      return brightness < 128; // below this is considered dark
     };
 
-    check();
-  });
-}
+    // save to sync instead of local
+    chrome.storage.sync.set({ linkedinTheme: isDark(bgColor) ? 'dark' : 'light' });
 
-function detectLinkedInTheme() {
-  const container = document.querySelector('.feed-shared-update-v2'); // or any reliable element
-  if (!container) return null;
-
-  const style = getComputedStyle(container);
-  const bgColor = style.backgroundColor;
-
-  // Function to check brightness
-  const isDark = (color) => {
-    const [r, g, b] = color.match(/\d+/g).map(Number);
-    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-    return brightness < 128; // below this is considered dark
-  };
-
-  // save to sync instead of local
-  chrome.storage.sync.set({ linkedinTheme: isDark(bgColor) ? 'dark' : 'light' });
-
-  return isDark(bgColor) ? 'dark' : 'light';
-}
+    return isDark(bgColor) ? 'dark' : 'light';
+  }
 
 
-async function initializeExtension() {
-  // Initialize the extension functionality
-  //setupPostCreationAssistant()
-  setupCommentReplyAssistant()
-  setuprewrite_enabledment()
-  setupTextSelectionToolbar()
-  setupTextToSpeech()
+  async function initializeExtension() {
+    // Initialize the extension functionality
+    //setupPostCreationAssistant()
+    setupCommentReplyAssistant()
+    setuprewrite_enabledment()
+    setupTextSelectionToolbar()
+    setupTextToSpeech()
 
-  detectLinkedInTheme();
+    detectLinkedInTheme();
 
-  linkedinUserInfo = await window.getLinkedinUserInfo()
+    linkedinUserInfo = await window.getLinkedinUserInfo()
 
-  let mutationTimeout
+    let mutationTimeout
 
-  // Set up mutation observer to detect new elements
-  const observer = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      clearTimeout(mutationTimeout)
-      mutationTimeout = setTimeout(async () => {
-        if (mutation.addedNodes.length) {
-          try {
-            setupCommentReplyAssistant()
-            setuprewrite_enabledment()
-            setupTextSelectionToolbar()
-            setupTextToSpeech()
-            detectLinkedInTheme()
+    // Set up mutation observer to detect new elements
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        clearTimeout(mutationTimeout)
+        mutationTimeout = setTimeout(async () => {
+          if (mutation.addedNodes.length) {
+            try {
+              setupCommentReplyAssistant()
+              setuprewrite_enabledment()
+              setupTextSelectionToolbar()
+              setupTextToSpeech()
+              detectLinkedInTheme()
 
-            linkedinUserInfo = await window.getLinkedinUserInfo()
+              linkedinUserInfo = await window.getLinkedinUserInfo()
 
-            if (chatbotState.referenceMode) {
-              addReferenceListeners()
+              if (chatbotState.referenceMode) {
+                addReferenceListeners()
+              }
+            } catch (error) {
+              console.error("MutationObserver Error:", error)
             }
-          } catch (error) {
-            console.error("MutationObserver Error:", error)
           }
-        }
-      }, 500)
+        }, 500)
+      })
     })
-  })
 
-  // observer entire document body
-  observer.observe(document.body, { childList: true, subtree: true })
+    // observer entire document body
+    observer.observe(document.body, { childList: true, subtree: true })
 
-  // observer .feed-shared-update-v2__comments-container
-  const commentsContainer = document.body.querySelector('.feed-shared-update-v2__comments-container')
-  if (commentsContainer) {
-    observer.observe(commentsContainer, { childList: true, subtree: true, characterData: true})
+    // observer .feed-shared-update-v2__comments-container
+    const commentsContainer = document.body.querySelector('.feed-shared-update-v2__comments-container')
+    if (commentsContainer) {
+      observer.observe(commentsContainer, { childList: true, subtree: true, characterData: true})
+    }
   }
-}
 
-function setupTextToSpeech() {
-  // Find all LinkedIn posts
-  const posts = document.querySelectorAll('.feed-shared-update-v2, .feed-shared-update-detail-viewer__content')
-  
-  posts.forEach(post => {
-    // Check if we've already added the TTS button
-    if (post.querySelector('.lia-tts-button')) return
+  function setupTextToSpeech() {
+    // Find all LinkedIn posts
+    const posts = document.querySelectorAll('.feed-shared-update-v2, .feed-shared-update-detail-viewer__content')
     
-    // Find the post content
-    const postContent = post.querySelector('.feed-shared-update-v2__description, .reader-article-content')
-    if (!postContent) return
-    
-    // Create the TTS button
-    createTTSButton(post, postContent)
-  })
-}
-
-function createTTSButton(postContainer, contentElement) {
-  const ttsButton = document.createElement('button')
-  ttsButton.className = 'lia-tts-button'
-  ttsButton.innerHTML = `
-    <svg class="lia-tts-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
-    </svg>
-    <span class="lia-tts-text">Listen</span>
-  `
-  
-  ttsButton.style.cssText = `
-    position: absolute;
-    top: 3px;
-    right: 90px;
-    background: rgba(255, 255, 255, 0.95);
-    border: 1px solid #e0e0e0;
-    border-radius: 20px;
-    padding: 8px 12px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 600;
-    color: #0a66c2;
-    transition: all 0.3s ease;
-    backdrop-filter: blur(10px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
-    opacity: 0;
-    transform: translateY(-10px);
-  `
-  
-  // Position the post container relatively
-  postContainer.style.position = 'relative'
-  
-  // Show button on hover
-  postContainer.addEventListener('mouseenter', () => {
-    ttsButton.style.opacity = '1'
-    ttsButton.style.transform = 'translateY(0)'
-  })
-  
-  postContainer.addEventListener('mouseleave', () => {
-    if (!ttsButton.classList.contains('playing')) {
-      ttsButton.style.opacity = '0'
-      ttsButton.style.transform = 'translateY(-10px)'
-    }
-  })
-  
-  // Add click handler
-  ttsButton.addEventListener('click', (e) => {
-    e.stopPropagation()
-    handleTTSClick(ttsButton, contentElement)
-  })
-  
-  postContainer.appendChild(ttsButton)
-}
-
-async function handleTTSClick(button, contentElement) {
-  const text = extractTextContent(contentElement)
-  
-  if (!text || text.length < 10) {
-    showTTSError(button, 'No content to read')
-    return
-  }
-  
-  if (button.classList.contains('playing')) {
-    stopAudio(button)
-    return
-  }
-  
-  if (button.classList.contains('loading')) return
-  
-  try {
-    showTTSLoading(button)
-    const audioUrl = await generateSpeech(text)
-    playAudio(button, audioUrl, text)
-  } catch (error) {
-    console.error('TTS Error:', error)
-    //showTTSError(button, 'Failed to generate speech')
-    showTTSError(button, 'Feature coming soon!')
-  }
-}
-
-function extractTextContent(element) {
-  // Get text content while preserving mentions
-  let text = ''
-  
-  const walker = document.createTreeWalker(
-    element,
-    NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
-    {
-      acceptNode: (node) => {
-        if (node.nodeType === Node.TEXT_NODE) {
-          return NodeFilter.FILTER_ACCEPT
-        }
-        if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('ql-mention')) {
-          return NodeFilter.FILTER_ACCEPT
-        }
-        return NodeFilter.FILTER_SKIP
-      }
-    }
-  )
-  
-  let node
-  while (node = walker.nextNode()) {
-    if (node.nodeType === Node.TEXT_NODE) {
-      text += node.textContent
-    } else if (node.classList.contains('ql-mention')) {
-      text += node.textContent
-    }
-  }
-  
-  // Clean up the text
-  text = text.replace(/\s+/g, ' ').trim()
-  
-  // Remove URLs for better speech
-  text = text.replace(/https?:\/\/[^\s]+/g, '')
-  
-  // Replace hashtags with readable format
-  text = text.replace(/#(\w+)/g, ' hashtag $1')
-
-  // Replace commonly used emojies with their meaning and remove the rest
-  // Replace commonly used emojis with words (their meaning), remove the rest
-  const emojiMap = {
-    '🔥': 'fire ',
-    '😊': 'smiling face ',
-    '❤️': 'heart ',
-    '✅': 'checkmark ',
-    '🚀': 'rocket ',
-    '🌍': 'world'
-  };
-
-  text = text.replace(
-    /[\p{Emoji_Presentation}\u200d\uFE0F]/gu,
-    (match) => emojiMap[match] || ''
-  );
-  
-  return text
-}
-
-async function generateSpeech(text) {
-  // Check if we have access token
-  const accessToken = await getAccessToken()
-  if (!accessToken) {
-    throw new Error('Please sign in to use text-to-speech')
-  }
-  
-  const response = await fetch('https://api.getlia.live/api/tts/generate', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${accessToken}`
-    },
-    body: JSON.stringify({
-      text: text,
-      voice: 'Joanna', // AWS Polly voice
-      engine: 'neural'
-    })
-  })
-  
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.message || 'Failed to generate speech')
-  }
-  
-  const data = await response.json()
-  return data.audioUrl
-}
-
-function playAudio(button, audioUrl, originalText) {
-  // Create audio element
-  const audio = new Audio(audioUrl)
-  audio.crossOrigin = 'anonymous'
-  
-  // Update button to playing state
-  button.classList.add('playing')
-  button.innerHTML = `
-    <svg class="lia-tts-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="6" y="4" width="4" height="16"/>
-      <rect x="14" y="4" width="4" height="16"/>
-    </svg>
-    <span class="lia-tts-text">Pause</span>
-  `
-  button.style.background = 'rgba(10, 102, 194, 0.1)'
-  button.style.borderColor = '#0a66c2'
-  button.style.opacity = '1'
-  button.style.transform = 'translateY(0)'
-  
-  // Create progress bar
-  const progressBar = createProgressBar(button)
-  
-  // Store audio reference
-  button.audioElement = audio
-  button.progressBar = progressBar
-  
-  // Audio event listeners
-  audio.addEventListener('loadstart', () => {
-    console.log('Audio loading started')
-  })
-  
-  audio.addEventListener('canplay', () => {
-    console.log('Audio can start playing')
-  })
-  
-  audio.addEventListener('timeupdate', () => {
-    if (audio.duration) {
-      const progress = (audio.currentTime / audio.duration) * 100
-      progressBar.style.width = `${progress}%`
-    }
-  })
-  
-  audio.addEventListener('ended', () => {
-    stopAudio(button)
-  })
-  
-  audio.addEventListener('error', (e) => {
-    console.error('Audio error:', e)
-    showTTSError(button, 'Playback failed')
-  })
-  
-  // Start playing
-  audio.play().catch(error => {
-    console.error('Play error:', error)
-    showTTSError(button, 'Playback failed')
-  })
-}
-
-function stopAudio(button) {
-  if (button.audioElement) {
-    button.audioElement.pause()
-    button.audioElement = null
-  }
-  
-  if (button.progressBar) {
-    button.progressBar.remove()
-    button.progressBar = null
-  }
-  
-  button.classList.remove('playing', 'loading', 'error')
-  button.innerHTML = `
-    <svg class="lia-tts-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
-      <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
-    </svg>
-    <span class="lia-tts-text">Listen</span>
-  `
-  button.style.background = 'rgba(255, 255, 255, 0.95)'
-  button.style.borderColor = '#e0e0e0'
-}
-
-function createProgressBar(button) {
-  const progressContainer = document.createElement('div')
-  progressContainer.style.cssText = `
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background: rgba(10, 102, 194, 0.2);
-    border-radius: 0 0 20px 20px;
-    overflow: hidden;
-  `
-  
-  const progressBar = document.createElement('div')
-  progressBar.style.cssText = `
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, #0a66c2, #004182);
-    transition: width 0.1s ease;
-  `
-  
-  progressContainer.appendChild(progressBar)
-  button.appendChild(progressContainer)
-  
-  return progressBar
-}
-
-function showTTSLoading(button) {
-  button.classList.add('loading')
-  button.innerHTML = `
-    <div class="lia-tts-spinner" style="
-      width: 16px;
-      height: 16px;
-      border: 2px solid #e0e0e0;
-      border-top: 2px solid #0a66c2;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    "></div>
-    <span class="lia-tts-text">Loading...</span>
-  `
-}
-
-function showTTSError(button, message) {
-  button.classList.add('error')
-  button.innerHTML = `
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="15" y1="9" x2="9" y2="15"/>
-      <line x1="9" y1="9" x2="15" y2="15"/>
-    </svg>
-    <span class="lia-tts-text" style="color: #ef4444;">${message}</span>
-  `
-  
-  setTimeout(() => {
-    if (button.classList.contains('error')) {
-      stopAudio(button)
-    }
-  }, 3000)
-}
-
-async function getAccessToken() {
-  try {
-    const { access_token } = await chrome.storage.local.get(['access_token'])
-    return access_token
-  } catch (error) {
-    console.error('Error getting access token:', error)
-    return null
-  }
-}
-
-// add bold and italic formatting leveraging unicodes
-function toUnicodeStyle(text, style = 'bold') {
-  const boldMap = {
-    a: '𝗮', b: '𝗯', c: '𝗰', d: '𝗱', e: '𝗲', f: '𝗳', g: '𝗴', h: '𝗵', i: '𝗶', j: '𝗷',
-    k: '𝗸', l: '𝗹', m: '𝗺', n: '𝗻', o: '𝗼', p: '𝗽', q: '𝗾', r: '𝗿', s: '𝘀', t: '𝘁',
-    u: '𝘂', v: '𝘃', w: '𝘄', x: '𝘅', y: '𝘆', z: '𝘇',
-    A: '𝗔', B: '𝗕', C: '𝗖', D: '𝗗', E: '𝗘', F: '𝗙', G: '𝗚', H: '𝗛', I: '𝗜', J: '𝗝',
-    K: '𝗞', L: '𝗟', M: '𝗠', N: '𝗡', O: '𝗢', P: '𝗣', Q: '𝗤', R: '𝗥', S: '𝗦', T: '𝗧',
-    U: '𝗨', V: '𝗩', W: '𝗪', X: '𝗫', Y: '𝗬', Z: '𝗭',
-    0: '𝟬', 1: '𝟭', 2: '𝟮', 3: '𝟯', 4: '𝟰', 5: '𝟱', 6: '𝟲', 7: '𝟳', 8: '𝟴', 9: '𝟵'
-  };
-
-  const italicMap = {
-    a: '𝘢', b: '𝘣', c: '𝘤', d: '𝘥', e: '𝘦', f: '𝘧', g: '𝘨', h: '𝘩', i: '𝘪', j: '𝘫',
-    k: '𝘬', l: '𝘭', m: '𝘮', n: '𝘯', o: '𝘰', p: '𝘱', q: '𝘲', r: '𝘳', s: '𝘴', t: '𝘵',
-    u: '𝘶', v: '𝘷', w: '𝘸', x: '𝘹', y: '𝘺', z: '𝘻',
-    A: '𝘈', B: '𝘉', C: '𝘊', D: '𝘋', E: '𝘌', F: '𝘍', G: '𝘎', H: '𝘏', I: '𝘐', J: '𝘑',
-    K: '𝘒', L: '𝘓', M: '𝘔', N: '𝘕', O: '𝘖', P: '𝘗', Q: '𝘘', R: '𝘙', S: '𝘚', T: '𝘛',
-    U: '𝘜', V: '𝘝', W: '𝘞', X: '𝘟', Y: '𝘠', Z: '𝘡'
-  };
-
-  const map = style === 'italic' ? italicMap : boldMap;
-
-  return [...text].map(char => map[char] || char).join('');
-}
-
-// convert from unicode to normal formatting
-function fromUnicodeToNormal(text, style = 'bold') {
-  const boldMap = {
-    '𝗮': 'a', '𝗯': 'b', '𝗰': 'c', '𝗱': 'd', '𝗲': 'e', '𝗳': 'f', '𝗴': 'g', '𝗵': 'h', '𝗶': 'i', '𝗷': 'j',
-    '𝗸': 'k', '𝗹': 'l', '𝗺': 'm', '𝗻': 'n', '𝗼': 'o', '𝗽': 'p', '𝗾': 'q', '𝗿': 'r', '𝘀': 's', '𝘁': 't',
-    '𝘂': 'u', '𝘃': 'v', '𝘄': 'w', '𝘅': 'x', '𝘆': 'y', '𝘇': 'z',
-    '𝗔': 'A', '𝗕': 'B', '𝗖': 'C', '𝗗': 'D', '𝗘': 'E', '𝗙': 'F', '𝗚': 'G', '𝗛': 'H', '𝗜': 'I', '𝗝': 'J',
-    '𝗞': 'K', '𝗟': 'L', '𝗠': 'M', '𝗡': 'N', '𝗢': 'O', '𝗣': 'P', '𝗤': 'Q', '𝗥': 'R', '𝗦': 'S', '𝗧': 'T',
-    '𝗨': 'U', '𝗩': 'V', '𝗪': 'W', '𝗫': 'X', '𝗬': 'Y', '𝗭': 'Z',
-    '𝟬': 0, '𝟭': 1, '𝟮': 2, '𝟯': 3, '𝟰': 4, '𝟱': 5, '𝟲': 6, '𝟳': 7, '𝟴': 8, '𝟵': 9
-  };
-
-  const italicMap = {
-    '𝘢': 'a', '𝘣': 'b', '𝘤': 'c', '𝘥': 'd', '𝘦': 'e', '𝘧': 'f', '𝘨': 'g', '𝘩': 'h', '𝘪': 'i', '𝘫': 'j',
-    '𝘬': 'k', '𝘭': 'l', '𝘮': 'm', '𝗻': 'n', '𝘰': 'o', '𝘱': 'p', '𝘲': 'q', '𝘳': 'r', '𝘴': 's', '𝘵': 't',
-    '𝘶': 'u', '𝘷': 'v', '𝘸': 'w', '𝘹': 'x', '𝘺': 'y', '𝘻': 'z',
-    '𝘈': 'A', '𝘉': 'B', '𝘊': 'C', '𝘋': 'D', '𝘌': 'E', '𝘍': 'F', '𝘎': 'G', '𝘏': 'H', '𝘐': 'I', '𝘑': 'J',
-    '𝘒': 'K', '𝘓': 'L', '𝘔': 'M', '𝘕': 'N', '𝘖': 'O', '𝘗': 'P', '𝘘': 'Q', '𝘙': 'R', '𝘚': 'S', '𝘛': 'T',
-    '𝘜': 'U', '𝘝': 'V', '𝘞': 'W', '𝘟': 'X', '𝘠': 'Y', '𝘡': 'Z'
-  };
-
-  const map = style === 'italic' ? italicMap : boldMap;
-
-  return [...text].map(char => map[char] || char).join('');
-}
-
-// check if text is unicode
-function isUnicode(text) {
-  // range of unicode characters
-  return /[^\u0000-\u007F]/.test(text);
-}
-
-function setupTextSelectionToolbar() {
-  // Remove existing popup if it exists
-  const existingPopup = document.getElementById('linkedin-ai-text-toolbar')
-
-  // Create the enhanced toolbar
-  const toolbar = document.createElement('div')
-  toolbar.id = 'linkedin-ai-text-toolbar'
-  toolbar.className = 'linkedin-ai-text-toolbar'
-  toolbar.style.cssText = `
-    position: absolute;
-    background: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    padding: 8px;
-    display: none;
-    z-index: 10000;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    gap: 4px;
-    align-items: center;
-    backdrop-filter: blur(10px);
-  `
-
-  // Create toolbar buttons
-  const buttons = [
-    {
-      id: 'bold',
-      icon: 'B',
-      title: 'Make Bold',
-      style: 'font-weight: 700; font-size: 14px;',
-      action: () => handleTextFormatting('bold')
-    },
-    {
-      id: 'italic',
-      icon: 'I',
-      title: 'Make Italic',
-      style: 'font-style: italic; font-size: 14px;',
-      action: () => handleTextFormatting('italic')
-    },
-    {
-      id: 'divider1',
-      type: 'divider'
-    },
-    {
-      id: 'ai-rewrite',
-      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
-        <path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10Zm0 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/>
-      </svg>`,
-      title: 'AI Rewrite Paragraph',
-      action: () => handleAIRewrite()
-    },
-    {
-      id: 'shorten',
-      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
-        <path d="M8 18L12 6l4 12"/>
-        <path d="M9.5 12h5"/>
-      </svg>`,
-      title: 'Make Shorter',
-      action: () => handleTextTransform('shorten')
-    },
-    {
-      id: 'expand',
-      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
-        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-      </svg>`,
-      title: 'Expand Text',
-      action: () => handleTextTransform('expand')
-    },
-    {
-      id: 'divider2',
-      type: 'divider'
-    },
-    {
-      id: 'professional',
-      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
-        <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-        <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
-      </svg>`,
-      title: 'Make Professional',
-      action: () => handleTextTransform('professional')
-    },
-    {
-      id: 'emoji',
-      icon: '😊',
-      title: 'Add Emojis',
-      style: 'font-size: 14px;',
-      action: () => handleTextTransform('emoji')
-    },
-    {
-      id: 'grammar',
-      icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
-        <path d="M9 12l2 2 4-4"/>
-        <circle cx="12" cy="12" r="10"/>
-      </svg>`,
-      title: 'Fix Grammar',
-      action: () => handleTextTransform('grammar')
-    }
-  ]
-
-  // Build toolbar HTML
-  buttons.forEach(button => {
-    if (button.type === 'divider') {
-      const divider = document.createElement('div')
-      divider.style.cssText = `
-        width: 1px;
-        height: 20px;
-        background: #e0e0e0;
-        margin: 0 4px;
-      `
-      toolbar.appendChild(divider)
-    } else {
-      const btn = document.createElement('button')
-      btn.className = 'linkedin-ai-toolbar-btn'
-      btn.title = button.title
-      btn.style.cssText = `
-        background: none;
-        border: none;
-        padding: 6px 8px;
-        border-radius: 4px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background-color 0.2s;
-        color: #0a66c2;
-        ${button.style || ''}
-      `
+    posts.forEach(post => {
+      // Check if we've already added the TTS button
+      if (post.querySelector('.lia-tts-button')) return
       
-      if (button.icon.startsWith('<svg')) {
-        btn.innerHTML = button.icon
-      } else {
-        btn.textContent = button.icon
+      // Find the post content
+      const postContent = post.querySelector('.feed-shared-update-v2__description, .reader-article-content')
+      if (!postContent) return
+      
+      // Create the TTS button
+      createTTSButton(post, postContent)
+    })
+  }
+
+  function createTTSButton(postContainer, contentElement) {
+    const ttsButton = document.createElement('button')
+    ttsButton.className = 'lia-tts-button'
+    ttsButton.innerHTML = `
+      <svg class="lia-tts-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
+      </svg>
+      <span class="lia-tts-text">Listen</span>
+    `
+    
+    ttsButton.style.cssText = `
+      position: absolute;
+      top: 3px;
+      right: 90px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1px solid #e0e0e0;
+      border-radius: 20px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      color: #0a66c2;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(-10px);
+    `
+    
+    // Position the post container relatively
+    postContainer.style.position = 'relative'
+    
+    // Show button on hover
+    postContainer.addEventListener('mouseenter', () => {
+      ttsButton.style.opacity = '1'
+      ttsButton.style.transform = 'translateY(0)'
+    })
+    
+    postContainer.addEventListener('mouseleave', () => {
+      if (!ttsButton.classList.contains('playing')) {
+        ttsButton.style.opacity = '0'
+        ttsButton.style.transform = 'translateY(-10px)'
       }
-
-      btn.addEventListener('mouseenter', () => {
-        btn.style.backgroundColor = '#e7f3ff'
-      })
-
-      btn.addEventListener('mouseleave', () => {
-        btn.style.backgroundColor = 'transparent'
-      })
-
-      btn.addEventListener('click', (e) => {
-        e.preventDefault()
-        e.stopPropagation()
-        button.action()
-      })
-
-      toolbar.appendChild(btn)
-    }
-  })
-
-  document.body.appendChild(toolbar)
-
-  // Add selection event listeners
-  document.addEventListener('mouseup', handleTextSelection)
-  document.addEventListener('keyup', handleTextSelection)
-
-  // Hide toolbar when clicking outside
-  document.addEventListener('mousedown', (e) => {
-    if (!toolbar.contains(e.target)) {
-      toolbar.style.display = 'none'
-    }
-  })
-}
-
-function handleTextSelection() {
-  const toolbar = document.getElementById('linkedin-ai-text-toolbar')
-  if (!toolbar) return
-
-  const selection = window.getSelection()
-  const selectedText = selection.toString().trim()
-
-  if (selectedText && selectedText.length > 0) {
-    // Check if we're in a LinkedIn editor
-    const activeElement = document.activeElement
-    const isInEditor = activeElement && (
-      activeElement.classList.contains('ql-editor') ||
-      activeElement.closest('.ql-editor') ||
-      activeElement.closest('.share-box') ||
-      activeElement.closest('.comments-comment-texteditor')
-    )
-
-    if (isInEditor) {
-      const range = selection.getRangeAt(0)
-      const rect = range.getBoundingClientRect()
-
-      toolbar.style.left = `${rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2)}px`
-      toolbar.style.top = `${rect.top + window.scrollY - 50}px`
-      toolbar.style.display = 'flex'
-
-      // Store selection for later use
-      toolbar.dataset.selectedText = selectedText
-      toolbar.dataset.selectionStart = range.startOffset
-      toolbar.dataset.selectionEnd = range.endOffset
-    }
-  } else {
-    toolbar.style.display = 'none'
-  }
-}
-
-function handleTextFormatting(type) {
-  const selection = window.getSelection()
-  const selectedText = selection.toString().trim()
-  
-  if (!selectedText) return
-
-  let formattedText = selectedText
-
-  switch (type) {
-    case 'bold':
-      if (isUnicode(selectedText)) {
-        formattedText = fromUnicodeToNormal(selectedText, 'bold') // convert to normal text
-      } else {
-        // Use Unicode bold characters or formatting symbols
-        formattedText = toUnicodeStyle(selectedText) // convert to unicode bold
-      }
-      break
-    case 'italic':
-      if (isUnicode(selectedText)) {
-        formattedText = fromUnicodeToNormal(selectedText, 'italic') // convert to normal text
-      } else {
-        // Use Unicode italic or formatting symbols
-        formattedText = toUnicodeStyle(selectedText, 'italic') // convert to unicode italic
-      }
-      break
+    })
+    
+    // Add click handler
+    ttsButton.addEventListener('click', (e) => {
+      e.stopPropagation()
+      handleTTSClick(ttsButton, contentElement)
+    })
+    
+    postContainer.appendChild(ttsButton)
   }
 
-  replaceSelectedText(formattedText)
-  hideToolbar()
-}
-
-async function handleAIRewrite() {
-  const selection = window.getSelection()
-  const selectedText = selection.toString().trim()
-  
-  if (!selectedText) return
-
-  // Get the entire sentence containing the selection
-  // but first check if . ? or ! is in the selectedText
-  // if it is, then it's already a full sentence
-  let fullSentence = selectedText
-  if (selectedText.endsWith('.') || selectedText.endsWith('?') || selectedText.endsWith('!')) {
-    fullSentence = selectedText
-  } else {
-    fullSentence = getFullSentence(selection)
-  }
-
-  // check if the last character in fullSentence is a fullstop is a full stop
-  if (fullSentence.length === 0) return;
-
-  // fullSentence without added full stop 
-  const originalSentence = fullSentence
-  if (fullSentence[fullSentence.length - 1] !== '.') {
-    // If not, add a full stop at the end
-    fullSentence += '.'
-  }
-  
-  try {
-    showToolbarLoading()
-
-    let rewrittenText = null;
-    try {
-      // generate ai rewritten text
-      rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
-    } catch (error) {
-      await refreshToken() // refresh the token
-
-        // call generateRewrittenText again after refresh
-        rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
-    }
-    if (rewrittenText) {
-      await replaceTextInSentence(selection, originalSentence, rewrittenText)
-      hideToolbar()
-    } else {
-      showToolbarError('failed to fetch')
-    }
-    //hideToolbar()
-  } catch (error) {
-    showToolbarError(error.message)
-  }
-}
-
-async function handleTextTransform(type) {
-  const selection = window.getSelection()
-  const selectedText = selection.toString().trim()
-  let fullSentence = getFullSentence(selection)
-
-  // check if the last character in fullSentence is a fullstop is a full stop
-  if (fullSentence.length === 0) return
-  if (fullSentence[fullSentence.length - 1] !== '.') {
-    // If not, add a full stop at the end
-    fullSentence += '.'
-  }
-
-  if (!selectedText) return
-
-  try {
-    showToolbarLoading()
-    let transformedText = ""
-    try {
-      transformedText = await generateRewrittenText(selectedText, type)
-    } catch (error) {
-      // refresh the token
-      await refreshToken() // refresh the token
-
-      // call generateRewrittenText again after refresh
-      transformedText = await generateRewrittenText(selectedText, type)
-    }
-    //replaceSelectedText(transformedText)
-    if (!transformedText) {
-      showToolbarError('Failed to fetch transformed text')
+  async function handleTTSClick(button, contentElement) {
+    const text = extractTextContent(contentElement)
+    
+    if (!text || text.length < 10) {
+      showTTSError(button, 'No content to read')
       return
     }
-    await replaceTextInSentence(selection, fullSentence, transformedText)
-    hideToolbar()
-  } catch (error) {
-    showToolbarError(error.message)
+    
+    if (button.classList.contains('playing')) {
+      stopAudio(button)
+      return
+    }
+    
+    if (button.classList.contains('loading')) return
+    
+    try {
+      showTTSLoading(button)
+      const audioUrl = await generateSpeech(text)
+      playAudio(button, audioUrl, text)
+    } catch (error) {
+      console.error('TTS Error:', error)
+      //showTTSError(button, 'Failed to generate speech')
+      showTTSError(button, 'Feature coming soon!')
+    }
   }
-}
 
-function getFullSentence(selection) {
+  function extractTextContent(element) {
+    // Get text content while preserving mentions
+    let text = ''
+    
+    const walker = document.createTreeWalker(
+      element,
+      NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT,
+      {
+        acceptNode: (node) => {
+          if (node.nodeType === Node.TEXT_NODE) {
+            return NodeFilter.FILTER_ACCEPT
+          }
+          if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('ql-mention')) {
+            return NodeFilter.FILTER_ACCEPT
+          }
+          return NodeFilter.FILTER_SKIP
+        }
+      }
+    )
+    
+    let node
+    while (node = walker.nextNode()) {
+      if (node.nodeType === Node.TEXT_NODE) {
+        text += node.textContent
+      } else if (node.classList.contains('ql-mention')) {
+        text += node.textContent
+      }
+    }
+    
+    // Clean up the text
+    text = text.replace(/\s+/g, ' ').trim()
+    
+    // Remove URLs for better speech
+    text = text.replace(/https?:\/\/[^\s]+/g, '')
+    
+    // Replace hashtags with readable format
+    text = text.replace(/#(\w+)/g, ' hashtag $1')
+
+    // Replace commonly used emojies with their meaning and remove the rest
+    // Replace commonly used emojis with words (their meaning), remove the rest
+    const emojiMap = {
+      '🔥': 'fire ',
+      '😊': 'smiling face ',
+      '❤️': 'heart ',
+      '✅': 'checkmark ',
+      '🚀': 'rocket ',
+      '🌍': 'world'
+    };
+
+    text = text.replace(
+      /[\p{Emoji_Presentation}\u200d\uFE0F]/gu,
+      (match) => emojiMap[match] || ''
+    );
+    
+    return text
+  }
+
+  async function generateSpeech(text) {
+    // Check if we have access token
+    const accessToken = await getAccessToken()
+    if (!accessToken) {
+      throw new Error('Please sign in to use text-to-speech')
+    }
+    
+    const response = await fetch('https://api.getlia.live/api/tts/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      },
+      body: JSON.stringify({
+        text: text,
+        voice: 'Joanna', // AWS Polly voice
+        engine: 'neural'
+      })
+    })
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to generate speech')
+    }
+    
+    const data = await response.json()
+    return data.audioUrl
+  }
+
+  function playAudio(button, audioUrl, originalText) {
+    // Create audio element
+    const audio = new Audio(audioUrl)
+    audio.crossOrigin = 'anonymous'
+    
+    // Update button to playing state
+    button.classList.add('playing')
+    button.innerHTML = `
+      <svg class="lia-tts-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="6" y="4" width="4" height="16"/>
+        <rect x="14" y="4" width="4" height="16"/>
+      </svg>
+      <span class="lia-tts-text">Pause</span>
+    `
+    button.style.background = 'rgba(10, 102, 194, 0.1)'
+    button.style.borderColor = '#0a66c2'
+    button.style.opacity = '1'
+    button.style.transform = 'translateY(0)'
+    
+    // Create progress bar
+    const progressBar = createProgressBar(button)
+    
+    // Store audio reference
+    button.audioElement = audio
+    button.progressBar = progressBar
+    
+    // Audio event listeners
+    audio.addEventListener('loadstart', () => {
+      console.log('Audio loading started')
+    })
+    
+    audio.addEventListener('canplay', () => {
+      console.log('Audio can start playing')
+    })
+    
+    audio.addEventListener('timeupdate', () => {
+      if (audio.duration) {
+        const progress = (audio.currentTime / audio.duration) * 100
+        progressBar.style.width = `${progress}%`
+      }
+    })
+    
+    audio.addEventListener('ended', () => {
+      stopAudio(button)
+    })
+    
+    audio.addEventListener('error', (e) => {
+      console.error('Audio error:', e)
+      showTTSError(button, 'Playback failed')
+    })
+    
+    // Start playing
+    audio.play().catch(error => {
+      console.error('Play error:', error)
+      showTTSError(button, 'Playback failed')
+    })
+  }
+
+  function stopAudio(button) {
+    if (button.audioElement) {
+      button.audioElement.pause()
+      button.audioElement = null
+    }
+    
+    if (button.progressBar) {
+      button.progressBar.remove()
+      button.progressBar = null
+    }
+    
+    button.classList.remove('playing', 'loading', 'error')
+    button.innerHTML = `
+      <svg class="lia-tts-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.08"/>
+      </svg>
+      <span class="lia-tts-text">Listen</span>
+    `
+    button.style.background = 'rgba(255, 255, 255, 0.95)'
+    button.style.borderColor = '#e0e0e0'
+  }
+
+  function createProgressBar(button) {
+    const progressContainer = document.createElement('div')
+    progressContainer.style.cssText = `
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: rgba(10, 102, 194, 0.2);
+      border-radius: 0 0 20px 20px;
+      overflow: hidden;
+    `
+    
+    const progressBar = document.createElement('div')
+    progressBar.style.cssText = `
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0a66c2, #004182);
+      transition: width 0.1s ease;
+    `
+    
+    progressContainer.appendChild(progressBar)
+    button.appendChild(progressContainer)
+    
+    return progressBar
+  }
+
+  function showTTSLoading(button) {
+    button.classList.add('loading')
+    button.innerHTML = `
+      <div class="lia-tts-spinner" style="
+        width: 16px;
+        height: 16px;
+        border: 2px solid #e0e0e0;
+        border-top: 2px solid #0a66c2;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      "></div>
+      <span class="lia-tts-text">Loading...</span>
+    `
+  }
+
+  function showTTSError(button, message) {
+    button.classList.add('error')
+    button.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="15" y1="9" x2="9" y2="15"/>
+        <line x1="9" y1="9" x2="15" y2="15"/>
+      </svg>
+      <span class="lia-tts-text" style="color: #ef4444;">${message}</span>
+    `
+    
+    setTimeout(() => {
+      if (button.classList.contains('error')) {
+        stopAudio(button)
+      }
+    }, 3000)
+  }
+
+  async function getAccessToken() {
+    try {
+      const { access_token } = await chrome.storage.local.get(['access_token'])
+      return access_token
+    } catch (error) {
+      console.error('Error getting access token:', error)
+      return null
+    }
+  }
+
+  // add bold and italic formatting leveraging unicodes
+  function toUnicodeStyle(text, style = 'bold') {
+    const boldMap = {
+      a: '𝗮', b: '𝗯', c: '𝗰', d: '𝗱', e: '𝗲', f: '𝗳', g: '𝗴', h: '𝗵', i: '𝗶', j: '𝗷',
+      k: '𝗸', l: '𝗹', m: '𝗺', n: '𝗻', o: '𝗼', p: '𝗽', q: '𝗾', r: '𝗿', s: '𝘀', t: '𝘁',
+      u: '𝘂', v: '𝘃', w: '𝘄', x: '𝘅', y: '𝘆', z: '𝘇',
+      A: '𝗔', B: '𝗕', C: '𝗖', D: '𝗗', E: '𝗘', F: '𝗙', G: '𝗚', H: '𝗛', I: '𝗜', J: '𝗝',
+      K: '𝗞', L: '𝗟', M: '𝗠', N: '𝗡', O: '𝗢', P: '𝗣', Q: '𝗤', R: '𝗥', S: '𝗦', T: '𝗧',
+      U: '𝗨', V: '𝗩', W: '𝗪', X: '𝗫', Y: '𝗬', Z: '𝗭',
+      0: '𝟬', 1: '𝟭', 2: '𝟮', 3: '𝟯', 4: '𝟰', 5: '𝟱', 6: '𝟲', 7: '𝟳', 8: '𝟴', 9: '𝟵'
+    };
+
+    const italicMap = {
+      a: '𝘢', b: '𝘣', c: '𝘤', d: '𝘥', e: '𝘦', f: '𝘧', g: '𝘨', h: '𝘩', i: '𝘪', j: '𝘫',
+      k: '𝘬', l: '𝘭', m: '𝘮', n: '𝘯', o: '𝘰', p: '𝘱', q: '𝘲', r: '𝘳', s: '𝘴', t: '𝘵',
+      u: '𝘶', v: '𝘷', w: '𝘸', x: '𝘹', y: '𝘺', z: '𝘻',
+      A: '𝘈', B: '𝘉', C: '𝘊', D: '𝘋', E: '𝘌', F: '𝘍', G: '𝘎', H: '𝘏', I: '𝘐', J: '𝘑',
+      K: '𝘒', L: '𝘓', M: '𝘔', N: '𝘕', O: '𝘖', P: '𝘗', Q: '𝘘', R: '𝘙', S: '𝘚', T: '𝘛',
+      U: '𝘜', V: '𝘝', W: '𝘞', X: '𝘟', Y: '𝘠', Z: '𝘡'
+    };
+
+    const map = style === 'italic' ? italicMap : boldMap;
+
+    return [...text].map(char => map[char] || char).join('');
+  }
+
+  // convert from unicode to normal formatting
+  function fromUnicodeToNormal(text, style = 'bold') {
+    const boldMap = {
+      '𝗮': 'a', '𝗯': 'b', '𝗰': 'c', '𝗱': 'd', '𝗲': 'e', '𝗳': 'f', '𝗴': 'g', '𝗵': 'h', '𝗶': 'i', '𝗷': 'j',
+      '𝗸': 'k', '𝗹': 'l', '𝗺': 'm', '𝗻': 'n', '𝗼': 'o', '𝗽': 'p', '𝗾': 'q', '𝗿': 'r', '𝘀': 's', '𝘁': 't',
+      '𝘂': 'u', '𝘃': 'v', '𝘄': 'w', '𝘅': 'x', '𝘆': 'y', '𝘇': 'z',
+      '𝗔': 'A', '𝗕': 'B', '𝗖': 'C', '𝗗': 'D', '𝗘': 'E', '𝗙': 'F', '𝗚': 'G', '𝗛': 'H', '𝗜': 'I', '𝗝': 'J',
+      '𝗞': 'K', '𝗟': 'L', '𝗠': 'M', '𝗡': 'N', '𝗢': 'O', '𝗣': 'P', '𝗤': 'Q', '𝗥': 'R', '𝗦': 'S', '𝗧': 'T',
+      '𝗨': 'U', '𝗩': 'V', '𝗪': 'W', '𝗫': 'X', '𝗬': 'Y', '𝗭': 'Z',
+      '𝟬': 0, '𝟭': 1, '𝟮': 2, '𝟯': 3, '𝟰': 4, '𝟱': 5, '𝟲': 6, '𝟳': 7, '𝟴': 8, '𝟵': 9
+    };
+
+    const italicMap = {
+      '𝘢': 'a', '𝘣': 'b', '𝘤': 'c', '𝘥': 'd', '𝘦': 'e', '𝘧': 'f', '𝘨': 'g', '𝘩': 'h', '𝘪': 'i', '𝘫': 'j',
+      '𝘬': 'k', '𝘭': 'l', '𝘮': 'm', '𝗻': 'n', '𝘰': 'o', '𝘱': 'p', '𝘲': 'q', '𝘳': 'r', '𝘴': 's', '𝘵': 't',
+      '𝘶': 'u', '𝘷': 'v', '𝘸': 'w', '𝘹': 'x', '𝘺': 'y', '𝘻': 'z',
+      '𝘈': 'A', '𝘉': 'B', '𝘊': 'C', '𝘋': 'D', '𝘌': 'E', '𝘍': 'F', '𝘎': 'G', '𝘏': 'H', '𝘐': 'I', '𝘑': 'J',
+      '𝘒': 'K', '𝘓': 'L', '𝘔': 'M', '𝘕': 'N', '𝘖': 'O', '𝘗': 'P', '𝘘': 'Q', '𝘙': 'R', '𝘚': 'S', '𝘛': 'T',
+      '𝘜': 'U', '𝘝': 'V', '𝘞': 'W', '𝘟': 'X', '𝘠': 'Y', '𝘡': 'Z'
+    };
+
+    const map = style === 'italic' ? italicMap : boldMap;
+
+    return [...text].map(char => map[char] || char).join('');
+  }
+
+  // check if text is unicode
+  function isUnicode(text) {
+    // range of unicode characters
+    return /[^\u0000-\u007F]/.test(text);
+  }
+
+  function setupTextSelectionToolbar() {
+    // Remove existing popup if it exists
+    const existingPopup = document.getElementById('linkedin-ai-text-toolbar')
+
+    // Create the enhanced toolbar
+    const toolbar = document.createElement('div')
+    toolbar.id = 'linkedin-ai-text-toolbar'
+    toolbar.className = 'linkedin-ai-text-toolbar'
+    toolbar.style.cssText = `
+      position: absolute;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 8px;
+      display: none;
+      z-index: 10000;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      gap: 4px;
+      align-items: center;
+      backdrop-filter: blur(10px);
+    `
+
+    // Create toolbar buttons
+    const buttons = [
+      {
+        id: 'bold',
+        icon: 'B',
+        title: 'Make Bold',
+        style: 'font-weight: 700; font-size: 14px;',
+        action: () => handleTextFormatting('bold')
+      },
+      {
+        id: 'italic',
+        icon: 'I',
+        title: 'Make Italic',
+        style: 'font-style: italic; font-size: 14px;',
+        action: () => handleTextFormatting('italic')
+      },
+      {
+        id: 'divider1',
+        type: 'divider'
+      },
+      {
+        id: 'ai-rewrite',
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
+          <path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10Zm0 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/>
+        </svg>`,
+        title: 'AI Rewrite Paragraph',
+        action: () => handleAIRewrite()
+      },
+      {
+        id: 'shorten',
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
+          <path d="M8 18L12 6l4 12"/>
+          <path d="M9.5 12h5"/>
+        </svg>`,
+        title: 'Make Shorter',
+        action: () => handleTextTransform('shorten')
+      },
+      {
+        id: 'expand',
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>`,
+        title: 'Expand Text',
+        action: () => handleTextTransform('expand')
+      },
+      {
+        id: 'divider2',
+        type: 'divider'
+      },
+      {
+        id: 'professional',
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+        </svg>`,
+        title: 'Make Professional',
+        action: () => handleTextTransform('professional')
+      },
+      {
+        id: 'emoji',
+        icon: '😊',
+        title: 'Add Emojis',
+        style: 'font-size: 14px;',
+        action: () => handleTextTransform('emoji')
+      },
+      {
+        id: 'grammar',
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
+          <path d="M9 12l2 2 4-4"/>
+          <circle cx="12" cy="12" r="10"/>
+        </svg>`,
+        title: 'Fix Grammar',
+        action: () => handleTextTransform('grammar')
+      }
+    ]
+
+    // Build toolbar HTML
+    buttons.forEach(button => {
+      if (button.type === 'divider') {
+        const divider = document.createElement('div')
+        divider.style.cssText = `
+          width: 1px;
+          height: 20px;
+          background: #e0e0e0;
+          margin: 0 4px;
+        `
+        toolbar.appendChild(divider)
+      } else {
+        const btn = document.createElement('button')
+        btn.className = 'linkedin-ai-toolbar-btn'
+        btn.title = button.title
+        btn.style.cssText = `
+          background: none;
+          border: none;
+          padding: 6px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s;
+          color: #0a66c2;
+          ${button.style || ''}
+        `
+        
+        if (button.icon.startsWith('<svg')) {
+          btn.innerHTML = button.icon
+        } else {
+          btn.textContent = button.icon
+        }
+
+        btn.addEventListener('mouseenter', () => {
+          btn.style.backgroundColor = '#e7f3ff'
+        })
+
+        btn.addEventListener('mouseleave', () => {
+          btn.style.backgroundColor = 'transparent'
+        })
+
+        btn.addEventListener('click', (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          button.action()
+        })
+
+        toolbar.appendChild(btn)
+      }
+    })
+
+    document.body.appendChild(toolbar)
+
+    // Add selection event listeners
+    document.addEventListener('mouseup', handleTextSelection)
+    document.addEventListener('keyup', handleTextSelection)
+
+    // Hide toolbar when clicking outside
+    document.addEventListener('mousedown', (e) => {
+      if (!toolbar.contains(e.target)) {
+        toolbar.style.display = 'none'
+      }
+    })
+  }
+
+  function handleTextSelection() {
+    const toolbar = document.getElementById('linkedin-ai-text-toolbar')
+    if (!toolbar) return
+
+    const selection = window.getSelection()
+    const selectedText = selection.toString().trim()
+
+    if (selectedText && selectedText.length > 0) {
+      // Check if we're in a LinkedIn editor
+      const activeElement = document.activeElement
+      const isInEditor = activeElement && (
+        activeElement.classList.contains('ql-editor') ||
+        activeElement.closest('.ql-editor') ||
+        activeElement.closest('.share-box') ||
+        activeElement.closest('.comments-comment-texteditor')
+      )
+
+      if (isInEditor) {
+        const range = selection.getRangeAt(0)
+        const rect = range.getBoundingClientRect()
+
+        toolbar.style.left = `${rect.left + window.scrollX + (rect.width / 2) - (toolbar.offsetWidth / 2)}px`
+        toolbar.style.top = `${rect.top + window.scrollY - 50}px`
+        toolbar.style.display = 'flex'
+
+        // Store selection for later use
+        toolbar.dataset.selectedText = selectedText
+        toolbar.dataset.selectionStart = range.startOffset
+        toolbar.dataset.selectionEnd = range.endOffset
+      }
+    } else {
+      toolbar.style.display = 'none'
+    }
+  }
+
+  function handleTextFormatting(type) {
+    const selection = window.getSelection()
+    const selectedText = selection.toString().trim()
+    
+    if (!selectedText) return
+
+    let formattedText = selectedText
+
+    switch (type) {
+      case 'bold':
+        if (isUnicode(selectedText)) {
+          formattedText = fromUnicodeToNormal(selectedText, 'bold') // convert to normal text
+        } else {
+          // Use Unicode bold characters or formatting symbols
+          formattedText = toUnicodeStyle(selectedText) // convert to unicode bold
+        }
+        break
+      case 'italic':
+        if (isUnicode(selectedText)) {
+          formattedText = fromUnicodeToNormal(selectedText, 'italic') // convert to normal text
+        } else {
+          // Use Unicode italic or formatting symbols
+          formattedText = toUnicodeStyle(selectedText, 'italic') // convert to unicode italic
+        }
+        break
+    }
+
+    replaceSelectedText(formattedText)
+    hideToolbar()
+  }
+
+  async function handleAIRewrite() {
+    const selection = window.getSelection()
+    const selectedText = selection.toString().trim()
+    
+    if (!selectedText) return
+
+    // Get the entire sentence containing the selection
+    // but first check if . ? or ! is in the selectedText
+    // if it is, then it's already a full sentence
+    let fullSentence = selectedText
+    if (selectedText.endsWith('.') || selectedText.endsWith('?') || selectedText.endsWith('!')) {
+      fullSentence = selectedText
+    } else {
+      fullSentence = getFullSentence(selection)
+    }
+
+    // check if the last character in fullSentence is a fullstop is a full stop
+    if (fullSentence.length === 0) return;
+
+    // fullSentence without added full stop 
+    const originalSentence = fullSentence
+    if (fullSentence[fullSentence.length - 1] !== '.') {
+      // If not, add a full stop at the end
+      fullSentence += '.'
+    }
+    
+    try {
+      showToolbarLoading()
+
+      let rewrittenText = null;
+      try {
+        // generate ai rewritten text
+        rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
+      } catch (error) {
+        await refreshToken() // refresh the token
+
+          // call generateRewrittenText again after refresh
+          rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
+      }
+      if (rewrittenText) {
+        await replaceTextInSentence(selection, originalSentence, rewrittenText)
+        hideToolbar()
+      } else {
+        showToolbarError('failed to fetch')
+      }
+      //hideToolbar()
+    } catch (error) {
+      showToolbarError(error.message)
+    }
+  }
+
+  async function handleTextTransform(type) {
+    const selection = window.getSelection()
+    const selectedText = selection.toString().trim()
+    let fullSentence = getFullSentence(selection)
+
+    // check if the last character in fullSentence is a fullstop is a full stop
+    if (fullSentence.length === 0) return
+    if (fullSentence[fullSentence.length - 1] !== '.') {
+      // If not, add a full stop at the end
+      fullSentence += '.'
+    }
+
+    if (!selectedText) return
+
+    try {
+      showToolbarLoading()
+      let transformedText = ""
+      try {
+        transformedText = await generateRewrittenText(selectedText, type)
+      } catch (error) {
+        // refresh the token
+        await refreshToken() // refresh the token
+
+        // call generateRewrittenText again after refresh
+        transformedText = await generateRewrittenText(selectedText, type)
+      }
+      //replaceSelectedText(transformedText)
+      if (!transformedText) {
+        showToolbarError('Failed to fetch transformed text')
+        return
+      }
+      await replaceTextInSentence(selection, fullSentence, transformedText)
+      hideToolbar()
+    } catch (error) {
+      showToolbarError(error.message)
+    }
+  }
+
+  function getFullSentence(selection) {
     const range = selection.getRangeAt(0)
 
     // Find the paragraph containing the selection
@@ -966,68 +966,68 @@ function getFullSentence(selection) {
     return `<a class="ql-mention" href="${mentionData.href || "#"}" data-entity-urn="${mentionData.entityUrn || ""}" data-guid="${mentionData.guid || ""}" data-object-urn="${mentionData.objectUrn || ""}" data-original-text="${mentionData.text}" spellcheck="false" data-test-ql-mention="true">${mentionData.text}</a>`
   }
 
-async function generateRewrittenText(text, type) {
-  let prompt = ''
-  
-  switch (type) {
-    case 'rewrite':
-      prompt = `Rewrite this sentence to be more engaging and professional: "${text}"`
-      break
-    case 'shorten':
-      prompt = `Make this text shorter while keeping the main message: "${text}"`
-      break
-    case 'expand':
-      prompt = `Expand this text with more detail and context: "${text}"`
-      break
-    case 'professional':
-      prompt = `Make this text more professional and business-appropriate: "${text}"`
-      break
-    case 'emoji':
-      prompt = `Add relevant emojis to this text to make it more engaging: "${text}"`
-      break
-    case 'grammar':
-      prompt = `Fix any grammar, spelling, or punctuation errors in this text: "${text}"`
-      break
-    default:
-      prompt = `Improve this text: "${text}"`
-  }
-
-  prompt += ` Return only the improved text without quotes or explanations.`
-
-  const response = await fetch('https://api.getlia.live/api/prompt/improve', {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${await accessToken()}`,
-    },
-    credentials: 'include',
-    body: JSON.stringify({prompt, type, userInfo: linkedinUserInfo}),
-  })
-
-  const data = await response.json()
-
-  if (!response.ok) {
-    throw new Error(data.error?.message || "Failed to transform text")
-  }
-
-  return data.response
-}
-
-function replaceSelectedText(newText) {
-  const selection = window.getSelection()
-  if (selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0)
-    range.deleteContents()
-    range.insertNode(document.createTextNode(newText))
+  async function generateRewrittenText(text, type) {
+    let prompt = ''
     
-    // Trigger input event for LinkedIn
-    const editor = range.commonAncestorContainer.parentElement
-    if (editor) {
-      const inputEvent = new Event("input", { bubbles: true })
-      editor.dispatchEvent(inputEvent)
+    switch (type) {
+      case 'rewrite':
+        prompt = `Rewrite this sentence to be more engaging and professional: "${text}"`
+        break
+      case 'shorten':
+        prompt = `Make this text shorter while keeping the main message: "${text}"`
+        break
+      case 'expand':
+        prompt = `Expand this text with more detail and context: "${text}"`
+        break
+      case 'professional':
+        prompt = `Make this text more professional and business-appropriate: "${text}"`
+        break
+      case 'emoji':
+        prompt = `Add relevant emojis to this text to make it more engaging: "${text}"`
+        break
+      case 'grammar':
+        prompt = `Fix any grammar, spelling, or punctuation errors in this text: "${text}"`
+        break
+      default:
+        prompt = `Improve this text: "${text}"`
+    }
+
+    prompt += ` Return only the improved text without quotes or explanations.`
+
+    const response = await fetch('https://api.getlia.live/api/prompt/improve', {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${await accessToken()}`,
+      },
+      credentials: 'include',
+      body: JSON.stringify({prompt, type, userInfo: linkedinUserInfo}),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || "Failed to transform text")
+    }
+
+    return data.response
+  }
+
+  function replaceSelectedText(newText) {
+    const selection = window.getSelection()
+    if (selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0)
+      range.deleteContents()
+      range.insertNode(document.createTextNode(newText))
+      
+      // Trigger input event for LinkedIn
+      const editor = range.commonAncestorContainer.parentElement
+      if (editor) {
+        const inputEvent = new Event("input", { bubbles: true })
+        editor.dispatchEvent(inputEvent)
+      }
     }
   }
-}
 
   async function replaceTextInSentence(selection, originalSentence, newSentence) {
     const range = selection.getRangeAt(0)
@@ -1149,1358 +1149,1356 @@ function replaceSelectedText(newText) {
     })
   }
 
-function showToolbarLoading() {
-  const toolbar = document.getElementById('linkedin-ai-text-toolbar')
-  if (toolbar) {
-    toolbar.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 8px; padding: 4px 8px;">
-        <div class="linkedin-ai-loading-spinner" style="width: 14px; height: 14px;"></div>
-        <span style="font-size: 12px; color: #0a66c2;">Processing...</span>
-      </div>
-    `
-  }
-}
-
-function showToolbarError(message) {
-  const toolbar = document.getElementById('linkedin-ai-text-toolbar')
-  if (toolbar) {
-    toolbar.innerHTML = `
-      <div style="padding: 4px 8px; color: #ef4444; font-size: 12px;">
-        ${message}
-      </div>
-    `
-    setTimeout(() => hideToolbar(), 3000)
-  }
-}
-
-function hideToolbar() {
-  const toolbar = document.getElementById("linkedin-ai-text-toolbar")
-  if (toolbar) {
-    toolbar.style.display = "none"
-    window.getSelection().removeAllRanges()
-  }
-
-  document.getElementById("linkedin-ai-text-toolbar").remove()
-  setupTextSelectionToolbar()
-}
-
-function setupPostCreationAssistant() {
-  if (!settings.post_enabled) return
-
-  // Find all post creation areas
-  const postEditors = document.querySelectorAll(".share-box-feed-entry__closed-share-box")
-
-  postEditors.forEach((editor) => {
-    // Check if we've already added our button
-    if (editor.querySelector(".linkedin-ai-button")) return
-
-    // Find the toolbar or create insertion point
-    const toolbar = editor.querySelector(".share-creation-state__footer") || editor.parentElement
-
+  function showToolbarLoading() {
+    const toolbar = document.getElementById('linkedin-ai-text-toolbar')
     if (toolbar) {
-      // post container
-      const aiPostContainer = document.createElement("form")
-      aiPostContainer.className = "linkedin-ai-post-container"
-
-      // ai post input
-      const aiPostInput = document.createElement("input")
-      aiPostInput.className = "linkedin-ai-post-input"
-      aiPostInput.setAttribute("placeholder", "What do you want to post?")
-      aiPostInput.setAttribute("spellcheck", "false")
-      aiPostInput.setAttribute("autocapitalize", "off")
-      
-      // Create AI assistant button
-      const aiButton = document.createElement("button")
-      aiButton.className = "linkedin-ai-button"
-      aiButton.setAttribute("type", "submit")
-      aiButton.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10Zm0 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/>
-        </svg>
-        AI Assist
+      toolbar.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; padding: 4px 8px;">
+          <div class="linkedin-ai-loading-spinner" style="width: 14px; height: 14px;"></div>
+          <span style="font-size: 12px; color: #0a66c2;">Processing...</span>
+        </div>
       `
+    }
+  }
 
-      // Event listeners
+  function showToolbarError(message) {
+    const toolbar = document.getElementById('linkedin-ai-text-toolbar')
+    if (toolbar) {
+      toolbar.innerHTML = `
+        <div style="padding: 4px 8px; color: #ef4444; font-size: 12px;">
+          ${message}
+        </div>
+      `
+      setTimeout(() => hideToolbar(), 3000)
+    }
+  }
 
-      aiPostInput.addEventListener("keydown", (event) => {
-        if (event.key === "Enter") {
+  function hideToolbar() {
+    const toolbar = document.getElementById("linkedin-ai-text-toolbar")
+    if (toolbar) {
+      toolbar.style.display = "none"
+      window.getSelection().removeAllRanges()
+    }
+
+    document.getElementById("linkedin-ai-text-toolbar").remove()
+    setupTextSelectionToolbar()
+  }
+
+  function setupPostCreationAssistant() {
+    if (!settings.post_enabled) return
+
+    // Find all post creation areas
+    const postEditors = document.querySelectorAll(".share-box-feed-entry__closed-share-box")
+
+    postEditors.forEach((editor) => {
+      // Check if we've already added our button
+      if (editor.querySelector(".linkedin-ai-button")) return
+
+      // Find the toolbar or create insertion point
+      const toolbar = editor.querySelector(".share-creation-state__footer") || editor.parentElement
+
+      if (toolbar) {
+        // post container
+        const aiPostContainer = document.createElement("form")
+        aiPostContainer.className = "linkedin-ai-post-container"
+
+        // ai post input
+        const aiPostInput = document.createElement("input")
+        aiPostInput.className = "linkedin-ai-post-input"
+        aiPostInput.setAttribute("placeholder", "What do you want to post?")
+        aiPostInput.setAttribute("spellcheck", "false")
+        aiPostInput.setAttribute("autocapitalize", "off")
+        
+        // Create AI assistant button
+        const aiButton = document.createElement("button")
+        aiButton.className = "linkedin-ai-button"
+        aiButton.setAttribute("type", "submit")
+        aiButton.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10Zm0 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/>
+          </svg>
+          AI Assist
+        `
+
+        // Event listeners
+
+        aiPostInput.addEventListener("keydown", (event) => {
+          if (event.key === "Enter") {
+            event.preventDefault()
+            const content = aiPostInput.value
+            handlepost_enabledant(editor, content)
+          }
+        })
+
+        aiButton.addEventListener("click", (event) => {
           event.preventDefault()
           const content = aiPostInput.value
           handlepost_enabledant(editor, content)
+        })
+
+        // check if AI Button Exists
+        if (toolbar.querySelector(".linkedin-ai-button")) {
+          // do nothing
         }
-      })
-
-      aiButton.addEventListener("click", (event) => {
-        event.preventDefault()
-        const content = aiPostInput.value
-        handlepost_enabledant(editor, content)
-      })
-
-      // check if AI Button Exists
-      if (toolbar.querySelector(".linkedin-ai-button")) {
-        // do nothing
-      }
-      else {
-        // Add button and input to postContainer then postContainer into toolbar
-        aiPostContainer.appendChild(aiButton)
-        aiPostContainer.appendChild(aiPostInput)
-        toolbar.appendChild(aiPostContainer)
-      }
-
-    }
-  })
-}
-
-function setupCommentReplyAssistant() {
-  if (!settings.reply_enabled) return
-
-  // Find all comment input areas
-  const commentInputs = document.querySelectorAll(".comments-comment-texteditor")
-
-  commentInputs.forEach((input) => {
-    const container = input.querySelector(".ql-container")
-
-    // Check if we've already added our button
-    if (input.querySelector(".linkedin-ai-button")) return
-
-    // Find the comment actions area
-    const actionsArea = input.querySelector(".comments-comment-box-comment__text-editor")
-
-    if (actionsArea) {
-      // Create AI assistant button
-      const aiButton = document.createElement("button")
-      aiButton.className = "linkedin-ai-button"
-      aiButton.style.fontSize = "12px"
-      aiButton.style.padding = "4px 8px"
-      aiButton.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10Zm0 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/>
-        </svg>
-        AI Reply
-      `
-
-      aiButton.addEventListener("click", (e) => {
-        e.preventDefault()
-        handlereply_enabledant(input)
-      })
-
-      // Add button to actions area
-      actionsArea.prepend(aiButton)
-    }
-  })
-}
-
-function setuprewrite_enabledment() {
-  if (!settings.rewrite_enabled) return
-
-  const createPostButton = document.querySelector(".share-box-feed-entry__top-bar button.artdeco-button--tertiary")
-
-  if (!createPostButton) return;
-
-  createPostButton.addEventListener('click', () => {
-
-    waitForElement(".share-box_actions").then((shareBoxAction) => {
-      //let shareBoxAction = document.querySelector(".share-box_actions")
-      if (shareBoxAction) {
-        shareBoxAction.style.display = "flex"
-        shareBoxAction.style.gap = "8px"
-        
-      }
-
-      const aiButton = document.createElement("button")
-      aiButton.className = "linkedin-ai-button"
-      aiButton.style.padding = "4px 8px"
-      aiButton.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10Zm0 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/>
-        </svg>
-        AI Rewrite
-      `
-      const qlEditor = document.querySelector(".share-box .ql-editor");
-      aiButton.addEventListener("click", () => {
-        if (settings.isRewriting) {
-          showTemporaryMessage(qlEditor, "LIA is rewriting text. Please wait until the process is complete.")
-        } else {
-          handleRewriteAssistant(qlEditor)
+        else {
+          // Add button and input to postContainer then postContainer into toolbar
+          aiPostContainer.appendChild(aiButton)
+          aiPostContainer.appendChild(aiPostInput)
+          toolbar.appendChild(aiPostContainer)
         }
-      })
 
-      if (shareBoxAction) {
-        if (!shareBoxAction.querySelector(".linkedin-ai-button")) {
-          shareBoxAction.prepend(aiButton)
-        }
       }
-      
-      
     })
-  })
-	
-}
-
-
-async function handlepost_enabledant(editor, content) {
-  // Create suggestions container if it doesn't exist
-  let suggestionsContainer = editor.parentElement.querySelector(".linkedin-ai-suggestions")
-
-  if (!suggestionsContainer) {
-    suggestionsContainer = document.createElement("div")
-    suggestionsContainer.className = "linkedin-ai-suggestions"
-    editor.parentElement.appendChild(suggestionsContainer)
   }
 
-  // Show loading state
-  suggestionsContainer.innerHTML = `
-    <div class="linkedin-ai-loading">
-      <div class="linkedin-ai-loading-spinner"></div>
-      <span>Generating suggestions...</span>
-    </div>
-  `
+  function setupCommentReplyAssistant() {
+    if (!settings.reply_enabled) return
 
-  try {
-    // Get the current post content
-    // const postContent = editor.textContent.trim()
+    // Find all comment input areas
+    const commentInputs = document.querySelectorAll(".comments-comment-texteditor")
 
-    // Get post context (optional)
-    const postContext = getPostContext()
+    commentInputs.forEach((input) => {
+      const container = input.querySelector(".ql-container")
 
-    // Generate suggestions
-    const suggestions = await generatePostSuggestions(content, postContext)
+      // Check if we've already added our button
+      if (input.querySelector(".linkedin-ai-button")) return
 
-    // Display suggestions
-    displayPostSuggestions(suggestionsContainer, suggestions, editor)
-  } catch (error) {
+      // Find the comment actions area
+      const actionsArea = input.querySelector(".comments-comment-box-comment__text-editor")
+
+      if (actionsArea) {
+        // Create AI assistant button
+        const aiButton = document.createElement("button")
+        aiButton.className = "linkedin-ai-button"
+        aiButton.style.fontSize = "12px"
+        aiButton.style.padding = "4px 8px"
+        aiButton.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10Zm0 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/>
+          </svg>
+          AI Reply
+        `
+
+        aiButton.addEventListener("click", (e) => {
+          e.preventDefault()
+          handlereply_enabledant(input)
+        })
+
+        // Add button to actions area
+        actionsArea.prepend(aiButton)
+      }
+    })
+  }
+
+  function setuprewrite_enabledment() {
+    if (!settings.rewrite_enabled) return
+
+    const createPostButton = document.querySelector(".share-box-feed-entry__top-bar button.artdeco-button--tertiary")
+
+    if (!createPostButton) return;
+
+    createPostButton.addEventListener('click', () => {
+
+      waitForElement(".share-box_actions").then((shareBoxAction) => {
+        //let shareBoxAction = document.querySelector(".share-box_actions")
+        if (shareBoxAction) {
+          shareBoxAction.style.display = "flex"
+          shareBoxAction.style.gap = "8px"
+          
+        }
+
+        const aiButton = document.createElement("button")
+        aiButton.className = "linkedin-ai-button"
+        aiButton.style.padding = "4px 8px"
+        aiButton.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10Zm0 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/>
+          </svg>
+          AI Rewrite
+        `
+        const qlEditor = document.querySelector(".share-box .ql-editor");
+        aiButton.addEventListener("click", () => {
+          if (settings.isRewriting) {
+            showTemporaryMessage(qlEditor, "LIA is rewriting text. Please wait until the process is complete.")
+          } else {
+            handleRewriteAssistant(qlEditor)
+          }
+        })
+
+        if (shareBoxAction) {
+          if (!shareBoxAction.querySelector(".linkedin-ai-button")) {
+            shareBoxAction.prepend(aiButton)
+          }
+        }
+        
+        
+      })
+    })
+    
+  }
+
+
+  async function handlepost_enabledant(editor, content) {
+    // Create suggestions container if it doesn't exist
+    let suggestionsContainer = editor.parentElement.querySelector(".linkedin-ai-suggestions")
+
+    if (!suggestionsContainer) {
+      suggestionsContainer = document.createElement("div")
+      suggestionsContainer.className = "linkedin-ai-suggestions"
+      editor.parentElement.appendChild(suggestionsContainer)
+    }
+
+    // Show loading state
     suggestionsContainer.innerHTML = `
-      <div style="color: red; padding: 10px;">
-        Error: ${error.message || "Failed to generate suggestions"}
+      <div class="linkedin-ai-loading">
+        <div class="linkedin-ai-loading-spinner"></div>
+        <span>Generating suggestions...</span>
       </div>
     `
-  }
 
-  // try to add ai assist to .share-box
-  const shareButton = editor.querySelector('.share-box-feed-entry__top-bar .artdeco-button')
-  shareButton.addEventListener('click', () => {
-    setupPostCreationAssistant()
-  })
-}
+    try {
+      // Get the current post content
+      // const postContent = editor.textContent.trim()
 
-async function handlereply_enabledant(commentInput) {
-  // Create suggestions container if it doesn't exist
-  const commentBox = commentInput.querySelector(".ql-container")
-  const commentInputEditor = commentInput.querySelector('.ql-editor')
-
-  let suggestionsContainer = commentBox.querySelector(".linkedin-ai-suggestions")
-
-  if (!suggestionsContainer) {
-    suggestionsContainer = document.createElement("div")
-    suggestionsContainer.className = "linkedin-ai-suggestions"
-    commentBox.appendChild(suggestionsContainer)
-  }
-
-  // Show loading state
-  suggestionsContainer.innerHTML = `
-    <div class="linkedin-ai-loading">
-      <div class="linkedin-ai-loading-spinner"></div>
-      <span>Generating reply suggestions...</span>
-    </div>
-  `
-
-  try {
-    // Get the post and comment context
-    const context = getCommentContext(commentInput)
-
-    if (!context) {
-      throw new Error("Unable to determine comment context")
-    }
-
-    let suggestions;
-    if (context.isReplyingToComment == true) {
-      // we are replying to a comment
-      try {
-        suggestions = await generateReplyToCommentSuggestions(context)
-      } catch (error) {
-          // try to refresh token and generate suggestions again
-          await refreshToken() // refresh the token
-          suggestions = await generateReplyToCommentSuggestions(context)
-      }
-    } else {
-      // we are replying to a post
+      // Get post context (optional)
+      const postContext = getPostContext()
 
       // Generate suggestions
+      const suggestions = await generatePostSuggestions(content, postContext)
 
-      try {
-        suggestions = await generateCommentSuggestions(context)
-      } catch (error) {
-        // try to refresh token and generate suggestions again
-        await refreshToken() // refresh the token
-        suggestions = await generateCommentSuggestions(context)
-      }
-    }
-
-    // set the ql-editor container to empty
-    commentInputEditor.textContent = ''
-
-    // Display suggestions
-    displayCommentSuggestions(suggestionsContainer, suggestions, commentInput)
-  } catch (error) {
-    if (error.message === "Failed to generate suggestions") {
-      suggestionsContainer.innerHTML = `
-      <div style="color: red; padding: 10px;">
-      Error: ${error.message || "Failed to generate suggestions"}, maybe your session has expired. Please try signing in again, <a href='https://getlia.live' target='_blank'>here</a>.
-      </div>
-      `
-    } else {
-    suggestionsContainer.innerHTML = `
-      <div style="color: red; padding: 10px;">
-      Error: ${error.message || "Failed to generate suggestions"}
-      </div>
-      `
-    }
-    throw error
-  }
-}
-
-async function handleRewriteAssistant(editor) {
-  settings.isRewriting = true;
-
-  // let makes sure that we are having all the line breaks and whitespaces
-  // in the editor text content by getting all the p tags and joining their text content
-  // this is to avoid issues with the editor not having line breaks and whitespaces
-  const paragraphs = Array.from(editor.querySelectorAll("p"))
-  const textContent = paragraphs.map(p => {
-    let result = '';
-    p.childNodes.forEach(node => {
-      if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('ql-mention')) {
-        result += '@' + node.textContent;
-      } else if (node.nodeType === Node.TEXT_NODE) {
-        result += node.textContent;
-      } else if (node.nodeType === Node.ELEMENT_NODE) {
-        result += node.textContent;
-      }
-    });
-    return result.trim();
-  }).join("\n")
-  console.log("Text content to rewrite:", textContent)
-  let currentText = textContent
-
-  if (!textContent) {
-    // Get the current text content
-    currentText = editor.textContent || editor.innerText || ""
-  }
-
-  if (!currentText.trim()) {
-    settings.isRewriting = false; // reset the flag
-    // Show a temporary message if no text is selected
-    showTemporaryMessage(editor, "Please write some text first to rewrite it")
-    return
-  }
-
-  // Show loading state by adding a subtle overlay
-  const loadingOverlay = createLoadingOverlay(editor)
-
-  try {
-    // Generate improved version
-
-    let improvedText = null;
-    try {
-      improvedText = await generateImprovedText(currentText)
+      // Display suggestions
+      displayPostSuggestions(suggestionsContainer, suggestions, editor)
     } catch (error) {
-      try { // call generateImprovedText again after refresh
-        await refreshToken() // refresh the token
-        improvedText = await generateImprovedText(currentText)
-      } catch (retryError) {
-        throw retryError // pass it to outer catch
-      }
+      suggestionsContainer.innerHTML = `
+        <div style="color: red; padding: 10px;">
+          Error: ${error.message || "Failed to generate suggestions"}
+        </div>
+      `
     }
 
-    // Remove loading overlay
-    loadingOverlay.remove()
-    if (improvedText) {
-      // Perform the in-place rewrite with animation
-      //await animateTextRewrite(editor, currentText, improvedText)
-      await window.animateTextRewriteWithMentions(editor, currentText, improvedText)
-      settings.isRewriting = false; // reset the flag
-    } else {
-      settings.isRewriting = false; // reset the flag
-      // Show a temporary message if no improved text was generated
-      showTemporaryMessage(editor, "No improvements were made to the text because the extension encountered an error")
+    // try to add ai assist to .share-box
+    const shareButton = editor.querySelector('.share-box-feed-entry__top-bar .artdeco-button')
+    shareButton.addEventListener('click', () => {
+      setupPostCreationAssistant()
+    })
+  }
+
+  async function handlereply_enabledant(commentInput) {
+    // Create suggestions container if it doesn't exist
+    const commentBox = commentInput.querySelector(".ql-container")
+    const commentInputEditor = commentInput.querySelector('.ql-editor')
+
+    let suggestionsContainer = commentBox.querySelector(".linkedin-ai-suggestions")
+
+    if (!suggestionsContainer) {
+      suggestionsContainer = document.createElement("div")
+      suggestionsContainer.className = "linkedin-ai-suggestions"
+      commentBox.appendChild(suggestionsContainer)
     }
-  } catch (error) {
-    settings.isRewriting = false; // reset the flag
-    loadingOverlay.remove()
-    console.error("Error during rewrite:", error)
-    // Show error message
-    if (error.message === "Failed to generate improved text") {
-      showTemporaryMessage(editor, "Failed to generate improved text. Maybe your session has expired. Please try signing in again.")
-    } else showTemporaryMessage(editor, `Error: ${error.message}`)
-  }
-}
 
-function createLoadingOverlay(editor) {
-  const overlay = document.createElement("div")
-  overlay.className = "linkedin-ai-rewrite-loading"
-  overlay.style.cssText = `
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    border-radius: 8px;
-    backdrop-filter: blur(2px);
-  `
-
-  overlay.innerHTML = `
-    <div style="display: flex; align-items: center; gap: 8px; color: #0a66c2;">
-      <div class="linkedin-ai-loading-spinner" style="width: 16px; height: 16px;"></div>
-      <span style="font-size: 14px;">AI is rewriting...</span>
-    </div>
-  `
-
-  // Position relative to editor
-  const editorRect = editor.getBoundingClientRect()
-  const editorParent = editor.parentElement
-  editorParent.style.position = "relative"
-  editorParent.appendChild(overlay)
-
-  return overlay
-}
-
-async function generateImprovedText(originalText) {
-
-  if (!settings.rewrite_enabled) return;
-
-  // setup prompt
-  const prompt = `Improve and rewrite the following LinkedIn post to make it more engaging, professional, and impactful. Keep the core message but enhance clarity, flow, and engagement. Maintain unicode characters, maintain the same tone (${settings.tone}) and make it suitable for the ${settings.industry} industry:
-
-  "${originalText}"
-
-  Return only the improved text without any explanations or quotes. Include proper line breaks and formatting as needed - whitespaces.`
-
-  // fetch the response from api-server
-  const response = await fetch("https://api.getlia.live/api/prompt/rewrite", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${await accessToken()}`,
-    },
-    body: JSON.stringify({prompt, originalText}),
-  })
-
-  if (!response.ok) {
-    throw new Error(data.error?.message || "Failed to generate improved text")
-  }
-
-  // get the json response
-  const data = await response.json()
-
-  return data.response
-}
-
-async function animateTextRewrite(editor, originalText, newText) {
-  return new Promise((resolve) => {
-
-    // Create a temporary container for the animation
-    const animationContainer = document.createElement("div")
-    animationContainer.style.cssText = `
-      position: relative;
-      min-height: ${editor.offsetHeight}px;
+    // Show loading state
+    suggestionsContainer.innerHTML = `
+      <div class="linkedin-ai-loading">
+        <div class="linkedin-ai-loading-spinner"></div>
+        <span>Generating reply suggestions...</span>
+      </div>
     `
 
-    // Store original editor styles
-    const originalStyles = {
-      opacity: editor.style.opacity,
-      transition: editor.style.transition,
-    }
+    try {
+      // Get the post and comment context
+      const context = getCommentContext(commentInput)
 
-    // Add smooth transition
-    editor.style.transition = "opacity 0.3s ease"
-
-    // Phase 1: Fade out original text
-    editor.style.opacity = "0.3"
-
-    setTimeout(() => {
-      // Phase 2: Character-by-character rewrite simulation
-      let currentIndex = 0
-      const maxLength = Math.max(originalText.length, newText.length)
-
-      const typewriterInterval = setInterval(() => {
-        if (currentIndex <= newText.length) {
-          const partialText = newText.substring(0, currentIndex)
-          editor.textContent = partialText
-
-          // Add a blinking cursor effect
-          if (currentIndex < newText.length) {
-            editor.textContent += "|"
-          }
-
-          currentIndex++
-        } else {
-          // Animation complete
-          clearInterval(typewriterInterval)
-          editor.textContent = newText
-
-          // Phase 3: Fade back in with final text
-          editor.style.opacity = "1"
-
-          // Restore original styles
-          setTimeout(() => {
-            editor.style.opacity = originalStyles.opacity
-            editor.style.transition = originalStyles.transition
-
-            // Dispatch input event to trigger LinkedIn's handlers
-            const inputEvent = new Event("input", { bubbles: true })
-            editor.dispatchEvent(inputEvent)
-
-            // Show success indicator
-            showTemporaryMessage(editor, "✨ Text improved!", "success")
-
-            resolve()
-          }, 300)
-        }
-      }, 30) // Adjust speed here (lower = faster)
-    }, 300)
-
-  })
-}
-
-/**
- * Shows a temporary message above the editor with a fade-in and fade-out animation.
- *
- * @param {HTMLElement} editor - The editor element to position the message relative to.
- * @param {string} message - The message to display.
- * @param {"info"|"success"|"error"} [type="info"] - The type of message to display.
- *   Determines the background color of the message.
- */
-
-
-function showTemporaryMessage(editor, message, type = "info") {
-  const container = document.createElement("div")
-  container.style.cssText = `
-    position: absolute;
-    top: 80px;
-    left: 50%;
-    transform: translateX(-50%);
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    z-index: 10001;
-    pointer-events: none;
-  `
-
-  // Color schemes
-  const colors = {
-    success: { avatar: "#10b981", bubble: "#f0fdf4", text: "#166534", border: "#bbf7d0" },
-    error: { avatar: "#ef4444", bubble: "#fef2f2", text: "#991b1b", border: "#fecaca" },
-    info: { avatar: "#0a66c2", bubble: "#eff6ff", text: "#1e40af", border: "#bfdbfe" },
-    warning: { avatar: "#f59e0b", bubble: "#fffbeb", text: "#92400e", border: "#fed7aa" },
-  }
-
-  const colorScheme = colors[type] || colors.info
-
-  // Avatar with pulsing effect
-  const avatarContainer = document.createElement("div")
-  avatarContainer.style.cssText = `
-    width: 44px;
-    height: 44px;
-    background: ${colorScheme.avatar};
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 4px 12px ${colorScheme.avatar}40;
-    opacity: 0;
-    transform: scale(0);
-    transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-    flex-shrink: 0;
-    position: relative;
-  `
-
-  // Add pulsing ring
-  const pulseRing = document.createElement("div")
-  pulseRing.style.cssText = `
-    position: absolute;
-    top: -4px;
-    left: -4px;
-    right: -4px;
-    bottom: -4px;
-    border: 2px solid ${colorScheme.avatar};
-    border-radius: 50%;
-    opacity: 0;
-    animation: pulse 2s infinite;
-  `
-
-  const pulseStyle = document.createElement("style")
-  pulseStyle.textContent = `
-    @keyframes pulse {
-      0% { transform: scale(1); opacity: 0.7; }
-      100% { transform: scale(1.2); opacity: 0; }
-    }
-  `
-  document.head.appendChild(pulseStyle)
-
-  avatarContainer.appendChild(pulseRing)
-  avatarContainer.innerHTML += `
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-      <rect x="2" y="9" width="4" height="12"/>
-      <circle cx="4" cy="4" r="2"/>
-      <circle cx="16" cy="4" r="2" fill="white"/>
-      <path d="M12 8a4 4 0 0 1 4-4" stroke="white"/>
-    </svg>
-  `
-
-  // Modern speech bubble
-  const speechBubble = document.createElement("div")
-  speechBubble.style.cssText = `
-    position: relative;
-    background: ${colorScheme.bubble};
-    color: ${colorScheme.text};
-    padding: 14px 18px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 500;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-    border: 1px solid ${colorScheme.border};
-    max-width: 280px;
-    opacity: 0;
-    transform: scale(0.7) translateY(15px);
-    transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    backdrop-filter: blur(10px);
-  `
-
-  // Curved tail for modern look
-  const bubbleTail = document.createElement("div")
-  bubbleTail.style.cssText = `
-    position: absolute;
-    left: -8px;
-    top: 15px;
-    width: 20px;
-    height: 20px;
-    background: ${colorScheme.bubble};
-    border: 1px solid ${colorScheme.border};
-    border-right: none;
-    border-bottom: none;
-    transform: rotate(-45deg);
-    border-radius: 4px 0 0 0;
-  `
-
-  const messageText = document.createElement("span")
-  speechBubble.appendChild(bubbleTail)
-  speechBubble.appendChild(messageText)
-
-  container.appendChild(avatarContainer)
-  container.appendChild(speechBubble)
-
-  const editorParent = editor.closest('.share-box')
-  editorParent.style.position = "relative"
-  editorParent.appendChild(container)
-
-  // Animation sequence
-  setTimeout(() => {
-    avatarContainer.style.opacity = "1"
-    avatarContainer.style.transform = "scale(1)"
-  }, 100)
-
-  setTimeout(() => {
-    speechBubble.style.opacity = "1"
-    speechBubble.style.transform = "scale(1) translateY(0)"
-  }, 400)
-
-  setTimeout(() => {
-    let i = 0
-    const typeMessage = () => {
-      if (i <= message.length) {
-        messageText.textContent = message.substring(0, i) + (i < message.length ? "▋" : "")
-        i++
-        setTimeout(typeMessage, 40)
+      if (!context) {
+        throw new Error("Unable to determine comment context")
       }
-    }
-    typeMessage()
-  }, 700)
 
-  // Cleanup
-  setTimeout(() => {
-    container.style.transform = "translateX(-50%) scale(0.8)"
-    container.style.opacity = "0"
-    setTimeout(() => {
-      container.remove()
-      pulseStyle.remove()
-    }, 1500)
-  }, 4500)
-}
+      let suggestions;
+      if (context.isReplyingToComment == true) {
+        // we are replying to a comment
+        try {
+          suggestions = await generateReplyToCommentSuggestions(context)
+        } catch (error) {
+            // try to refresh token and generate suggestions again
+            await refreshToken() // refresh the token
+            suggestions = await generateReplyToCommentSuggestions(context)
+        }
+      } else {
+        // we are replying to a post
 
+        // Generate suggestions
 
+        try {
+          suggestions = await generateCommentSuggestions(context)
+        } catch (error) {
+          // try to refresh token and generate suggestions again
+          await refreshToken() // refresh the token
+          suggestions = await generateCommentSuggestions(context)
+        }
+      }
 
-function getPostContext() {
-  // Try to get context from the page (like hashtags, trending topics, etc.)
-  const context = {
-    industry: settings.tone,
-    recentTopics: [],
-  }
+      // set the ql-editor container to empty
+      commentInputEditor.textContent = ''
 
-  // Look for trending topics or hashtags
-  const trendingElements = document.querySelectorAll(
-    ".feed-shared-news-module__headline, .feed-shared-news-module__sub-headline",
-  )
-  trendingElements.forEach((element) => {
-    if (element.textContent.trim()) {
-      context.recentTopics.push(element.textContent.trim())
-    }
-  })
-
-  return context
-}
-
-function getCommentContext(commentInput) {
-  const context = {
-    postContent: "",
-    previousComments: [],
-    postWriter: ""
-  }
-
-  if (window.location.href.includes("linkedin.com/pulse/")) {
-    /** we are in the articles page */
-
-    // Try to get the original article content
-    const articleContainer = document.querySelector('.reader-article-content')
-    const articleHeaderTitle = document.querySelector('.reader-article-header__title')
-    //const postCreatorContainer = articleContainer.querySelector(".update-components-actor__meta")
-    
-    if (articleContainer) {
-      const contentContext = `
-        ${articleHeaderTitle.innerText}
-        ${articleContainer.innerText}
+      // Display suggestions
+      displayCommentSuggestions(suggestionsContainer, suggestions, commentInput)
+    } catch (error) {
+      if (error.message === "Failed to generate suggestions") {
+        suggestionsContainer.innerHTML = `
+        <div style="color: red; padding: 10px;">
+        Error: ${error.message || "Failed to generate suggestions"}, maybe your session has expired. Please try signing in again, <a href='https://getlia.live' target='_blank'>here</a>.
+        </div>
         `
-      context.postContent = contentContext
+      } else {
+      suggestionsContainer.innerHTML = `
+        <div style="color: red; padding: 10px;">
+        Error: ${error.message || "Failed to generate suggestions"}
+        </div>
+        `
+      }
+      throw error
+    }
+  }
+
+  async function handleRewriteAssistant(editor) {
+    settings.isRewriting = true;
+
+    // let makes sure that we are having all the line breaks and whitespaces
+    // in the editor text content by getting all the p tags and joining their text content
+    // this is to avoid issues with the editor not having line breaks and whitespaces
+    const paragraphs = Array.from(editor.querySelectorAll("p"))
+    const textContent = paragraphs.map(p => {
+      let result = '';
+      p.childNodes.forEach(node => {
+        if (node.nodeType === Node.ELEMENT_NODE && node.classList.contains('ql-mention')) {
+          result += '@' + node.textContent;
+        } else if (node.nodeType === Node.TEXT_NODE) {
+          result += node.textContent;
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          result += node.textContent;
+        }
+      });
+      return result.trim();
+    }).join("\n")
+    console.log("Text content to rewrite:", textContent)
+    let currentText = textContent
+
+    if (!textContent) {
+      // Get the current text content
+      currentText = editor.textContent || editor.innerText || ""
     }
 
-    // Try to get previous comments
-    const commentsContainer = document.querySelector(".reader-social-details__comments-list, .comments-comments-list")
-    if (commentsContainer) {
-      const commentElementsContainer = commentsContainer.querySelectorAll(".comments-comment-entity")
-      commentElementsContainer.forEach((comment) => {
-        const commentElement = comment.querySelector(".comments-comment-item__main-content")
-        const commenter = comment.querySelector(".comments-comment-meta__description-title")
+    if (!currentText.trim()) {
+      settings.isRewriting = false; // reset the flag
+      // Show a temporary message if no text is selected
+      showTemporaryMessage(editor, "Please write some text first to rewrite it")
+      return
+    }
 
-        const commentContext = `
+    // Show loading state by adding a subtle overlay
+    const loadingOverlay = createLoadingOverlay(editor)
+
+    try {
+      // Generate improved version
+
+      let improvedText = null;
+      try {
+        improvedText = await generateImprovedText(currentText)
+      } catch (error) {
+        try { // call generateImprovedText again after refresh
+          await refreshToken() // refresh the token
+          improvedText = await generateImprovedText(currentText)
+        } catch (retryError) {
+          throw retryError // pass it to outer catch
+        }
+      }
+
+      // Remove loading overlay
+      loadingOverlay.remove()
+      if (improvedText) {
+        // Perform the in-place rewrite with animation
+        //await animateTextRewrite(editor, currentText, improvedText)
+        await window.animateTextRewriteWithMentions(editor, currentText, improvedText)
+        settings.isRewriting = false; // reset the flag
+      } else {
+        settings.isRewriting = false; // reset the flag
+        // Show a temporary message if no improved text was generated
+        showTemporaryMessage(editor, "No improvements were made to the text because the extension encountered an error")
+      }
+    } catch (error) {
+      settings.isRewriting = false; // reset the flag
+      loadingOverlay.remove()
+      console.error("Error during rewrite:", error)
+      // Show error message
+      if (error.message === "Failed to generate improved text") {
+        showTemporaryMessage(editor, "Failed to generate improved text. Maybe your session has expired. Please try signing in again.")
+      } else showTemporaryMessage(editor, `Error: ${error.message}`)
+    }
+  }
+
+  function createLoadingOverlay(editor) {
+    const overlay = document.createElement("div")
+    overlay.className = "linkedin-ai-rewrite-loading"
+    overlay.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255, 255, 255, 0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      border-radius: 8px;
+      backdrop-filter: blur(2px);
+    `
+
+    overlay.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px; color: #0a66c2;">
+        <div class="linkedin-ai-loading-spinner" style="width: 16px; height: 16px;"></div>
+        <span style="font-size: 14px;">AI is rewriting...</span>
+      </div>
+    `
+
+    // Position relative to editor
+    const editorRect = editor.getBoundingClientRect()
+    const editorParent = editor.parentElement
+    editorParent.style.position = "relative"
+    editorParent.appendChild(overlay)
+
+    return overlay
+  }
+
+  async function generateImprovedText(originalText) {
+
+    if (!settings.rewrite_enabled) return;
+
+    // setup prompt
+    const prompt = `Improve and rewrite the following LinkedIn post to make it more engaging, professional, and impactful. Keep the core message but enhance clarity, flow, and engagement. Maintain unicode characters, maintain the same tone (${settings.tone}) and make it suitable for the ${settings.industry} industry:
+
+    "${originalText}"
+
+    Return only the improved text without any explanations or quotes. Include proper line breaks and formatting as needed - whitespaces.`
+
+    // fetch the response from api-server
+    const response = await fetch("https://api.getlia.live/api/prompt/rewrite", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${await accessToken()}`,
+      },
+      body: JSON.stringify({prompt, originalText}),
+    })
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || "Failed to generate improved text")
+    }
+
+    // get the json response
+    const data = await response.json()
+
+    return data.response
+  }
+
+  async function animateTextRewrite(editor, originalText, newText) {
+    return new Promise((resolve) => {
+
+      // Create a temporary container for the animation
+      const animationContainer = document.createElement("div")
+      animationContainer.style.cssText = `
+        position: relative;
+        min-height: ${editor.offsetHeight}px;
+      `
+
+      // Store original editor styles
+      const originalStyles = {
+        opacity: editor.style.opacity,
+        transition: editor.style.transition,
+      }
+
+      // Add smooth transition
+      editor.style.transition = "opacity 0.3s ease"
+
+      // Phase 1: Fade out original text
+      editor.style.opacity = "0.3"
+
+      setTimeout(() => {
+        // Phase 2: Character-by-character rewrite simulation
+        let currentIndex = 0
+        const maxLength = Math.max(originalText.length, newText.length)
+
+        const typewriterInterval = setInterval(() => {
+          if (currentIndex <= newText.length) {
+            const partialText = newText.substring(0, currentIndex)
+            editor.textContent = partialText
+
+            // Add a blinking cursor effect
+            if (currentIndex < newText.length) {
+              editor.textContent += "|"
+            }
+
+            currentIndex++
+          } else {
+            // Animation complete
+            clearInterval(typewriterInterval)
+            editor.textContent = newText
+
+            // Phase 3: Fade back in with final text
+            editor.style.opacity = "1"
+
+            // Restore original styles
+            setTimeout(() => {
+              editor.style.opacity = originalStyles.opacity
+              editor.style.transition = originalStyles.transition
+
+              // Dispatch input event to trigger LinkedIn's handlers
+              const inputEvent = new Event("input", { bubbles: true })
+              editor.dispatchEvent(inputEvent)
+
+              // Show success indicator
+              showTemporaryMessage(editor, "✨ Text improved!", "success")
+
+              resolve()
+            }, 300)
+          }
+        }, 30) // Adjust speed here (lower = faster)
+      }, 300)
+
+    })
+  }
+
+  /**
+   * Shows a temporary message above the editor with a fade-in and fade-out animation.
+   *
+   * @param {HTMLElement} editor - The editor element to position the message relative to.
+   * @param {string} message - The message to display.
+   * @param {"info"|"success"|"error"} [type="info"] - The type of message to display.
+   *   Determines the background color of the message.
+   */
+  function showTemporaryMessage(editor, message, type = "info") {
+    const container = document.createElement("div")
+    container.style.cssText = `
+      position: absolute;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      z-index: 10001;
+      pointer-events: none;
+    `
+
+    // Color schemes
+    const colors = {
+      success: { avatar: "#10b981", bubble: "#f0fdf4", text: "#166534", border: "#bbf7d0" },
+      error: { avatar: "#ef4444", bubble: "#fef2f2", text: "#991b1b", border: "#fecaca" },
+      info: { avatar: "#0a66c2", bubble: "#eff6ff", text: "#1e40af", border: "#bfdbfe" },
+      warning: { avatar: "#f59e0b", bubble: "#fffbeb", text: "#92400e", border: "#fed7aa" },
+    }
+
+    const colorScheme = colors[type] || colors.info
+
+    // Avatar with pulsing effect
+    const avatarContainer = document.createElement("div")
+    avatarContainer.style.cssText = `
+      width: 44px;
+      height: 44px;
+      background: ${colorScheme.avatar};
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px ${colorScheme.avatar}40;
+      opacity: 0;
+      transform: scale(0);
+      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      flex-shrink: 0;
+      position: relative;
+    `
+
+    // Add pulsing ring
+    const pulseRing = document.createElement("div")
+    pulseRing.style.cssText = `
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      border: 2px solid ${colorScheme.avatar};
+      border-radius: 50%;
+      opacity: 0;
+      animation: pulse 2s infinite;
+    `
+
+    const pulseStyle = document.createElement("style")
+    pulseStyle.textContent = `
+      @keyframes pulse {
+        0% { transform: scale(1); opacity: 0.7; }
+        100% { transform: scale(1.2); opacity: 0; }
+      }
+    `
+    document.head.appendChild(pulseStyle)
+
+    avatarContainer.appendChild(pulseRing)
+    avatarContainer.innerHTML += `
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+        <rect x="2" y="9" width="4" height="12"/>
+        <circle cx="4" cy="4" r="2"/>
+        <circle cx="16" cy="4" r="2" fill="white"/>
+        <path d="M12 8a4 4 0 0 1 4-4" stroke="white"/>
+      </svg>
+    `
+
+    // Modern speech bubble
+    const speechBubble = document.createElement("div")
+    speechBubble.style.cssText = `
+      position: relative;
+      background: ${colorScheme.bubble};
+      color: ${colorScheme.text};
+      padding: 14px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+      border: 1px solid ${colorScheme.border};
+      max-width: 280px;
+      opacity: 0;
+      transform: scale(0.7) translateY(15px);
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      backdrop-filter: blur(10px);
+    `
+
+    // Curved tail for modern look
+    const bubbleTail = document.createElement("div")
+    bubbleTail.style.cssText = `
+      position: absolute;
+      left: -8px;
+      top: 15px;
+      width: 20px;
+      height: 20px;
+      background: ${colorScheme.bubble};
+      border: 1px solid ${colorScheme.border};
+      border-right: none;
+      border-bottom: none;
+      transform: rotate(-45deg);
+      border-radius: 4px 0 0 0;
+    `
+
+    const messageText = document.createElement("span")
+    speechBubble.appendChild(bubbleTail)
+    speechBubble.appendChild(messageText)
+
+    container.appendChild(avatarContainer)
+    container.appendChild(speechBubble)
+
+    const editorParent = editor.closest('.share-box')
+    editorParent.style.position = "relative"
+    editorParent.appendChild(container)
+
+    // Animation sequence
+    setTimeout(() => {
+      avatarContainer.style.opacity = "1"
+      avatarContainer.style.transform = "scale(1)"
+    }, 100)
+
+    setTimeout(() => {
+      speechBubble.style.opacity = "1"
+      speechBubble.style.transform = "scale(1) translateY(0)"
+    }, 400)
+
+    setTimeout(() => {
+      let i = 0
+      const typeMessage = () => {
+        if (i <= message.length) {
+          messageText.textContent = message.substring(0, i) + (i < message.length ? "▋" : "")
+          i++
+          setTimeout(typeMessage, 40)
+        }
+      }
+      typeMessage()
+    }, 700)
+
+    // Cleanup
+    setTimeout(() => {
+      container.style.transform = "translateX(-50%) scale(0.8)"
+      container.style.opacity = "0"
+      setTimeout(() => {
+        container.remove()
+        pulseStyle.remove()
+      }, 1500)
+    }, 4500)
+  }
+
+
+
+  function getPostContext() {
+    // Try to get context from the page (like hashtags, trending topics, etc.)
+    const context = {
+      industry: settings.tone,
+      recentTopics: [],
+    }
+
+    // Look for trending topics or hashtags
+    const trendingElements = document.querySelectorAll(
+      ".feed-shared-news-module__headline, .feed-shared-news-module__sub-headline",
+    )
+    trendingElements.forEach((element) => {
+      if (element.textContent.trim()) {
+        context.recentTopics.push(element.textContent.trim())
+      }
+    })
+
+    return context
+  }
+
+  function getCommentContext(commentInput) {
+    const context = {
+      postContent: "",
+      previousComments: [],
+      postWriter: ""
+    }
+
+    if (window.location.href.includes("linkedin.com/pulse/")) {
+      /** we are in the articles page */
+
+      // Try to get the original article content
+      const articleContainer = document.querySelector('.reader-article-content')
+      const articleHeaderTitle = document.querySelector('.reader-article-header__title')
+      //const postCreatorContainer = articleContainer.querySelector(".update-components-actor__meta")
+      
+      if (articleContainer) {
+        const contentContext = `
+          ${articleHeaderTitle.innerText}
+          ${articleContainer.innerText}
+          `
+        context.postContent = contentContext
+      }
+
+      // Try to get previous comments
+      const commentsContainer = document.querySelector(".reader-social-details__comments-list, .comments-comments-list")
+      if (commentsContainer) {
+        const commentElementsContainer = commentsContainer.querySelectorAll(".comments-comment-entity")
+        commentElementsContainer.forEach((comment) => {
+          const commentElement = comment.querySelector(".comments-comment-item__main-content")
+          const commenter = comment.querySelector(".comments-comment-meta__description-title")
+
+          const commentContext = `
+            ${commenter.innerText} said: 
+            ${commentElement.innerText}
+          `
+          context.previousComments.push(commentContext)
+        })
+      }
+
+      // Try to get article writer
+      const articleWriterContainer = document.querySelector(".reader-author-info__content")
+      if (articleWriterContainer) {
+        const creatorFullname = articleWriterContainer.querySelector("div a").innerText
+        context.postWriter = creatorFullname
+      }
+
+      const replyContext = {
+        postContent: context.postContent,
+        commenterName: "",
+        commentReply: "",
+        previousRepliesOnComment: [],
+        previousComments: context.previousComments,
+        isReplyingToComment: true,
+        isReplyingTo: "",
+        isSubReplyingTo: false // replying to a reply on a comment
+      }
+
+      // check if the ai reply button is in a comment input replying to a comment
+
+      const commentMainContainer = commentInput.closest(".comments-comment-entity")
+      let commentSocailActivity = null;
+      if (commentMainContainer) {
+        commentSocailActivity = commentMainContainer.querySelector(".comment-social-activity")
+      } else { // we are in pulse article comments
+        commentSocailActivity = commentInput.closest(".comments-social-activity")
+      }
+
+      if (commentSocailActivity) { 
+        // we are in a comment input replying to a comment
+        // also I need it to find all the previous comments on that comment
+
+        // the comment that was made on the post that the user is replying to
+        const commentCommenterMeta = commentMainContainer.querySelector('.comments-comment-meta__container .comments-comment-meta__description')
+        const commentContentElement = commentMainContainer.querySelector('.comments-thread-entity')
+
+        // structure the context
+        const commenterName = commentCommenterMeta.querySelector('.comments-comment-meta__description-title').innerText
+
+        // get content in ql editor because sometimes linkedin will append the person you're replying to in it after clicking reply
+        // we need it to tell the ai who to reply to
+        const currentContent = commentInput.querySelector('.ql-editor').textContent
+        // remove duplicate words in currentContent because sometime there are
+        // duplicate words in currentContent
+        const currentContentWords = currentContent.split(' ')
+        const uniqueCurrentContentWords = [...new Set(currentContentWords)]
+        const uniqueCurrentContent = uniqueCurrentContentWords.join(' ')
+        
+        replyContext.isReplyingTo = uniqueCurrentContent.trim()
+
+        const commentReplyContext = `
+        ${commentContentElement.innerText} -- by ${commenterName}
+        `
+
+        // push to context
+        replyContext.commenterName = commenterName
+        replyContext.commentReply = commentReplyContext
+
+        // get previous reply that was made on that comment
+        const previousReplyContainer = commentSocailActivity.querySelector(".comments-replies-list")
+        if (!previousReplyContainer) { // no one has replied to this comment yet
+          // return the reply context with no previous replies
+          replyContext.previousRepliesOnComment = []
+          replyContext.replyContext = true
+
+          return replyContext;
+        }
+        
+        const previousReplyElements = previousReplyContainer.querySelectorAll(".comments-thread-entity")
+        previousReplyElements.forEach((reply) => {
+          const replyElement = reply.querySelector(".comments-comment-entity .comments-thread-entity")
+          const replier = reply.querySelector(".comments-comment-entity .comments-comment-meta__container")
+          
+          if (replyElement && replier) {
+            const replyOnCommentContext = `
+              ${replier.querySelector('.comments-comment-meta__description-container .comments-comment-meta__description').innerText} replied: 
+              ${replyElement.innerText}
+            `
+            replyContext.previousRepliesOnComment.push(replyOnCommentContext)
+          }
+        })
+
+        // loop through previous reply on comment if it contains replyContext.isReplyingTo
+        // then change replyContext.commentReply to that comment
+        replyContext.previousRepliesOnComment.forEach((reply) => {
+          if (reply.includes((replyContext.isReplyingTo + ' replied'))) {
+            replyContext.commentReply = reply
+            replyContext.isSubReplyingTo = true
+            return
+          }
+        })
+
+        replyContext.replyContext = true
+        return replyContext;
+      }
+
+      return context
+    } else {
+      //* we are in feed or somewhere else */
+
+      // Try to get the original post content
+      let postContainer = commentInput.closest(".feed-shared-update-v2")
+      if (postContainer == null) { // we are in the detail view
+        postContainer = commentInput.closest(".feed-shared-update-detail-viewer__content")
+      }
+      
+      if (postContainer) {
+        const postTextElement = postContainer.querySelector(".feed-shared-update-v2__description")
+        if (postTextElement) {
+          context.postContent = postTextElement.textContent.trim()
+        }
+      }
+      
+      // Try to get previous comments
+      const commentsContainer = postContainer.querySelector(".reader-social-details__comments-list, .comments-comments-list")
+      if (commentsContainer) {
+        const commentElementsContainer = commentsContainer.querySelectorAll(".comments-comment-entity")
+        commentElementsContainer.forEach((comment) => {
+          const commentElement = comment.querySelector(".comments-comment-item__main-content")
+          const commenter = comment.querySelector(".comments-comment-meta__description-title")
+          
+          const commentContext = `
           ${commenter.innerText} said: 
           ${commentElement.innerText}
-        `
-        context.previousComments.push(commentContext)
-      })
-    }
-
-    // Try to get article writer
-    const articleWriterContainer = document.querySelector(".reader-author-info__content")
-    if (articleWriterContainer) {
-      const creatorFullname = articleWriterContainer.querySelector("div a").innerText
-      context.postWriter = creatorFullname
-    }
-
-    const replyContext = {
-      postContent: context.postContent,
-      commenterName: "",
-      commentReply: "",
-      previousRepliesOnComment: [],
-      previousComments: context.previousComments,
-      isReplyingToComment: true,
-      isReplyingTo: "",
-      isSubReplyingTo: false // replying to a reply on a comment
-    }
-
-    // check if the ai reply button is in a comment input replying to a comment
-
-    const commentMainContainer = commentInput.closest(".comments-comment-entity")
-    let commentSocailActivity = null;
-    if (commentMainContainer) {
-      commentSocailActivity = commentMainContainer.querySelector(".comment-social-activity")
-    } else { // we are in pulse article comments
-      commentSocailActivity = commentInput.closest(".comments-social-activity")
-    }
-
-    if (commentSocailActivity) { 
-      // we are in a comment input replying to a comment
-      // also I need it to find all the previous comments on that comment
-
-      // the comment that was made on the post that the user is replying to
-      const commentCommenterMeta = commentMainContainer.querySelector('.comments-comment-meta__container .comments-comment-meta__description')
-      const commentContentElement = commentMainContainer.querySelector('.comments-thread-entity')
-
-      // structure the context
-      const commenterName = commentCommenterMeta.querySelector('.comments-comment-meta__description-title').innerText
-
-      // get content in ql editor because sometimes linkedin will append the person you're replying to in it after clicking reply
-      // we need it to tell the ai who to reply to
-      const currentContent = commentInput.querySelector('.ql-editor').textContent
-      // remove duplicate words in currentContent because sometime there are
-      // duplicate words in currentContent
-      const currentContentWords = currentContent.split(' ')
-      const uniqueCurrentContentWords = [...new Set(currentContentWords)]
-      const uniqueCurrentContent = uniqueCurrentContentWords.join(' ')
+          `
+          context.previousComments.push(commentContext)
+        })
+      }
       
-      replyContext.isReplyingTo = uniqueCurrentContent.trim()
+      // Try to get post writer
+      const postCreatorContainer = postContainer.querySelector(".update-components-actor__container")
+      const postCreator = postCreatorContainer.querySelector(".update-components-actor__title")
+      if (postCreatorContainer) {
+        const creatorFullname = postCreator.querySelector('span').innerText
+        context.postWriter = creatorFullname
+      }
 
-      const commentReplyContext = `
-      ${commentContentElement.innerText} -- by ${commenterName}
-      `
+      const replyContext = {
+        postContent: context.postContent,
+        commenterName: "",
+        commentReply: "",
+        previousRepliesOnComment: [],
+        previousComments: context.previousComments,
+        isReplyingToComment: true,
+        isReplyingTo: "",
+        isSubReplyingTo: false // replying to a reply on a comment
+      }
 
-      // push to context
-      replyContext.commenterName = commenterName
-      replyContext.commentReply = commentReplyContext
+      // check if the ai reply button is in a comment input replying to a comment
 
-      // get previous reply that was made on that comment
-      const previousReplyContainer = commentSocailActivity.querySelector(".comments-replies-list")
-      if (!previousReplyContainer) { // no one has replied to this comment yet
-        // return the reply context with no previous replies
-        replyContext.previousRepliesOnComment = []
+      const commentMainContainer = commentInput.closest(".comments-comment-entity")
+      const commentSocailActivity = commentInput.closest(".comment-social-activity")
+      if (commentSocailActivity) { 
+        // we are in a comment input replying to a comment
+        // also I need it to find all the previous comments on that comment
+
+        // the comment that was made on the post that the user is replying to
+        const commentCommenterMeta = commentMainContainer.querySelector('.comments-comment-meta__container .comments-comment-meta__description')
+        const commentContentElement = commentMainContainer.querySelector('.comments-thread-entity')
+
+        // structure the context
+        const commenterName = commentCommenterMeta.querySelector('.comments-comment-meta__description-title').innerText
+
+        // get content in ql editor because sometimes linkedin will append the person you're replying to in it after clicking reply
+        // we need it to tell the ai who to reply to
+        const currentContent = commentInput.querySelector('.ql-editor').textContent
+        // remove duplicate words in currentContent because sometime there are
+        // duplicate words in currentContent
+        const currentContentWords = currentContent.split(' ')
+        const uniqueCurrentContentWords = [...new Set(currentContentWords)]
+        const uniqueCurrentContent = uniqueCurrentContentWords.join(' ')
+
+        replyContext.isReplyingTo = uniqueCurrentContent.trim()
+
+        const commentReplyContext = `
+        ${commentContentElement.innerText}. The comment was posted by "${commenterName}"
+        `
+
+        // push to context
+        replyContext.commenterName = commenterName
+        replyContext.commentReply = commentReplyContext
+
+        // get previous reply that was made on that comment
+        const previousReplyContainer = commentSocailActivity.querySelector(".comments-replies-list")
+        if (!previousReplyContainer) { // no one has replied to this comment yet
+          // return the reply context with no previous replies
+          replyContext.previousRepliesOnComment = []
+          replyContext.replyContext = true
+
+          return replyContext;
+        }
+        
+        const previousReplyElements = previousReplyContainer.querySelectorAll(".comments-thread-entity")
+        previousReplyElements.forEach((reply) => {
+          const replyElement = reply.querySelector(".comments-comment-entity .comments-thread-entity")
+          const replier = reply.querySelector(".comments-comment-entity .comments-comment-meta__container")
+          
+          if (replyElement && replier) {
+            const replyOnCommentContext = `
+              ${replier.querySelector('.comments-comment-meta__description-container .comments-comment-meta__description').innerText} replied: 
+              ${replyElement.innerText}
+            `
+            replyContext.previousRepliesOnComment.push(replyOnCommentContext)
+          }
+        })
+
+        // loop through previous reply on comment if it contains replyContext.isReplyingTo
+        // then change replyContext.commentReply to that comment
+        replyContext.previousRepliesOnComment.forEach((reply) => {
+          if (reply.includes(replyContext.isReplyingTo)) {
+            replyContext.commentReply = reply
+            replyContext.isSubReplyingTo = true
+            return
+          }
+        })
+
         replyContext.replyContext = true
-
         return replyContext;
       }
-      
-      const previousReplyElements = previousReplyContainer.querySelectorAll(".comments-thread-entity")
-      previousReplyElements.forEach((reply) => {
-        const replyElement = reply.querySelector(".comments-comment-entity .comments-thread-entity")
-        const replier = reply.querySelector(".comments-comment-entity .comments-comment-meta__container")
-        
-        if (replyElement && replier) {
-          const replyOnCommentContext = `
-            ${replier.querySelector('.comments-comment-meta__description-container .comments-comment-meta__description').innerText} replied: 
-            ${replyElement.innerText}
-          `
-          replyContext.previousRepliesOnComment.push(replyOnCommentContext)
-        }
-      })
 
-      // loop through previous reply on comment if it contains replyContext.isReplyingTo
-      // then change replyContext.commentReply to that comment
-      replyContext.previousRepliesOnComment.forEach((reply) => {
-        if (reply.includes((replyContext.isReplyingTo + ' replied'))) {
-          replyContext.commentReply = reply
-          replyContext.isSubReplyingTo = true
-          return
-        }
-      })
 
-      replyContext.replyContext = true
-      return replyContext;
+      return context
     }
 
-    return context
-  } else {
-    //* we are in feed or somewhere else */
-
-    // Try to get the original post content
-    let postContainer = commentInput.closest(".feed-shared-update-v2")
-    if (postContainer == null) { // we are in the detail view
-      postContainer = commentInput.closest(".feed-shared-update-detail-viewer__content")
-    }
     
-    if (postContainer) {
-      const postTextElement = postContainer.querySelector(".feed-shared-update-v2__description")
-      if (postTextElement) {
-        context.postContent = postTextElement.textContent.trim()
-      }
-    }
-    
-    // Try to get previous comments
-    const commentsContainer = postContainer.querySelector(".reader-social-details__comments-list, .comments-comments-list")
-    if (commentsContainer) {
-      const commentElementsContainer = commentsContainer.querySelectorAll(".comments-comment-entity")
-      commentElementsContainer.forEach((comment) => {
-        const commentElement = comment.querySelector(".comments-comment-item__main-content")
-        const commenter = comment.querySelector(".comments-comment-meta__description-title")
-        
-        const commentContext = `
-        ${commenter.innerText} said: 
-        ${commentElement.innerText}
-        `
-        context.previousComments.push(commentContext)
-      })
-    }
-    
-    // Try to get post writer
-    const postCreatorContainer = postContainer.querySelector(".update-components-actor__container")
-    const postCreator = postCreatorContainer.querySelector(".update-components-actor__title")
-    if (postCreatorContainer) {
-      const creatorFullname = postCreator.querySelector('span').innerText
-      context.postWriter = creatorFullname
+  }
+
+  async function generatePostSuggestions(postContent, context) {
+    // Check if API key is available
+
+    if (!settings.post_enabled) return;
+
+    // check if acces_token is available
+    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
+    if (refresh_token == null) {
+      throw new Error("Please Sign in to continue")
+    };
+
+    // Prepare the prompt
+    let prompt = `Generate 3 professional LinkedIn post suggestions`
+
+    if (postContent) {
+
+      prompt += ` based on this draft: "${postContent}" written by ${context.postWriter}`
+    } else {
+      prompt += ` for a ${settings.industry} professional`
     }
 
-    const replyContext = {
-      postContent: context.postContent,
-      commenterName: "",
-      commentReply: "",
-      previousRepliesOnComment: [],
-      previousComments: context.previousComments,
-      isReplyingToComment: true,
-      isReplyingTo: "",
-      isSubReplyingTo: false // replying to a reply on a comment
+    prompt += `. The tone should be ${settings.tone}.`
+
+    if (context.recentTopics && context.recentTopics.length > 0) {
+      prompt += ` Consider these trending topics: ${context.recentTopics.join(", ")}.`
     }
 
-    // check if the ai reply button is in a comment input replying to a comment
+    prompt += ` Each post should be concise (under 200 words), engaging, and include relevant hashtags.`
 
-    const commentMainContainer = commentInput.closest(".comments-comment-entity")
-    const commentSocailActivity = commentInput.closest(".comment-social-activity")
-    if (commentSocailActivity) { 
-      // we are in a comment input replying to a comment
-      // also I need it to find all the previous comments on that comment
-
-      // the comment that was made on the post that the user is replying to
-      const commentCommenterMeta = commentMainContainer.querySelector('.comments-comment-meta__container .comments-comment-meta__description')
-      const commentContentElement = commentMainContainer.querySelector('.comments-thread-entity')
-
-      // structure the context
-      const commenterName = commentCommenterMeta.querySelector('.comments-comment-meta__description-title').innerText
-
-      // get content in ql editor because sometimes linkedin will append the person you're replying to in it after clicking reply
-      // we need it to tell the ai who to reply to
-      const currentContent = commentInput.querySelector('.ql-editor').textContent
-      // remove duplicate words in currentContent because sometime there are
-      // duplicate words in currentContent
-      const currentContentWords = currentContent.split(' ')
-      const uniqueCurrentContentWords = [...new Set(currentContentWords)]
-      const uniqueCurrentContent = uniqueCurrentContentWords.join(' ')
-
-      replyContext.isReplyingTo = uniqueCurrentContent.trim()
-
-      const commentReplyContext = `
-      ${commentContentElement.innerText}. The comment was posted by "${commenterName}"
-      `
-
-      // push to context
-      replyContext.commenterName = commenterName
-      replyContext.commentReply = commentReplyContext
-
-      // get previous reply that was made on that comment
-      const previousReplyContainer = commentSocailActivity.querySelector(".comments-replies-list")
-      if (!previousReplyContainer) { // no one has replied to this comment yet
-        // return the reply context with no previous replies
-        replyContext.previousRepliesOnComment = []
-        replyContext.replyContext = true
-
-        return replyContext;
-      }
-      
-      const previousReplyElements = previousReplyContainer.querySelectorAll(".comments-thread-entity")
-      previousReplyElements.forEach((reply) => {
-        const replyElement = reply.querySelector(".comments-comment-entity .comments-thread-entity")
-        const replier = reply.querySelector(".comments-comment-entity .comments-comment-meta__container")
-        
-        if (replyElement && replier) {
-          const replyOnCommentContext = `
-            ${replier.querySelector('.comments-comment-meta__description-container .comments-comment-meta__description').innerText} replied: 
-            ${replyElement.innerText}
-          `
-          replyContext.previousRepliesOnComment.push(replyOnCommentContext)
-        }
-      })
-
-      // loop through previous reply on comment if it contains replyContext.isReplyingTo
-      // then change replyContext.commentReply to that comment
-      replyContext.previousRepliesOnComment.forEach((reply) => {
-        if (reply.includes(replyContext.isReplyingTo)) {
-          replyContext.commentReply = reply
-          replyContext.isSubReplyingTo = true
-          return
-        }
-      })
-
-      replyContext.replyContext = true
-      return replyContext;
-    }
-
-
-    return context
-  }
-
-  
-}
-
-async function generatePostSuggestions(postContent, context) {
-  // Check if API key is available
-
-  if (!settings.post_enabled) return;
-
-  // check if acces_token is available
-  const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-  if (refresh_token == null) {
-    throw new Error("Please Sign in to continue")
-  };
-
-  // Prepare the prompt
-  let prompt = `Generate 3 professional LinkedIn post suggestions`
-
-  if (postContent) {
-
-    prompt += ` based on this draft: "${postContent}" written by ${context.postWriter}`
-  } else {
-    prompt += ` for a ${settings.industry} professional`
-  }
-
-  prompt += `. The tone should be ${settings.tone}.`
-
-  if (context.recentTopics && context.recentTopics.length > 0) {
-    prompt += ` Consider these trending topics: ${context.recentTopics.join(", ")}.`
-  }
-
-  prompt += ` Each post should be concise (under 200 words), engaging, and include relevant hashtags.`
-
-  // Call the OpenAI API
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${await accessToken()}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-3.5-turbo",
-      messages: [
-        {
-          role: "system",
-          content: `You are a professional LinkedIn content assistant. You help create engaging, professional posts for the ${settings.industry} industry in a ${settings.tone} tone.`,
-        },
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature: 0.7,
-    }),
-  })
-
-  const data = await response.json()
-
-  if (!response.ok) {
-    throw new Error(data.error?.message || "Failed to generate suggestions")
-  }
-
-  // Parse the response to extract the suggestions
-  const content = data.choices[0].message.content
-
-  // Split the content into separate suggestions
-  const suggestions = content
-    .split(/\d+\.\s+/)
-    .filter(Boolean)
-    .map((s) => s.trim())
-
-  return suggestions
-}
-
-async function generateCommentSuggestions(context) {
-  // check if comment suggestions enabled by user
-  if (!settings.reply_enabled) return;
-
-  // check if acces_token is available
-  const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-  if (refresh_token == null) {
-    throw new Error("Please Sign in to continue")
-  };
-
-  // Prepare the prompt
-  let prompt = `Generate 3 LinkedIn comment replies that are playful, smart, and thoughtful, they should feel natural - like something a sharp professional would say in public:`
-
-  if (context.postContent) {
-    prompt += ` The post says: "${context.postContent}"`
-  }
-
-  if (context.postWriter) {
-    prompt += `. Written by ${context.postWriter}`
-  }
-
-
-  if (context.previousComments && context.previousComments.length > 0) {
-    prompt += `. Look at these previous comments as inspiration for tone, vibe, or topic: ${context.previousComments.join(" | ")}`
-  }
-
-  prompt += `. The tone should be ${settings.tone}. And industry should be ${settings.industry}`
-  prompt += ` Write each reply:
-  - Under 20 words
-  - Distinct in voice or viewpoint
-  - Without hashtags
-  - Without starting with "Your"
-  - Use emojis cautiously so it doesn't sound too robotic
-  - Without sounding like an AI or bot
-  - Avoid generic responses
-  - Feel free to be slightly opinionated, clever, or relatable`
-
-  async function generate() {
-    const response = await fetch ("https://api.getlia.live/api/prompt/suggest-reply", {
+    // Call the OpenAI API
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${await accessToken()}`,
       },
       body: JSON.stringify({
-        comment_text: prompt,
-        userInfo: {...linkedinUserInfo}
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: `You are a professional LinkedIn content assistant. You help create engaging, professional posts for the ${settings.industry} industry in a ${settings.tone} tone.`,
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(data.error?.message || "Failed to generate suggestions")
+    }
+
+    // Parse the response to extract the suggestions
+    const content = data.choices[0].message.content
+
+    // Split the content into separate suggestions
+    const suggestions = content
+      .split(/\d+\.\s+/)
+      .filter(Boolean)
+      .map((s) => s.trim())
+
+    return suggestions
+  }
+
+  async function generateCommentSuggestions(context) {
+    // check if comment suggestions enabled by user
+    if (!settings.reply_enabled) return;
+
+    // check if acces_token is available
+    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
+    if (refresh_token == null) {
+      throw new Error("Please Sign in to continue")
+    };
+
+    // Prepare the prompt
+    let prompt = `Generate 3 LinkedIn comment replies that are playful, smart, and thoughtful, they should feel natural - like something a sharp professional would say in public:`
+
+    if (context.postContent) {
+      prompt += ` The post says: "${context.postContent}"`
+    }
+
+    if (context.postWriter) {
+      prompt += `. Written by ${context.postWriter}`
+    }
+
+
+    if (context.previousComments && context.previousComments.length > 0) {
+      prompt += `. Look at these previous comments as inspiration for tone, vibe, or topic: ${context.previousComments.join(" | ")}`
+    }
+
+    prompt += `. The tone should be ${settings.tone}. And industry should be ${settings.industry}`
+    prompt += ` Write each reply:
+    - Under 20 words
+    - Distinct in voice or viewpoint
+    - Without hashtags
+    - Without starting with "Your"
+    - Use emojis cautiously so it doesn't sound too robotic
+    - Without sounding like an AI or bot
+    - Avoid generic responses
+    - Feel free to be slightly opinionated, clever, or relatable`
+
+    async function generate() {
+      const response = await fetch ("https://api.getlia.live/api/prompt/suggest-reply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await accessToken()}`,
+        },
+        body: JSON.stringify({
+          comment_text: prompt,
+          userInfo: {...linkedinUserInfo}
+        })
+      })
+
+      
+
+      return await response.json()
+    }
+
+    let data = await generate()
+
+    if (data.error && data.message === 'Invalid Token') {
+      // refresh the token
+      const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
+      await refreshToken(refresh_token);
+
+      // retry again
+      const new_data = await generate();
+      data = new_data
+
+    }
+
+    if (data.error) {
+      throw new Error(data.error?.message || "Failed to generate suggestions")
+    }
+
+    const suggestions = data.suggestions;
+
+    return suggestions
+  }
+
+  async function generateReplyToCommentSuggestions(context) {
+    // check if comment suggestions enabled by user
+    if (!settings.reply_enabled) return;
+
+    // check if acces_token is available
+    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
+    if (refresh_token == null) {
+      throw new Error("Please Sign in to continue")
+    };
+
+    // Prepare the prompt
+    let prompt = `You are replying to a **comment** on a LinkedIn post. Generate 3 thoughtful and human-sounding LinkedIn replies`;
+
+    if (context.commentReply) {
+      prompt += ` to this comment${context.isSubReplyingTo ? " (a nested reply - a reply to another reply)" : ""}: "${context.commentReply}"`;
+    }
+    
+    if (context.postContent) {
+      prompt += `. The original post is: "${context.postContent}"`;
+    }
+    
+    if (context.postWriter) {
+      prompt += `. The original post was written by ${context.postWriter}`;
+    }
+    
+    if (context.previousRepliesOnComment && context.previousRepliesOnComment.length > 0) {
+      prompt += `. Consider these previous replies to that comment: ${context.previousRepliesOnComment.join(" | ")}`;
+    }
+    
+    prompt += `. The tone should be ${settings.tone} and industry should be ${settings.industry}`;
+    
+    prompt += ` Respond from either the perspective of the **author replying to a comment**, or a **regular user replying to another user** — whichever fits the situation. Vary the tone and style across the 3 replies.`;
+    
+    prompt += ` Each suggestion should:
+    - Be under 15 words
+    - Feel human and natural
+    - Add value to the conversation
+    - Include no hashtags
+    - Use no emojis
+    - Never start with "Your" or use "Your [something] is..."
+    - Avoid generic or robotic responses`;
+    
+    prompt += `
+    
+    Only return the 3 replies. No explanation or extra formatting.`;
+    
+
+    async function generate() {
+      const response = await fetch ("https://api.getlia.live/api/prompt/suggest-reply", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${await accessToken()}`,
+        },
+        body: JSON.stringify({
+          comment_text: prompt,
+          userInfo: {...linkedinUserInfo}
+        })
+      })
+
+      
+
+      return await response.json()
+    }
+
+    let data = await generate()
+
+    if (data.error && data.message === 'Invalid Token') {
+      // refresh the token
+      const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
+      await refreshToken(refresh_token);
+
+      // retry again
+      const new_data = await generate();
+      data = new_data
+
+    }
+
+    if (data.error) {
+      throw new Error(data.error?.message || "Failed to generate suggestions")
+    }
+
+    const suggestions = data.suggestions;
+
+    return suggestions
+  }
+
+  function displayPostSuggestions(container, suggestions, editor) {
+    container.innerHTML = `
+      <h3>AI Post Suggestions</h3>
+      <div class="linkedin-ai-suggestion-list">
+        ${suggestions
+          .map(
+            (suggestion, index) => `
+          <div class="linkedin-ai-suggestion" data-index="${index}">
+            ${suggestion}
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+      <div class="linkedin-ai-actions">
+        <button class="linkedin-ai-dismiss">Dismiss</button>
+        <button class="linkedin-ai-regenerate">Regenerate</button>
+      </div>
+    `
+
+    // Add click event to suggestions
+    const suggestionElements = container.querySelectorAll(".linkedin-ai-suggestion")
+    suggestionElements.forEach((element) => {
+      element.addEventListener("click", function () {
+        const index = this.getAttribute("data-index")
+        const suggestion = suggestions[index]
+
+        // Insert the suggestion into the editor
+        const editorBox = editor.querySelector('.share-box-feed-entry__top-bar .artdeco-button')
+        insertTextIntoEditor(editorBox, suggestion)
+
+        // Remove the suggestions container
+        container.remove()
       })
     })
 
-    
+    // Add click event to dismiss button
+    const dismissButton = container.querySelector(".linkedin-ai-dismiss")
+    dismissButton.addEventListener("click", () => {
+      container.remove()
+    })
 
-    return await response.json()
+    // Add click event to regenerate button
+    const regenerateButton = container.querySelector(".linkedin-ai-regenerate")
+    regenerateButton.addEventListener("click", () => {
+      const aiPostInput = container.parentElement.querySelector(".linkedin-ai-post-input")
+      const content = aiPostInput.value
+      handlepost_enabledant(editor, content)
+    })
   }
 
-  let data = await generate()
+  function displayCommentSuggestions(container, suggestions, commentInput) {
+    container.innerHTML = `
+      <h3>AI Reply Suggestions</h3>
+      <div class="linkedin-ai-suggestion-list">
+        ${suggestions
+          .map(
+            (suggestion, index) => `
+          <div class="linkedin-ai-suggestion" data-index="${index}">
+            ${suggestion}
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+      <div class="linkedin-ai-actions">
+        <button class="linkedin-ai-dismiss">Dismiss</button>
+        <button class="linkedin-ai-regenerate">Regenerate</button>
+      </div>
+    `
 
-  if (data.error && data.message === 'Invalid Token') {
-    // refresh the token
-    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-    await refreshToken(refresh_token);
+    // Add click event to suggestions
+    const suggestionElements = container.querySelectorAll(".linkedin-ai-suggestion")
+    suggestionElements.forEach((element) => {
+      element.addEventListener("click", function () {
+        const index = this.getAttribute("data-index")
+        const suggestion = suggestions[index]
 
-    // retry again
-    const new_data = await generate();
-    data = new_data
+        // Insert the suggestion into the comment input
+        const commentInputEditor = commentInput.querySelector('.ql-editor')
+        insertTextIntoEditor(commentInputEditor, suggestion)
 
-  }
-
-  if (data.error) {
-    throw new Error(data.error?.message || "Failed to generate suggestions")
-  }
-
-  const suggestions = data.suggestions;
-
-  return suggestions
-}
-
-async function generateReplyToCommentSuggestions(context) {
-  // check if comment suggestions enabled by user
-  if (!settings.reply_enabled) return;
-
-  // check if acces_token is available
-  const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-  if (refresh_token == null) {
-    throw new Error("Please Sign in to continue")
-  };
-
-  // Prepare the prompt
-  let prompt = `You are replying to a **comment** on a LinkedIn post. Generate 3 thoughtful and human-sounding LinkedIn replies`;
-
-  if (context.commentReply) {
-    prompt += ` to this comment${context.isSubReplyingTo ? " (a nested reply - a reply to another reply)" : ""}: "${context.commentReply}"`;
-  }
-  
-  if (context.postContent) {
-    prompt += `. The original post is: "${context.postContent}"`;
-  }
-  
-  if (context.postWriter) {
-    prompt += `. The original post was written by ${context.postWriter}`;
-  }
-  
-  if (context.previousRepliesOnComment && context.previousRepliesOnComment.length > 0) {
-    prompt += `. Consider these previous replies to that comment: ${context.previousRepliesOnComment.join(" | ")}`;
-  }
-  
-  prompt += `. The tone should be ${settings.tone} and industry should be ${settings.industry}`;
-  
-  prompt += ` Respond from either the perspective of the **author replying to a comment**, or a **regular user replying to another user** — whichever fits the situation. Vary the tone and style across the 3 replies.`;
-  
-  prompt += ` Each suggestion should:
-  - Be under 15 words
-  - Feel human and natural
-  - Add value to the conversation
-  - Include no hashtags
-  - Use no emojis
-  - Never start with "Your" or use "Your [something] is..."
-  - Avoid generic or robotic responses`;
-  
-  prompt += `
-  
-  Only return the 3 replies. No explanation or extra formatting.`;
-  
-
-  async function generate() {
-    const response = await fetch ("https://api.getlia.live/api/prompt/suggest-reply", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${await accessToken()}`,
-      },
-      body: JSON.stringify({
-        comment_text: prompt,
-        userInfo: {...linkedinUserInfo}
+        // Remove the suggestions container
+        container.remove()
       })
     })
 
-    
-
-    return await response.json()
-  }
-
-  let data = await generate()
-
-  if (data.error && data.message === 'Invalid Token') {
-    // refresh the token
-    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-    await refreshToken(refresh_token);
-
-    // retry again
-    const new_data = await generate();
-    data = new_data
-
-  }
-
-  if (data.error) {
-    throw new Error(data.error?.message || "Failed to generate suggestions")
-  }
-
-  const suggestions = data.suggestions;
-
-  return suggestions
-}
-
-function displayPostSuggestions(container, suggestions, editor) {
-  container.innerHTML = `
-    <h3>AI Post Suggestions</h3>
-    <div class="linkedin-ai-suggestion-list">
-      ${suggestions
-        .map(
-          (suggestion, index) => `
-        <div class="linkedin-ai-suggestion" data-index="${index}">
-          ${suggestion}
-        </div>
-      `,
-        )
-        .join("")}
-    </div>
-    <div class="linkedin-ai-actions">
-      <button class="linkedin-ai-dismiss">Dismiss</button>
-      <button class="linkedin-ai-regenerate">Regenerate</button>
-    </div>
-  `
-
-  // Add click event to suggestions
-  const suggestionElements = container.querySelectorAll(".linkedin-ai-suggestion")
-  suggestionElements.forEach((element) => {
-    element.addEventListener("click", function () {
-      const index = this.getAttribute("data-index")
-      const suggestion = suggestions[index]
-
-      // Insert the suggestion into the editor
-      const editorBox = editor.querySelector('.share-box-feed-entry__top-bar .artdeco-button')
-      insertTextIntoEditor(editorBox, suggestion)
-
-      // Remove the suggestions container
+    // Add click event to dismiss button
+    const dismissButton = container.querySelector(".linkedin-ai-dismiss")
+    dismissButton.addEventListener("click", () => {
       container.remove()
     })
-  })
 
-  // Add click event to dismiss button
-  const dismissButton = container.querySelector(".linkedin-ai-dismiss")
-  dismissButton.addEventListener("click", () => {
-    container.remove()
-  })
-
-  // Add click event to regenerate button
-  const regenerateButton = container.querySelector(".linkedin-ai-regenerate")
-  regenerateButton.addEventListener("click", () => {
-    const aiPostInput = container.parentElement.querySelector(".linkedin-ai-post-input")
-    const content = aiPostInput.value
-    handlepost_enabledant(editor, content)
-  })
-}
-
-function displayCommentSuggestions(container, suggestions, commentInput) {
-  container.innerHTML = `
-    <h3>AI Reply Suggestions</h3>
-    <div class="linkedin-ai-suggestion-list">
-      ${suggestions
-        .map(
-          (suggestion, index) => `
-        <div class="linkedin-ai-suggestion" data-index="${index}">
-          ${suggestion}
-        </div>
-      `,
-        )
-        .join("")}
-    </div>
-    <div class="linkedin-ai-actions">
-      <button class="linkedin-ai-dismiss">Dismiss</button>
-      <button class="linkedin-ai-regenerate">Regenerate</button>
-    </div>
-  `
-
-  // Add click event to suggestions
-  const suggestionElements = container.querySelectorAll(".linkedin-ai-suggestion")
-  suggestionElements.forEach((element) => {
-    element.addEventListener("click", function () {
-      const index = this.getAttribute("data-index")
-      const suggestion = suggestions[index]
-
-      // Insert the suggestion into the comment input
-      const commentInputEditor = commentInput.querySelector('.ql-editor')
-      insertTextIntoEditor(commentInputEditor, suggestion)
-
-      // Remove the suggestions container
-      container.remove()
+    // Add click event to regenerate button
+    const regenerateButton = container.querySelector(".linkedin-ai-regenerate")
+    regenerateButton.addEventListener("click", () => {
+      handlereply_enabledant(commentInput)
     })
-  })
-
-  // Add click event to dismiss button
-  const dismissButton = container.querySelector(".linkedin-ai-dismiss")
-  dismissButton.addEventListener("click", () => {
-    container.remove()
-  })
-
-  // Add click event to regenerate button
-  const regenerateButton = container.querySelector(".linkedin-ai-regenerate")
-  regenerateButton.addEventListener("click", () => {
-    handlereply_enabledant(commentInput)
-  })
-}
-
-function insertTextIntoEditor(editor, text) {
-  // For contentEditable elements
-  if (editor.isContentEditable) {
-    editor.textContent = text.replaceAll('"', '')
-
-    // Dispatch input event to trigger LinkedIn's event handlers
-    const inputEvent = new Event("input", { bubbles: true })
-    editor.dispatchEvent(inputEvent)
   }
-  // For textarea elements
-  else if (editor.tagName === "TEXTAREA") {
-    editor.value = text
 
-    // Dispatch input event
-    const inputEvent = new Event("input", { bubbles: true })
-    editor.dispatchEvent(inputEvent)
-  } else {
-    editor.textContent = text
+  function insertTextIntoEditor(editor, text) {
+    // For contentEditable elements
+    if (editor.isContentEditable) {
+      editor.textContent = text.replaceAll('"', '')
+
+      // Dispatch input event to trigger LinkedIn's event handlers
+      const inputEvent = new Event("input", { bubbles: true })
+      editor.dispatchEvent(inputEvent)
+    }
+    // For textarea elements
+    else if (editor.tagName === "TEXTAREA") {
+      editor.value = text
+
+      // Dispatch input event
+      const inputEvent = new Event("input", { bubbles: true })
+      editor.dispatchEvent(inputEvent)
+    } else {
+      editor.textContent = text
+    }
   }
-}
 
-// helper functions
-const refreshToken = async () => {
-  const refresh_token = await getRefreshToken();
-  try {
-    const response = await fetch('https://api.getlia.live/api/auth/refresh-token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      // include credentials to allow cookies to be sent
-      credentials: 'include',
-      body: JSON.stringify({ refresh_token }),
-    });
+  // helper functions
+  const refreshToken = async () => {
+    const refresh_token = await getRefreshToken();
+    try {
+      const response = await fetch('https://api.getlia.live/api/auth/refresh-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        // include credentials to allow cookies to be sent
+        credentials: 'include',
+        body: JSON.stringify({ refresh_token }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    chrome.storage.local.set({ access_token: data.access_token, refresh_token: data.refresh_token });
-    return data.access_token;
+      chrome.storage.local.set({ access_token: data.access_token, refresh_token: data.refresh_token });
+      return data.access_token;
 
-  } catch (error) {
-    console.error('Error refreshing token:', error);
-    return null;
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      return null;
+    }
   }
-}
 
   // helper function to fetch access token in chrome storage
   const accessToken = async () => {
@@ -2550,6 +2548,16 @@ const refreshToken = async () => {
 
   });
 
+  // load chatbot state from storage function
+  const loadChatbotState = async () => {
+    // Load state from storage
+    const result = await chrome.storage.local.get(['chatbotState']);
+    if (result.chatbotState) {
+      Object.assign(chatbotState, result.chatbotState);
+    }
+
+  }
+
   // Create proxy AFTER loading state
   /*const chatbotStateProxy = new Proxy(chatbotState, {
     set(target, prop, value) {
@@ -2574,11 +2582,24 @@ const refreshToken = async () => {
   }
   */
 
-  function initializeChatbot() {
+  async function initializeChatbot() {
     if (window.location.href.includes("linkedin.com")) {
+      await loadChatbotState()
+
       createChatbotButton()
       createChatbotInterface()
-      loadChatHistory()
+      
+
+      if (chatbotState.notesMode) {
+        // toggle notes mode for notes ui to show
+        chatbotState.notesMode = false
+        toggleNotesMode()
+      } else {
+
+        // Load chat history if not in notes mode
+        loadChatHistory()
+      }
+
       //makeChatbotDraggable() remove dragging feature for now
     }
   }
@@ -2802,6 +2823,8 @@ const refreshToken = async () => {
       align-items: center;
       padding: 8px 0;
       flex-direction: column;
+      padding-right: 15px;
+      border-right: 2px solid #eee;
     }
 
     .lia-context-info {
@@ -3569,7 +3592,7 @@ const refreshToken = async () => {
         <span id="lia-mode-title">LIA</span>
       </div>
       <div class="lia-chatbot-controls">
-        <button class="lia-control-btn" id="lia-notes-toggle" title="Notes Mode">
+        <button class="lia-control-btn ${chatbotState.notesMode ? 'notes-active' : ''}" id="lia-notes-toggle" title="Notes Mode">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14,2 14,8 20,8"/>
@@ -3578,7 +3601,7 @@ const refreshToken = async () => {
             <polyline points="10,9 9,9 8,9"/>
           </svg>
         </button>
-        <button class="lia-control-btn" id="lia-reference-toggle" title="Reference Mode (Pro)">
+        <button class="lia-control-btn ${chatbotState.referenceMode ? 'reference-active' : ''}" id="lia-reference-toggle" title="Reference Mode (Pro)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
           </svg>
@@ -3681,7 +3704,7 @@ const refreshToken = async () => {
             </button>
           </div>
           <div class="lia-mode-indicator" id="lia-mode-indicator" style="display: none;">
-            <span class="lia-mode-text">Notes Mode Active</span>
+            <!-- <span class="lia-mode-text">Notes Mode Active</span> -->
             <div class="lia-context-info" id="lia-context-info"></div>
           </div>
         </div>
@@ -3847,6 +3870,7 @@ const refreshToken = async () => {
     const messageInput = document.getElementById("lia-message-input")
     const inputActions = document.getElementById("lia-input-actions")
     const modeIndicator = document.getElementById("lia-mode-indicator")
+    const liaSendBtn = document.getElementById("lia-send-btn")
 
     if (chatbotState.notesMode) {
       // Switch to Notes Mode
@@ -3868,12 +3892,22 @@ const refreshToken = async () => {
       inputActions.style.display = "flex"
       modeIndicator.style.display = "block"
 
+      // Lia Send Button inner html should be change to the correct svg for note
+      liaSendBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="12" y1="11" x2="12" y2="17"/>
+          <line x1="9" y1="14" x2="15" y2="14"/>
+        </svg>
+      `
+
       // Update context info
       updateNoteContext()
 
       // Load notes
+      showNotesWelcome()
       await loadNotes()
-      //showNotesWelcome()
 
       showTemporaryNotification("📝 Notes Mode ON - Capture and organize your thoughts", "success")
     } else {
@@ -3887,9 +3921,15 @@ const refreshToken = async () => {
       inputActions.style.display = "none"
       modeIndicator.style.display = "none"
 
+      liaSendBtn.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22,2 15,22 11,13 2,9"></polygon>
+        </svg>`
+
       // Load conversations
-      await loadChatHistory()
       showChatWelcome()
+      await loadChatHistory()
 
       showTemporaryNotification("💬 Chat Mode ON", "info")
     }
@@ -4232,8 +4272,7 @@ const refreshToken = async () => {
         startNewNote()
         return
       }
-      
-      console.log(notes)
+  
       if (notes.length > 0) {
         chatbotState.currentNoteId = notes[0].id
         await loadNote(chatbotState.currentNoteId)
@@ -4424,16 +4463,15 @@ const refreshToken = async () => {
     chatbotState.isOpen = true
     chatbotState.isMinimized = false
 
-    await updateConversationList()
-    const conversations = document.querySelectorAll(".lia-conversation-item")
-    if (conversations.length > 0) {
-      // Select the first conversation if available
-      // and it's id from data and load it
-      const firstConversation = conversations[0]
-      firstConversation.classList.add("active")
-      chatbotState.currentConversationId = firstConversation.dataset.id
+    await loadChatbotState()
+
+    if (chatbotState.notesMode) {
+      // If in Notes Mode, load notes
+      await loadNotes()
+    } else {
+      // Load chat history
+      await loadChatHistory()
     }
-    await loadConversation(chatbotState.currentConversationId)
 
     // Focus on input
     setTimeout(() => {

@@ -218,3 +218,26 @@ exports.getCompletionAiSendMessage = async (req, prompt) => {
  
   return {"Content": completions, "Usage": response.usage};
 }
+
+// AI Enhance Note
+exports.getCompletionEnhanceNote = async (req, prompt, content, context) => {
+  const response = await openai.chat.completions.create({
+    model: await getModel(req), // Pass req
+    messages: [
+      {
+        role: 'system',
+        content: `
+              You are a professional LinkedIn user. Your job is to enhance a note based on the provided content and type. The note should be professional, engaging, and suitable for LinkedIn.
+            `
+      },
+      { 
+        role: 'user', 
+        content: prompt + `\n\nContent: ${content}\nType: ${context.type || 'general'}`
+      }
+    ], // conversation between user and AI
+    temperature: 0.7, // Adjust temperature for creativity
+  });
+  const completions = response.choices[0].message.content;
+ 
+  return {"Content": completions, "Usage": response.usage};
+}

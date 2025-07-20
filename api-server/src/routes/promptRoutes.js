@@ -18,6 +18,6 @@ router.post('/improve', authenticate, checkPlan('standard'), aiImprovePost);
 
 router.post('/message', authenticate, checkPlan('standard'), aiSendMessage);
 
-router.post('enhance-note', authenticate, checkPlan('standard'), enhanceNote);
+router.post('/enhance-note', authenticate, checkPlan('standard'), enhanceNote);
 
 module.exports = router;

@@ -89,8 +89,8 @@ function detectLinkedInTheme() {
     return brightness < 128; // below this is considered dark
   };
 
-  // save to storage if theme is dark or light
-  chrome.storage.local.set({ linkedinTheme: isDark(bgColor) ? 'dark' : 'light' });
+  // save to sync instead of local
+  chrome.storage.sync.set({ linkedinTheme: isDark(bgColor) ? 'dark' : 'light' });
 
   return isDark(bgColor) ? 'dark' : 'light';
 }
@@ -105,10 +105,6 @@ async function initializeExtension() {
   setupTextToSpeech()
 
   detectLinkedInTheme();
-
-  //const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  //console.log('Dark mode: 1', isDarkMode);
-  //injectProfileNotesSidebar()
 
   linkedinUserInfo = await window.getLinkedinUserInfo()
 
@@ -126,11 +122,6 @@ async function initializeExtension() {
             setupTextSelectionToolbar()
             setupTextToSpeech()
             detectLinkedInTheme()
-            //const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-            //console.log('Dark mode: 2', isDarkMode);
-
-            console.log('linkedin theme detected:', theme);
-            //injectProfileNotesSidebar()
 
             linkedinUserInfo = await window.getLinkedinUserInfo()
 
@@ -2538,7 +2529,40 @@ const refreshToken = async () => {
     position: { x: window.innerWidth - 80, y: window.innerHeight - 80 },
     referenceMode: false,
     referencedContent: null,
+
+    // New notes functionality
+    notesMode: false,
+    notes: [],
+    currentNoteId: null,
+    noteContext: null, // LinkedIn profile context
   }
+
+  // save to extension storage
+  async function saveChatbotState() {
+    await chrome.storage.local.set({ chatbotState });
+  }
+
+  // Load state from storage on startup
+  chrome.storage.local.get(['chatbotState'], (result) => {
+    if (result.chatbotState) {
+      Object.assign(chatbotState, result.chatbotState);
+    }
+
+  });
+
+  // Create proxy AFTER loading state
+  /*const chatbotStateProxy = new Proxy(chatbotState, {
+    set(target, prop, value) {
+      target[prop] = value;
+      saveChatbotState();
+      return true;
+    }
+  });
+
+  // Make proxy available globally
+  window.chatbotState = chatbotStateProxy;*/
+
+
   /*
   referencedContent: {
     type: "unknown",
@@ -2671,6 +2695,168 @@ const refreshToken = async () => {
 
     .lia-notification-dot.show {
       opacity: 1;
+    }
+
+    /* Note Display Styles */
+    .lia-message.note {
+      background: linear-gradient(135deg, #f8f9fa, #ffffff);
+      border: 1px solid #e9ecef;
+      border-radius: 12px;
+      margin: 12px 0;
+      padding: 4px;
+    }
+    
+    .lia-message.note .lia-message-content {
+      background: transparent;
+      border: none;
+      box-shadow: none;
+    }
+    
+    .lia-note-content {
+      position: relative;
+    }
+    
+    .lia-note-header {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 8px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #e9ecef;
+      position: relative;
+    }
+    
+    .lia-note-title {
+      font-weight: 600;
+      color: #0a66c2;
+      font-size: 14px;
+    }
+    
+    .lia-note-timestamp {
+      font-size: 11px;
+      color: #6c757d;
+      white-space: nowrap;
+      position: absolute;
+      bottom: .5px;
+      right: 2px;
+    }
+    
+    .lia-note-body {
+      line-height: 1.6;
+      margin-bottom: 12px;
+      color: #495057;
+    }
+    
+    .lia-note-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    
+    .lia-tag {
+      background: #e7f3ff;
+      color: #0a66c2;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    
+    .lia-note-actions {
+      display: flex;
+      gap: 8px;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    
+    .lia-message.note:hover .lia-note-actions {
+      opacity: 1;
+    }
+    
+    .lia-note-action-btn {
+      padding: 6px;
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .lia-note-action-btn:hover {
+      background: #0a66c2;
+      color: white;
+      transform: scale(1.1);
+    }
+    
+    .lia-note-action-btn.lia-delete-btn:hover {
+      background: #dc3545;
+    }
+
+    .lia-input-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      padding: 8px 0;
+      flex-direction: column;
+    }
+
+    .lia-context-info {
+      color: #495057;
+    }
+    
+    /* Note formatting styles */
+    .lia-note-h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #0a66c2;
+      margin: 12px 0 8px 0;
+    }
+    
+    .lia-note-h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #495057;
+      margin: 10px 0 6px 0;
+    }
+    
+    .lia-note-ul {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+    
+    .lia-note-li {
+      margin: 4px 0;
+      color: #495057;
+    }
+    
+    /* Loading spinner for notes */
+    .lia-loading-spinner {
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #0a66c2;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .lia-input-actions {
+        flex-wrap: wrap;
+      }
+      
+      .lia-action-btn {
+        flex: 1;
+        min-width: 0;
+        justify-content: center;
+      }
     }
 
     @keyframes liaFloat {
@@ -3116,14 +3302,14 @@ const refreshToken = async () => {
 
     .lia-message-input {
       flex: 1;
-      border: none;
+      border: none !important;
       border-radius: 20px;
       padding: 12px 16px;
       font-size: 14px;
       resize: none;
       max-height: 120px;
       min-height: 20px;
-      outline: none;
+      outline: none !important;
       background: transparent;
       font-family: inherit;
       color: #333333;
@@ -3139,6 +3325,10 @@ const refreshToken = async () => {
         width: 2px;
         height: 2px;
       }
+    }
+
+    .lia-message-input:active {
+      background: none !important;
     }
 
     .lia-send-btn {
@@ -3259,7 +3449,8 @@ const refreshToken = async () => {
       51%, 100% { opacity: 0; }
     }
 
-    .lia-control-btn.reference-active {
+    .lia-control-btn.reference-active,
+    .lia-control-btn.notes-active {
       background: rgba(16, 185, 129, 0.2);
       color: #10b981;
     }
@@ -3375,9 +3566,18 @@ const refreshToken = async () => {
           <circle cx="16" cy="4" r="2" fill="currentColor"/>
           <path d="M12 8a4 4 0 0 1 4-4" stroke="currentColor"/>
         </svg>
-        LIA
+        <span id="lia-mode-title">LIA</span>
       </div>
       <div class="lia-chatbot-controls">
+        <button class="lia-control-btn" id="lia-notes-toggle" title="Notes Mode">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14,2 14,8 20,8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10,9 9,9 8,9"/>
+          </svg>
+        </button>
         <button class="lia-control-btn" id="lia-reference-toggle" title="Reference Mode (Pro)">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
@@ -3396,7 +3596,7 @@ const refreshToken = async () => {
         </button>
       </div>
     </div>
-    
+
     <div class="lia-chatbot-body">
       <div class="lia-chat-sidebar" id="lia-chat-sidebar">
         <button class="lia-sidebar-toggle" id="lia-sidebar-toggle" title="Toggle Sidebar">
@@ -3404,13 +3604,13 @@ const refreshToken = async () => {
             <polyline points="15,18 9,12 15,6"></polyline>
           </svg>
         </button>
-        <div class="lia-sidebar-header">Recent Chats</div>
+        <div class="lia-sidebar-header" id="lia-sidebar-header">Recent Chats</div>
         <div class="lia-conversation-list" id="lia-conversation-list">
-          <!-- Conversations will be populated here -->
+          <!-- Conversations/Notes will be populated here -->
         </div>
         <button class="lia-new-chat-btn" id="lia-new-chat-btn">+ New Chat</button>
       </div>
-      
+
       <div class="lia-chat-main">
         <div class="lia-messages-container" id="lia-messages-container">
           <div class="lia-message assistant">
@@ -3428,11 +3628,47 @@ const refreshToken = async () => {
             </div>
           </div>
         </div>
-        
+
         <div class="lia-input-container">
+          <!-- Enhanced input area with mode-specific features -->
           <div class="lia-input-wrapper">
+            <div class="lia-input-actions" id="lia-input-actions" style="display: none;">
+              <!-- Note enhancement buttons -->
+              <button class="lia-action-btn" id="lia-structure-note" title="Structure Note">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="8" y1="6" x2="21" y2="6"/>
+                  <line x1="8" y1="12" x2="21" y2="12"/>
+                  <line x1="8" y1="18" x2="21" y2="18"/>
+                  <line x1="3" y1="6" x2="3.01" y2="6"/>
+                  <line x1="3" y1="12" x2="3.01" y2="12"/>
+                  <line x1="3" y1="18" x2="3.01" y2="18"/>
+                </svg>
+              </button>
+              <button class="lia-action-btn" id="lia-summarize-note" title="Summarize">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                  <polyline points="14,2 14,8 20,8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+              </button>
+              <button class="lia-action-btn" id="lia-expand-note" title="Expand Details">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15,3 21,3 21,9"/>
+                  <polyline points="9,21 3,21 3,15"/>
+                  <line x1="21" y1="3" x2="14" y2="10"/>
+                  <line x1="3" y1="21" x2="10" y2="14"/>
+                </svg>
+              </button>
+              <button class="lia-action-btn" id="lia-add-tags" title="Add Tags">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+                  <line x1="7" y1="7" x2="7.01" y2="7"/>
+                </svg>
+              </button>
+            </div>
             <textarea 
-              class="lia-message-input" 
+              class="lia-message-input"
               id="lia-message-input"
               placeholder="What do you want to post?"
               rows="1"
@@ -3443,6 +3679,10 @@ const refreshToken = async () => {
                 <polygon points="22,2 15,22 11,13 2,9"></polygon>
               </svg>
             </button>
+          </div>
+          <div class="lia-mode-indicator" id="lia-mode-indicator" style="display: none;">
+            <span class="lia-mode-text">Notes Mode Active</span>
+            <div class="lia-context-info" id="lia-context-info"></div>
           </div>
         </div>
       </div>
@@ -3465,9 +3705,19 @@ const refreshToken = async () => {
     const newChatBtn = document.getElementById("lia-new-chat-btn")
     const liaChatbotTitle = document.querySelector(".lia-chatbot-title")
     const referenceToggle = document.getElementById("lia-reference-toggle")
+    const notesToggle = document.getElementById("lia-notes-toggle")
+
+    // Notes action buttons
+    const structureBtn = document.getElementById("lia-structure-note")
+    const summarizeBtn = document.getElementById("lia-summarize-note")
+    const expandBtn = document.getElementById("lia-expand-note")
+    const addTagsBtn = document.getElementById("lia-add-tags")
 
     // set default to collapsed
     sidebar.classList.add("collapsed")
+
+    // Auto focus
+    messageInput.focus()
 
     // Auto-resize textarea
     messageInput.addEventListener("input", function () {
@@ -3479,7 +3729,11 @@ const refreshToken = async () => {
     messageInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault()
-        sendMessage()
+        if (chatbotState.notesMode) {
+          saveNote()
+        } else {
+          sendMessage()
+        }
       }
     })
 
@@ -3528,16 +3782,25 @@ const refreshToken = async () => {
     })
 
 
-    // New chat button
+    // New chat/note button
     newChatBtn.addEventListener("click", (e) => {
       e.stopPropagation()
-      startNewConversation()
+      if (chatbotState.notesMode) {
+        // if notes mode enabled, start a new note
+        startNewNote()
+      } else {
+        startNewConversation()
+      }
     })
 
     // Send button
     sendBtn.addEventListener("click", (e) => {
       e.stopPropagation()
-      sendMessage()
+      if (chatbotState.notesMode) {
+        saveNote()
+      } else {
+        sendMessage()
+      }
     })
 
     // Reference mode toggle
@@ -3546,14 +3809,612 @@ const refreshToken = async () => {
       toggleReferenceMode()
     })
 
+    // Notes mode toggle
+    notesToggle.addEventListener("click", (e) => {
+      e.stopPropagation()
+      toggleNotesMode()
+    })
+
+    // Notes action buttons
+    structureBtn?.addEventListener("click", (e) => {
+      e.stopPropagation()
+      enhanceNote("structure")
+    })
+
+    summarizeBtn?.addEventListener("click", (e) => {
+      e.stopPropagation()
+      enhanceNote("summarize")
+    })
+
+    expandBtn?.addEventListener("click", (e) => {
+      e.stopPropagation()
+      enhanceNote("expand")
+    })
+
+    addTagsBtn?.addEventListener("click", (e) => {
+      e.stopPropagation()
+      enhanceNote("tags")
+    })
   }
 
-  function toggleChatbot() {
+  // Notes Mode Functions
+  async function toggleNotesMode() {
+    chatbotState.notesMode = !chatbotState.notesMode
+    const notesToggle = document.getElementById("lia-notes-toggle")
+    const modeTitle = document.getElementById("lia-mode-title")
+    const sidebarHeader = document.getElementById("lia-sidebar-header")
+    const newChatBtn = document.getElementById("lia-new-chat-btn")
+    const messageInput = document.getElementById("lia-message-input")
+    const inputActions = document.getElementById("lia-input-actions")
+    const modeIndicator = document.getElementById("lia-mode-indicator")
+
+    if (chatbotState.notesMode) {
+      // Switch to Notes Mode
+      notesToggle.classList.add("notes-active")
+      notesToggle.title = "Notes Mode: ON"
+      modeTitle.textContent = "LIA Notes"
+      sidebarHeader.textContent = "Recent Notes"
+      newChatBtn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+          <line x1="12" y1="11" x2="12" y2="17"/>
+          <line x1="9" y1="14" x2="15" y2="14"/>
+        </svg>
+        + New Note
+      `
+      messageInput.placeholder = "Write your note here..."
+      messageInput.setAttribute("rows", "3")
+      inputActions.style.display = "flex"
+      modeIndicator.style.display = "block"
+
+      // Update context info
+      updateNoteContext()
+
+      // Load notes
+      await loadNotes()
+      //showNotesWelcome()
+
+      showTemporaryNotification("📝 Notes Mode ON - Capture and organize your thoughts", "success")
+    } else {
+      // Switch back to Chat Mode
+      notesToggle.classList.remove("notes-active")
+      notesToggle.title = "Notes Mode"
+      modeTitle.textContent = "LIA"
+      sidebarHeader.textContent = "Recent Chats"
+      newChatBtn.innerHTML = `+ New Chat`
+      messageInput.placeholder = "What do you want to post?"
+      inputActions.style.display = "none"
+      modeIndicator.style.display = "none"
+
+      // Load conversations
+      await loadChatHistory()
+      showChatWelcome()
+
+      showTemporaryNotification("💬 Chat Mode ON", "info")
+    }
+
+    // Update conversation list
+    await updateConversationList()
+
+    // save chatbot state
+    await saveChatbotState()
+  }
+
+  function updateNoteContext() {
+    const contextInfo = document.getElementById("lia-context-info")
+    let context = ""
+
+    // Detect LinkedIn context
+    if (window.location.href.includes("linkedin.com/in/")) {
+      const match = window.location.pathname.match(/\/in\/([^/]+)/)
+      const profileSegment = match ? match[1] : null
+      if (profileSegment) {
+        context = `📋 Profile: ${profileSegment}`
+        chatbotState.noteContext = {
+          type: "profile",
+          identifier: profileSegment,
+          url: window.location.href,
+        }
+      }
+    } else if (window.location.href.includes("linkedin.com/feed")) {
+      context = "📰 LinkedIn Feed"
+      chatbotState.noteContext = {
+        type: "feed",
+        identifier: "feed",
+        url: window.location.href,
+      }
+    } else if (window.location.href.includes("linkedin.com/pulse")) {
+      context = "📖 LinkedIn Article"
+      chatbotState.noteContext = {
+        type: "article",
+        identifier: "article",
+        url: window.location.href,
+      }
+    } else {
+      context = "🌐 General Note"
+      chatbotState.noteContext = {
+        type: "general",
+        identifier: "general",
+        url: window.location.href,
+      }
+    }
+
+    contextInfo.textContent = context
+  }
+
+  function showNotesWelcome() {
+    const messagesContainer = document.getElementById("lia-messages-container")
+    messagesContainer.innerHTML = `
+      <div class="lia-message assistant">
+        <div class="lia-message-avatar">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <polyline points="14,2 14,8 20,8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </div>
+        <div class="lia-message-content">
+          📝 <strong>Welcome to Notes Mode!</strong><br/><br/>
+          I can help you:<br/>
+          • <strong>Structure</strong> your thoughts into organized notes<br/>
+          • <strong>Summarize</strong> long content into key points<br/>
+          • <strong>Expand</strong> brief ideas into detailed notes<br/>
+          • <strong>Tag</strong> and categorize your notes<br/><br/>
+          Start typing your note below, or use the action buttons to enhance existing content!
+        </div>
+      </div>
+    `
+  }
+
+  function showChatWelcome() {
+    const messagesContainer = document.getElementById("lia-messages-container")
+    messagesContainer.innerHTML = `
+      <div class="lia-message assistant">
+        <div class="lia-message-avatar">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+            <rect x="2" y="9" width="4" height="12"/>
+            <circle cx="4" cy="4" r="2"/>
+            <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
+            <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
+          </svg>
+        </div>
+        <div class="lia-message-content">
+          Hi! I'm Lia, your LinkedIn Intelligence Assistant. <br/><br/> I'm here to help you write posts, polish comments, and improve your content. <br/><br/>What can I assist you with today?
+        </div>
+      </div>
+    `
+  }
+
+  async function startNewNote() {
+    // Clear current note display
+    const messagesContainer = document.getElementById("lia-messages-container")
+    showNotesWelcome()
+
+    // Create new note
+    const newNote = {
+      id: generateNoteId(),
+      title: "New Note",
+      content: "",
+      tags: [],
+      context: chatbotState.noteContext,
+      timestamp: Date.now(),
+      lastModified: Date.now(),
+    }
+
+    chatbotState.currentNoteId = newNote.id
+
+    // Save to storage
+    await saveNoteToStorage(newNote)
+
+    // Update notes list
+    await updateConversationList()
+
+    // Focus on input
+    document.getElementById("lia-message-input").focus()
+  }
+
+  async function saveNote() {
+    const messageInput = document.getElementById("lia-message-input")
+    const content = messageInput.value.trim()
+
+    if (!content) return
+
+    const noteId = chatbotState.currentNoteId || generateNoteId()
+    //const noteId = chatbotState.currentNoteId || generateNoteId()
+
+    const note = {
+      id: noteId,
+      title: await generateNoteTitle(content),
+      content: content,
+      tags: extractHashtags(content),
+      context: chatbotState.noteContext,
+      timestamp: chatbotState.currentNoteId ? (await getNoteFromStorage(noteId))?.timestamp || Date.now() : Date.now(),
+      lastModified: Date.now(),
+    }
+
+    chatbotState.currentNoteId = noteId
+
+    // Display note in chat-like format
+    addNoteToDisplay(note)
+
+    // Clear input
+    messageInput.value = ""
+    messageInput.style.height = "auto"
+
+    // Save to storage
+    await saveNoteToStorage(note)
+
+    // Update notes list
+    await updateConversationList()
+
+    showTemporaryNotification("📝 Note saved!", "success")
+  }
+
+  function addNoteToDisplay(note) {
+    const messagesContainer = document.getElementById("lia-messages-container")
+
+    // Clear welcome message if it exists
+    const welcomeMsg = messagesContainer.querySelector(".lia-message.assistant")
+    if (welcomeMsg && welcomeMsg.textContent.includes("Welcome to Notes Mode")) {
+      welcomeMsg.remove()
+    }
+
+    const noteDiv = document.createElement("div")
+    noteDiv.className = "lia-message note"
+    noteDiv.dataset.noteId = note.id
+    
+    // Remove hastags from content for display
+    if (note.tags && note.tags.length > 0) {
+      note.tags.forEach(tag => {
+        note.content = note.content.replace(`#${tag}`, '')
+      })
+    }
+
+    const formattedContent = formatNoteContent(note.content)
+    const tagsHtml =
+      note.tags.length > 0
+        ? `<div class="lia-note-tags">${note.tags.map((tag) => `<span class="lia-tag">${tag}</span>`).join("")}</div>`
+        : ""
+
+    noteDiv.innerHTML = `
+      <div class="lia-message-avatar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+          <polyline points="14,2 14,8 20,8"/>
+        </svg>
+      </div>
+      <div class="lia-message-content lia-note-content">
+        <div class="lia-note-header">
+          <span class="lia-note-title">${note.title}</span>
+          <span class="lia-note-timestamp">${formatTimestamp(note.lastModified)}</span>
+        </div>
+        <div class="lia-note-body">${formattedContent}</div>
+        ${tagsHtml}
+        <div class="lia-note-actions">
+          <button class="lia-note-action-btn lia-edit-note-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8z"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+          </button>
+          <button class="lia-note-action-btn lia-duplicate-note-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
+          <button class="lia-note-action-btn lia-delete-note-btn">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3,6 5,6 21,6"/>
+              <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    `
+
+    messagesContainer.appendChild(noteDiv)
+    messagesContainer.scrollTop = messagesContainer.scrollHeight
+
+    // Trigger animation
+    setTimeout(() => {
+      noteDiv.style.opacity = "1"
+    }, 50)
+  }
+
+  async function enhanceNote(type) {
+    const messageInput = document.getElementById("lia-message-input")
+    const content = messageInput.value.trim()
+
+    if (!content) {
+      showTemporaryNotification("Please write some content first", "warning")
+      return
+    }
+
+    // Show loading
+    const loadingDiv = document.createElement("div")
+    loadingDiv.className = "lia-message assistant"
+    loadingDiv.innerHTML = `
+      <div class="lia-message-avatar">
+        <div class="lia-loading-spinner" style="width: 16px; height: 16px;"></div>
+      </div>
+      <div class="lia-message-content">
+        <div class="lia-typing-indicator">
+          <div class="lia-typing-dot"></div>
+          <div class="lia-typing-dot"></div>
+          <div class="lia-typing-dot"></div>
+        </div>
+      </div>
+    `
+
+    const messagesContainer = document.getElementById("lia-messages-container")
+    messagesContainer.appendChild(loadingDiv)
+    messagesContainer.scrollTop = messagesContainer.scrollHeight
+
+    try {
+      let enhancedContent = ""
+
+      switch (type) {
+        case "structure":
+          enhancedContent = await enhanceNoteContent(
+            content,
+            "Structure this note with clear headings, bullet points, and organized sections",
+          )
+          break
+        case "summarize":
+          enhancedContent = await enhanceNoteContent(content, "Summarize this content into key points and main takeaways")
+          break
+        case "expand":
+          enhancedContent = await enhanceNoteContent(
+            content,
+            "Expand this note with more details, examples, and comprehensive information",
+          )
+          break
+        case "tags":
+          const tags = await enhanceNoteContent(
+            content,
+            "Generate relevant tags for this content. Return only comma-separated tags, no explanations",
+          )
+          enhancedContent = content + "\n\nSuggested tags: " + tags
+          break
+      }
+
+      // Remove loading
+      loadingDiv.remove()
+
+      // Update input with enhanced content
+      messageInput.value = enhancedContent
+      messageInput.style.height = "auto"
+      messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + "px"
+
+      showTemporaryNotification(`✨ Note ${type}d successfully!`, "success")
+    } catch (error) {
+      loadingDiv.remove()
+      showTemporaryNotification(`Failed to ${type} note`, "error")
+      console.error("Note enhancement error:", error)
+    }
+  }
+
+  async function enhanceNoteContent(content, instruction) {
+    const prompt = `${instruction}:\n\n"${content}"\n\nReturn only the enhanced content without explanations.`
+
+    const response = await fetch("https://api.getlia.live/api/prompt/enhance-note", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${await accessToken()}`,
+      },
+      body: JSON.stringify({
+        prompt,
+        content,
+        context: chatbotState.noteContext,
+      }),
+    })
+
+    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(data.error?.message || "Failed to enhance note")
+    }
+
+    return data.response
+  }
+
+  // Note Management Functions
+  async function loadNotes() {
+    try {
+      const notes = await getNotesFromStorage()
+      chatbotState.notes = notes
+
+      if (notes.length === 0) {
+        startNewNote()
+        return
+      }
+      
+      console.log(notes)
+      if (notes.length > 0) {
+        chatbotState.currentNoteId = notes[0].id
+        await loadNote(chatbotState.currentNoteId)
+      }
+    } catch (error) {
+      console.error("Error loading notes:", error)
+    }
+  }
+
+  async function loadNote(noteId) {
+    const note = await getNoteFromStorage(noteId)
+    if (!note) return
+
+    chatbotState.currentNoteId = noteId
+
+    const messagesContainer = document.getElementById("lia-messages-container")
+    messagesContainer.innerHTML = ""
+
+    addNoteToDisplay(note)
+
+    // Update input with note content for editing
+    const messageInput = document.getElementById("lia-message-input")
+    
+    // restore hastags
+    if (note.tags && note.tags.length > 0) {
+      note.content += `\n`
+      note.tags.forEach(tag => {
+        note.content += `#${tag} `
+      })
+    }
+
+    messageInput.value = note.content
+    messageInput.style.height = "auto"
+    messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + "px"
+
+    updateConversationList()
+  }
+
+  // Storage Functions
+  async function saveNoteToStorage(note) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(["lia_notes"], (result) => {
+        const notes = result.lia_notes || []
+        const existingIndex = notes.findIndex((n) => n.id === note.id)
+
+        if (existingIndex >= 0) {
+          notes[existingIndex] = note
+        } else {
+          notes.unshift(note)
+        }
+
+        chrome.storage.local.set({ lia_notes: notes }, resolve)
+      })
+    })
+  }
+
+  async function getNoteFromStorage(noteId) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(["lia_notes"], (result) => {
+        const notes = result.lia_notes || []
+        resolve(notes.find((n) => n.id === noteId))
+      })
+    })
+  }
+
+  async function getNotesFromStorage() {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(["lia_notes"], (result) => {
+        resolve(result.lia_notes || [])
+      })
+    })
+  }
+
+  async function deleteNoteFromStorage(noteId) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(["lia_notes"], (result) => {
+        const notes = result.lia_notes || []
+        const filteredNotes = notes.filter((n) => n.id !== noteId)
+        chrome.storage.local.set({ lia_notes: filteredNotes }, resolve)
+      })
+    })
+  }
+
+  // Utility Functions
+  function generateNoteId() {
+    return "note_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9)
+  }
+
+  async function generateNoteTitle(content) {
+    const firstLine = content.split("\n")[0].trim()
+    if (firstLine.length > 50) {
+      return firstLine.substring(0, 47) + "..."
+    }
+    return firstLine || "Untitled Note"
+  }
+
+  function extractHashtags(content) {
+    const hashtags = content.match(/#[\w]+/g)
+    return hashtags ? hashtags.map((tag) => tag.substring(1)) : []
+  }
+
+  function formatNoteContent(content) {
+    // Basic markdown-like formatting
+    let formatted = content
+
+    // Headers
+    formatted = formatted.replace(/^# (.*$)/gm, '<h3 class="lia-note-h3">$1</h3>')
+    formatted = formatted.replace(/^## (.*$)/gm, '<h4 class="lia-note-h4">$1</h4>')
+
+    // Bold
+    formatted = formatted.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+
+    // Italic
+    formatted = formatted.replace(/\*(.*?)\*/g, "<em>$1</em>")
+
+    // Lists
+    formatted = formatted.replace(/^- (.*$)/gm, '<li class="lia-note-li">$1</li>')
+    formatted = formatted.replace(/(<li class="lia-note-li">.*<\/li>)/s, '<ul class="lia-note-ul">$1</ul>')
+
+    // Line breaks
+    formatted = formatted.replace(/\n/g, "<br>")
+
+    return formatted
+  }
+
+  function formatTimestamp(timestamp) {
+    const date = new Date(timestamp)
+    const now = new Date()
+    const diff = now - date
+
+    if (diff < 60000) return "Just now"
+    if (diff < 3600000) return Math.floor(diff / 60000) + "m ago"
+    if (diff < 86400000) return Math.floor(diff / 3600000) + "h ago"
+    if (diff < 604800000) return Math.floor(diff / 86400000) + "d ago"
+
+    return date.toLocaleDateString()
+  }
+
+  // Global functions for note actions
+  window.editNote = async (noteId) => {
+    await loadNote(noteId)
+    document.getElementById("lia-message-input").focus()
+  }
+
+  window.duplicateNote = async (noteId) => {
+    const originalNote = await getNoteFromStorage(noteId)
+    if (!originalNote) return
+
+    const duplicatedNote = {
+      ...originalNote,
+      id: generateNoteId(),
+      title: originalNote.title + " (Copy)",
+      timestamp: Date.now(),
+      lastModified: Date.now(),
+    }
+
+    await saveNoteToStorage(duplicatedNote)
+    await updateConversationList()
+    showTemporaryNotification("📝 Note duplicated!", "success")
+  }
+
+  window.deleteNote = async (noteId) => {
+    await deleteNoteFromStorage(noteId)
+
+    if (chatbotState.currentNoteId === noteId) {
+      await startNewNote()
+    }
+
+    await updateConversationList()
+    showTemporaryNotification("🗑️ Note deleted", "info")
+  }
+
+  async function toggleChatbot() {
     if (chatbotState.isOpen) {
       closeChatbot()
     } else {
       openChatbot()
     }
+
+    // save chatbot state
+    await saveChatbotState()
   }
 
   async function openChatbot() {
@@ -3973,85 +4834,184 @@ const refreshToken = async () => {
   }
 
   async function updateConversationList() {
-    const conversationList = document.getElementById("lia-conversation-list")
-    //let conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
+      const conversationList = document.getElementById("lia-conversation-list")
+      //let conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
 
-    let conversations = []
+      if (chatbotState.notesMode) {
+        // Load and display notes instead of conversations
+        const notes = await getNotesFromStorage()
+        conversationList.innerHTML = notes
+        .map((note) => {
+          const truncatedTitle = note.title.slice(0, 15) + (note.title.length > 15 ? "..." : "")
+          const contextIcon = getContextIcon(note.context?.type)
 
-    // load conversations from API server
-    try {
-      const chats = await loadConversations()
-      conversations = chats
-    } catch (error) {
-      console.error("Error loading conversations:", error)
-      // try refreshing the token
-      try {
-      await refreshToken()
-        conversations = await loadConversations()
-      } catch {
-        console.error("Error refreshing token:", error)
-      }
-    }
-
-
-    conversationList.innerHTML = conversations
-      .map(
-        (conv) => {
-          const truncatedTitle = conv.title.slice(0, 10) + (conv.title.length > 15 ? "..." : "");
           return `
             <div class="lia-conversation-item-wrapper" style="position: relative;">
-              <div class="lia-conversation-item ${conv.id === chatbotState.currentConversationId ? "active" : ""}" 
-                  data-id="${conv.id}" title="${conv.title}" style="cursor: pointer; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
-                <span style="flex: 1; overflow: hidden;" class='truncatedTitle'>${truncatedTitle}</span>
+              <div class="lia-conversation-item ${note.id === chatbotState.currentNoteId ? "active" : ""}"
+                  data-id="${note.id}" title="${note.title}" style="cursor: pointer; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+                <div style="flex: 1; overflow: hidden;">
+                  <div class="truncatedTitle" style="font-size: 12px; font-weight: 500;">${contextIcon} ${truncatedTitle}</div>
+                  <div style="font-size: 10px; color: #a9d2f3ff; margin-top: 2px;">${formatTimestamp(note.lastModified)}</div>
+                </div>
                 <span class="lia-menu-trigger" style="cursor: pointer; padding: 4px; border-radius: 4px; opacity: 0.7; transition: opacity 0.2s;">⋯</span>
               </div>
               <div class="lia-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 120px; overflow: hidden;">
-                <button class="lia-rename-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
-                  <span style="margin-right: 8px;">✏️</span>Rename
+                <button class="lia-edit-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                  <span style="margin-right: 8px;">✏️</span>Edit
                 </button>
-                ${/*<button class="lia-duplicate-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                <button class="lia-duplicate-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
                   <span style="margin-right: 8px;">📋</span>Duplicate
                 </button>
-                <button class="lia-export-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
-                  <span style="margin-right: 8px;">💾</span>Export
-                </button>*/ ""}
                 <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
-                <button class="lia-delete-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #dc3545; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
-                  <span style="margin-right: 8px;">🗑️</span>Delete Chat
+                <button class="lia-delete-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #dc3545; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                  <span style="margin-right: 8px;">🗑️</span>Delete
                 </button>
               </div>
             </div>
+          `
+        })
+        .join("")
+
+        // Add note-specific event listeners
+        setupNoteEventListeners()
+      } else {
+          // Original chat functionality
+          let conversations = []
+          // load conversations from API server
+          try {
+            conversations = await loadConversations()
+          } catch (error) {
+            console.error("Error loading conversations:", error)
+            // try refreshing the token
+            try {
+              await refreshToken()
+              conversations = await loadConversations()
+            } catch {
+              console.error("Error refreshing token:", error)
+            }
+          }
+
+
+          conversationList.innerHTML = conversations
+            .map(
+              (conv) => {
+                const truncatedTitle = conv.title.slice(0, 10) + (conv.title.length > 15 ? "..." : "");
+                return `
+                  <div class="lia-conversation-item-wrapper" style="position: relative;">
+                    <div class="lia-conversation-item ${conv.id === chatbotState.currentConversationId ? "active" : ""}" 
+                        data-id="${conv.id}" title="${conv.title}" style="cursor: pointer; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+                      <span style="flex: 1; overflow: hidden;" class='truncatedTitle'>${truncatedTitle}</span>
+                      <span class="lia-menu-trigger" style="cursor: pointer; padding: 4px; border-radius: 4px; opacity: 0.7; transition: opacity 0.2s;">⋯</span>
+                    </div>
+                    <div class="lia-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 120px; overflow: hidden;">
+                      <button class="lia-rename-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                        <span style="margin-right: 8px;">✏️</span>Rename
+                      </button>
+                      ${/*<button class="lia-duplicate-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                        <span style="margin-right: 8px;">📋</span>Duplicate
+                      </button>
+                      <button class="lia-export-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                        <span style="margin-right: 8px;">💾</span>Export
+                      </button>*/ ""}
+                      <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+                      <button class="lia-delete-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #dc3545; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                        <span style="margin-right: 8px;">🗑️</span>Delete Chat
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }
+            )
+            .join("");
+
+          // Add hover effects for menu items
+          const style = document.createElement('style');
+          style.textContent = `
+            .lia-conversation-item:hover .lia-menu-trigger {
+              opacity: 1 !important;
+              background-color: rgba(0,0,0,0.1);
+            }
+            .lia-menu button:hover {
+              background-color: #f5f5f5 !important;
+            }
+            .lia-delete-chat-btn:hover {
+              background-color: #fff5f5 !important;
+            }
           `;
-        }
-      )
-      .join("");
+          document.head.appendChild(style);
 
-    // Add hover effects for menu items
-    const style = document.createElement('style');
-    style.textContent = `
-      .lia-conversation-item:hover .lia-menu-trigger {
-        opacity: 1 !important;
-        background-color: rgba(0,0,0,0.1);
-      }
-      .lia-menu button:hover {
-        background-color: #f5f5f5 !important;
-      }
-      .lia-delete-chat-btn:hover {
-        background-color: #fff5f5 !important;
-      }
-    `;
-    document.head.appendChild(style);
+          // Add click to load conversation
+          document.querySelectorAll(".lia-conversation-item").forEach((item) => {
+            item.addEventListener("click", (e) => {
+              // Prevent menu trigger click from also loading conversation
+              if (e.target.classList.contains("lia-menu-trigger")) return;
+              loadConversation(item.dataset.id);
+            });
+          });
 
-    // Add click to load conversation
+          // chat specific event listeners
+          setupChatEventListeners(); 
+      }
+      
+  }
+
+  function setupNoteEventListeners() {
+    // Add click to load note
     document.querySelectorAll(".lia-conversation-item").forEach((item) => {
       item.addEventListener("click", (e) => {
-        // Prevent menu trigger click from also loading conversation
-        if (e.target.classList.contains("lia-menu-trigger")) return;
-        loadConversation(item.dataset.id);
-      });
-    });
+        if (e.target.classList.contains("lia-menu-trigger")) return
+        loadNote(item.dataset.id)
+      })
+    })
 
-    // Add menu toggle
+    // Menu toggles and actions
+    document.querySelectorAll(".lia-menu-trigger").forEach((menuBtn) => {
+      menuBtn.addEventListener("click", (e) => {
+        e.stopPropagation()
+        const menu = menuBtn.closest(".lia-conversation-item-wrapper").querySelector(".lia-menu")
+        document.querySelectorAll(".lia-menu").forEach((m) => {
+          if (m !== menu) m.style.display = "none"
+        })
+        menu.style.display = menu.style.display === "block" ? "none" : "block"
+      })
+    })
+
+    // Note actions
+    document.querySelectorAll(".lia-edit-note-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation()
+        window.editNote(btn.dataset.id)
+        document.querySelectorAll(".lia-menu").forEach((m) => (m.style.display = "none"))
+      })
+    })
+
+    document.querySelectorAll(".lia-duplicate-note-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation()
+        window.duplicateNote(btn.dataset.id)
+        document.querySelectorAll(".lia-menu").forEach((m) => (m.style.display = "none"))
+      })
+    })
+
+    document.querySelectorAll(".lia-delete-note-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation()
+        window.deleteNote(btn.dataset.id)
+        document.querySelectorAll(".lia-menu").forEach((m) => (m.style.display = "none"))
+      })
+    })
+  }
+
+  function setupChatEventListeners() {
+    // Original chat event listeners
+    document.querySelectorAll(".lia-conversation-item").forEach((item) => {
+      item.addEventListener("click", (e) => {
+        if (e.target.classList.contains("lia-menu-trigger")) return
+        loadConversation(item.dataset.id)
+      })
+    })
+  
+  // Add menu toggle
     document.querySelectorAll(".lia-menu-trigger").forEach((menuBtn) => {
       menuBtn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -4143,6 +5103,21 @@ const refreshToken = async () => {
     });
   }
 
+  function getContextIcon(contextType) {
+    switch (contextType) {
+      case "profile":
+        return "👤"
+      case "feed":
+        return "📰"
+      case "article":
+        return "📖"
+      case "general":
+        return "📝"
+      default:
+        return "📝"
+    }
+  }
+
   // chat actions
   function deleteConversation(id) {
 
@@ -4212,9 +5187,6 @@ const refreshToken = async () => {
   
 
   async function loadConversation(conversationId) {
-    //const conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
-    //let conversation = conversations.find((c) => c.id === conversationId)
-
     let conversation = null
 
     // load conversation form API server
@@ -4328,6 +5300,9 @@ const refreshToken = async () => {
       disableReferenceMode()
       showTemporaryNotification("Reference Mode OFF", "info")
     }
+
+    // save chatbot state
+    await saveChatbotState()
   }
 
   async function checkProAccess() {
@@ -4861,142 +5836,5 @@ const refreshToken = async () => {
   
   // Initialize chatbot when extension loads
   initializeChatbot()
-
-  // === Profile Notes Sidebar Injection ===
-  function injectProfileNotesSidebar() {
-    console.log('injected')
-    // Only run on LinkedIn profile pages
-    if (!/linkedin\.com\/in\//.test(window.location.href)) return;
-
-    // Avoid duplicate injection
-    if (document.getElementById('lia-profile-notes-sidebar')) return;
-
-    // Extract profile segment from URL
-    const match = window.location.pathname.match(/\/in\/([^\/]+)/);
-    const profileSegment = match ? match[1] : null;
-    if (!profileSegment) return;
-
-    // Sidebar HTML
-    const sidebar = document.createElement('div');
-    sidebar.id = 'lia-profile-notes-sidebar';
-    sidebar.style.cssText = `
-      position: fixed;
-      top: 0;
-      right: 0;
-      width: 340px;
-      height: 100vh;
-      background: #fff;
-      box-shadow: -2px 0 16px rgba(0,0,0,0.08);
-      border-left: 1px solid #e5e7eb;
-      z-index: 100000;
-      display: flex;
-      flex-direction: column;
-      padding: 0;
-      font-family: 'Inter', Arial, sans-serif;
-      overflow-y: auto;
-    `;
-    sidebar.innerHTML = `
-      <div style="padding: 1.25rem 1.25rem 0.5rem 1.25rem; border-bottom: 1px solid #f1f1f1; background: #f9fafb;">
-        <h2 style="font-size: 1.2rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
-          <span>📝</span> Profile Notes
-        </h2>
-        <div style="font-size: 0.95rem; color: #666; margin-top: 0.25rem;">${profileSegment}</div>
-      </div>
-      <div id="lia-notes-form-section" style="padding: 1rem 1.25rem 0.5rem 1.25rem; border-bottom: 1px solid #f1f1f1;">
-        <textarea id="lia-note-input" rows="3" placeholder="Type your note..." style="width: 100%; border: 1px solid #e5e7eb; border-radius: 8px; padding: 0.75rem; resize: vertical; font-size: 1rem; margin-bottom: 0.5rem;"></textarea>
-        <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem;">
-          <select id="lia-note-tags" multiple style="flex: 1; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0.4rem; font-size: 0.95rem;">
-            <option value="Investor">Investor</option>
-            <option value="Follow-up">Follow-up</option>
-            <option value="Hiring">Hiring</option>
-          </select>
-          <button id="lia-ai-suggest" style="background: #f3f4f6; border: none; border-radius: 6px; padding: 0.4rem 0.7rem; font-size: 0.95rem; color: #0a66c2; cursor: pointer;">AI Suggest</button>
-        </div>
-        <button id="lia-save-note" style="background: #0a66c2; color: #fff; border: none; border-radius: 8px; padding: 0.6rem 1.2rem; font-size: 1rem; font-weight: 500; cursor: pointer; width: 100%;">Save Note</button>
-      </div>
-      <div id="lia-notes-list-section" style="flex: 1; padding: 1rem 1.25rem; overflow-y: auto;"></div>
-    `;
-    document.body.appendChild(sidebar);
-
-    // Helper: get notes from storage
-    function getNotes(cb) {
-      console.log('xyz')
-      chrome.storage.local.get([`profile_notes_${profileSegment}`], (result) => {
-        cb(result[`profile_notes_${profileSegment}`] || []);
-      });
-    }
-    // Helper: save notes to storage
-    function saveNotes(notes, cb) {
-      chrome.storage.local.set({ [`profile_notes_${profileSegment}`]: notes }, cb);
-    }
-
-    // Render notes list
-    function renderNotes() {
-      getNotes((notes) => {
-        const listSection = document.getElementById('lia-notes-list-section');
-        if (!notes.length) {
-          listSection.innerHTML = `<div style='color:#888; text-align:center; margin-top:2rem;'>No notes yet for this profile</div>`;
-          return;
-        }
-        listSection.innerHTML = notes.map((note, idx) => `
-          <div style="background: #f3f4f6; border-radius: 8px; padding: 0.75rem 0.9rem; margin-bottom: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,0.03); position: relative;">
-            <div style="font-size: 0.97rem; margin-bottom: 0.4rem; white-space: pre-line;">${note.text.replace(/</g, '&lt;')}</div>
-            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: #666;">
-              <span>${new Date(note.timestamp).toLocaleString()}</span>
-              <span>${(note.tags||[]).map(tag => `<span style='background:#e0e7ef; color:#0a66c2; border-radius:4px; padding:2px 7px; margin-left:3px;'>${tag}</span>`).join('')}</span>
-            </div>
-            <div style="position: absolute; top: 0.7rem; right: 0.7rem; display: flex; gap: 0.3rem;">
-              <button data-edit="${idx}" style="background: none; border: none; color: #0a66c2; font-size: 1rem; cursor: pointer;">✏️</button>
-              <button data-delete="${idx}" style="background: none; border: none; color: #ef4444; font-size: 1rem; cursor: pointer;">🗑️</button>
-            </div>
-          </div>
-        `).join('');
-      });
-    }
-
-    // Save note handler
-    sidebar.querySelector('#lia-save-note').onclick = function() {
-      const textarea = sidebar.querySelector('#lia-note-input');
-      const tagsSelect = sidebar.querySelector('#lia-note-tags');
-      const text = textarea.value.trim();
-      if (!text) return;
-      const tags = Array.from(tagsSelect.selectedOptions).map(opt => opt.value);
-      getNotes((notes) => {
-        notes.unshift({ text, tags, timestamp: Date.now() });
-        saveNotes(notes, () => {
-          textarea.value = '';
-          tagsSelect.selectedIndex = -1;
-          renderNotes();
-        });
-      });
-    };
-
-    // Edit/delete handlers
-    sidebar.addEventListener('click', function(e) {
-      if (e.target.hasAttribute('data-delete')) {
-        const idx = +e.target.getAttribute('data-delete');
-        getNotes((notes) => {
-          notes.splice(idx, 1);
-          saveNotes(notes, renderNotes);
-        });
-      } else if (e.target.hasAttribute('data-edit')) {
-        const idx = +e.target.getAttribute('data-edit');
-        getNotes((notes) => {
-          const note = notes[idx];
-          sidebar.querySelector('#lia-note-input').value = note.text;
-          const tagsSelect = sidebar.querySelector('#lia-note-tags');
-          Array.from(tagsSelect.options).forEach(opt => {
-            opt.selected = note.tags.includes(opt.value);
-          });
-          // Remove the note being edited
-          notes.splice(idx, 1);
-          saveNotes(notes, renderNotes);
-        });
-      }
-    });
-
-    // Initial render
-    renderNotes();
-  };
 
 })()

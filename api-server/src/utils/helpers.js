@@ -10,7 +10,7 @@ const supabase = require('../utils/supabaseClient');
 exports.getModel = async (req) => {
     const userId = req.user.sub;
 
-    const { data, error } = supabase
+    const { data, error } = await supabase
         .from('users')
         .select('plan')
         .eq('id', userId)

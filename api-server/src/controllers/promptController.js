@@ -242,15 +242,15 @@ exports.enhanceNote = async (req, res) => {
     // Log usage
     await usageLogger.log({
       userId,
-      type: 'ai_enhance_note_' + (type == 'tags' ? 'add_tags' : type), // e.g., ai_enhance_note_bold, ai_enhance_note_grammar
+      type: 'ai_enhance_note_' + (type == 'tags' ? 'add_tags' : type), // e.g., ai_enhance_note_structure, ai_enhance_note_expand, ai_enhance_note_summarize
       original_text: content,
       suggested_text: enhancedNote,
       token_used: usage.total_tokens || 0 // Fallback to 0 if not available
     });
 
-    res.status(200).json({ enhancedNote });
+    return res.status(200).json({ enhancedNote });
   } catch (error) {
     console.error('AI Enhance Note failed:', error.message);
-    res.status(500).json({ error: 'AI Enhance Note failed' });
+    return res.status(500).json({ error: 'AI Enhance Note failed' });
   }
 };

@@ -1,5 +1,6 @@
 const openaiService = require('../services/openaiService');
 const usageLogger = require('../services/usageLogger');
+const { generateNoteTitle } = require('../utils/helpers');
 
 // Enhance Note endpoint
 exports.enhanceNote = async (req, res) => {

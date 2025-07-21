@@ -74,6 +74,10 @@ app.use('/api/support', supportRoutes);
 const ttsRoutes = require('./routes/ttsRoutes');
 app.use('/api/tts', ttsRoutes);
 
+// note routes
+const noteRoutes = require('./routes/noteRoutes');  
+app.use('/api/note', noteRoutes);
+
 // Default route
 app.get('/', (req, res) => {
   res.send('LIA API is live 🔥');

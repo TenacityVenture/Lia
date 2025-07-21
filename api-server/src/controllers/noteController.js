@@ -1,3 +1,8 @@
+const openaiService = require('../services/openaiService');
+const usageLogger = require('../services/usageLogger');
+const { openai } = require('../services/openaiService');
+const { message } = require('./chatController');
+
 // Enhance Note endpoint
 exports.enhanceNote = async (req, res) => {
   const userId = req.user.sub;
@@ -36,3 +41,20 @@ exports.enhanceNote = async (req, res) => {
     return res.status(500).json({ error: 'AI Enhance Note failed' });
   }
 };
+
+// Generate Title endpoint
+exports.generateTitle = async (req, res) => {
+    if (!req.body || !req.body.content || typeof req.body.content !== 'string') {
+        return res.status(400).json({ error: 'Content is required and should be a text string' });
+    }
+
+    let { content } = req.body;
+    content = content.length > 1000 ? content.slice(0, 1000) + '...' : content; // Truncate if too long
+
+    const title = await generateNoteTitle(req, res, content);
+    if (!title) {
+        return res.status(400).json({ error: 'AI response is empty', message: 'Failed to generate title' });
+    }
+
+    return res.status(200).json({ title });
+}

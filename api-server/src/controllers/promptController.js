@@ -54,8 +54,6 @@ exports.suggestReply = async (req, res) => {
     }
   }
 
-  console.log('this is the user info', userInfo)
-
   try {
     //const prompt = `Suggest a professional, thoughtful reply to this LinkedIn comment:\n\n"${comment_text}"`;
     const prompt = comment_text; // the comment text itself is the prompt -- structured in the extension

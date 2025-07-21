@@ -11,6 +11,4 @@ const client = new PollyClient({
   },
 });
 
-console.log('Polly client initialized with region:', client);
-
 module.exports = client; // Export the Polly client for use in other modules

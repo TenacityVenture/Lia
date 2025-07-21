@@ -1,5 +1,4 @@
 const supabase = require('../utils/supabaseClient');
-const { openai } = require('../services/openaiService');
 
 /**
  * 
@@ -131,6 +130,7 @@ exports.getChatSystemMessage = (userInfo) => {
 }
 
 exports.generateNoteTitle = async (req, res, content) => {
+  const { openai } = require('../services/openaiService'); // I'm importing openai here to avoid circular dependency issues
   const titlePrompt = `Generate a concise title for a LinkedIn user note based on this note: "${content}". Maximum 10 words. Return only the title without any quotes or additional text.`;
 
   const { choices } = await openai.chat.completions.create({

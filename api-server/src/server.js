@@ -7,6 +7,9 @@ const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const app = express();
+
+app.set('trust proxy', true); // tells express not to ignore the X-Forwarded-For header, which is important for rate limiting and security
+
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
   max: 20, // Limit each IP to 20 requests per minute

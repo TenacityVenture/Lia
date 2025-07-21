@@ -129,15 +129,30 @@ exports.getChatSystemMessage = (userInfo) => {
     return systemMessage;
 }
 
-exports.generateNoteTitle = async (req, res, content) => {
+exports.generateNoteTitle = async (req, content) => {
   const { openai } = require('../services/openaiService'); // I'm importing openai here to avoid circular dependency issues
-  const titlePrompt = `Generate a concise title for a LinkedIn user note based on this note: "${content}". Maximum 10 words. Return only the title without any quotes or additional text.`;
+  const titlePrompt = `Generate a concise title for this note: "${content}". Maximum 10 words. Return only the title without any quotes or additional text.
+  
+  Do not use markdown or HTML formatting, just plain text.
+  Do not use any special characters or formatting like **bold** or *italic*.
+  Avoid introducing new ideas or being overly creative.
+  Do not add any text before or after the title. Just return the title as bold unicode characters.`;
 
   const { choices } = await openai.chat.completions.create({
-    model: await getModel(req),
+    model: await this.getModel(req),
     messages: [{ role: 'user', content: titlePrompt }],
   });
 
-  const title = choices[0].message.content || 'New Chat';
-  return { title };
+  const title = choices[0].message.content || 'New Note'; // Fallback to 'New Note' if no title is generated
+
+  // Ensure the title is a string and trim it
+  if (typeof title !== 'string') {
+    return 'New Note'; // Fallback if title is not a string
+  }
+  // remove quotes if they exist
+  if (title.startsWith('"') && title.endsWith('"')) {
+    console.log('Title has quotes, removing them');
+    return title.slice(1, -1).trim(); // Remove quotes and trim whitespace
+  }
+  return title.trim(); // Just trim whitespace if no quotes
 }

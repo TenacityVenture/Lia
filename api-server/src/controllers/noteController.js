@@ -50,9 +50,9 @@ exports.generateTitle = async (req, res) => {
     let { content } = req.body;
     content = content.length > 1000 ? content.slice(0, 1000) + '...' : content; // Truncate if too long
 
-    const title = await generateNoteTitle(req, res, content);
+    let title = await generateNoteTitle(req, content);
     if (!title) {
-        return res.status(400).json({ error: 'AI response is empty', message: 'Failed to generate title' });
+      return res.status(400).json({ error: 'AI response is empty', message: 'Failed to generate title' });
     }
 
     return res.status(200).json({ title });

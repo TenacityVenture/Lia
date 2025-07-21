@@ -6,7 +6,7 @@ const { checkPlan } = require('../middlewares/authMiddleware');
 const { enhanceNote } = require('../controllers/promptController');
 router.post('/enhance-note', authenticate, enhanceNote);
 
-const { generateTitle } = require('../controllers/promptController');
+const { generateTitle } = require('../controllers/noteController');
 router.post('/generate-title', authenticate, generateTitle);
 
 module.exports = router;

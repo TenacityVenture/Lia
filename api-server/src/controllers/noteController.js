@@ -1,7 +1,5 @@
 const openaiService = require('../services/openaiService');
 const usageLogger = require('../services/usageLogger');
-const { openai } = require('../services/openaiService');
-const { message } = require('./chatController');
 
 // Enhance Note endpoint
 exports.enhanceNote = async (req, res) => {

@@ -8,7 +8,12 @@ require('dotenv').config();
 
 const app = express();
 
-app.set('trust proxy', true); // tells express not to ignore the X-Forwarded-For header, which is important for rate limiting and security
+// tells express not to ignore the X-Forwarded-For header, which is important for rate limiting and security
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1); // trust first proxy
+} else {
+  app.set('trust proxy', false); // local dev, don't trust
+}
 
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute

@@ -2829,6 +2829,7 @@
 
     .lia-context-info {
       color: #495057;
+      margintTop: 5px;
     }
     
     /* Note formatting styles */
@@ -3872,6 +3873,8 @@
     const modeIndicator = document.getElementById("lia-mode-indicator")
     const liaSendBtn = document.getElementById("lia-send-btn")
 
+    messageInput.value = ""
+
     if (chatbotState.notesMode) {
       // Switch to Notes Mode
       notesToggle.classList.add("notes-active")
@@ -4031,6 +4034,7 @@
   async function startNewNote() {
     // Clear current note display
     const messagesContainer = document.getElementById("lia-messages-container")
+    document.querySelector(".lia-message-input").value = ""
     showNotesWelcome()
 
     // Create new note
@@ -4074,6 +4078,18 @@
       timestamp: chatbotState.currentNoteId ? (await getNoteFromStorage(noteId))?.timestamp || Date.now() : Date.now(),
       lastModified: Date.now(),
     }
+
+    /*const note = {
+      id: noteId,
+      title: await generateNoteTitle(content),
+      content: [
+        // array of note content lines
+      ]
+      tags: extractHashtags(content),
+      context: chatbotState.noteContext,
+      timestamp: chatbotState.currentNoteId ? (await getNoteFromStorage(noteId))?.timestamp || Date.now() : Date.now(),
+      lastModified: Date.now(),
+    }*/
 
     chatbotState.currentNoteId = noteId
 
@@ -4134,19 +4150,19 @@
         <div class="lia-note-body">${formattedContent}</div>
         ${tagsHtml}
         <div class="lia-note-actions">
-          <button class="lia-note-action-btn lia-edit-note-btn">
+          <button class="lia-note-action-btn lia-edit-note-btn" data-id="${note.id}">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8z"/>
               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </button>
-          <button class="lia-note-action-btn lia-duplicate-note-btn">
+          <button class="lia-note-action-btn lia-duplicate-note-btn" data-id="${note.id}">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
             </svg>
           </button>
-          <button class="lia-note-action-btn lia-delete-note-btn">
+          <button class="lia-note-action-btn lia-delete-note-btn" data-id="${note.id}">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="3,6 5,6 21,6"/>
               <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
@@ -4200,21 +4216,24 @@
       switch (type) {
         case "structure":
           enhancedContent = await enhanceNoteContent(
+            type,
             content,
             "Structure this note with clear headings, bullet points, and organized sections",
           )
           break
         case "summarize":
-          enhancedContent = await enhanceNoteContent(content, "Summarize this content into key points and main takeaways")
+          enhancedContent = await enhanceNoteContent(type, content, "Summarize this content into key points and main takeaways")
           break
         case "expand":
           enhancedContent = await enhanceNoteContent(
+            type,
             content,
             "Expand this note with more details, examples, and comprehensive information",
           )
           break
         case "tags":
           const tags = await enhanceNoteContent(
+            type,
             content,
             "Generate relevant tags for this content. Return only comma-separated tags, no explanations",
           )
@@ -4238,8 +4257,8 @@
     }
   }
 
-  async function enhanceNoteContent(content, instruction) {
-    const prompt = `${instruction}:\n\n"${content}"\n\nReturn only the enhanced content without explanations.`
+  async function enhanceNoteContent(type, content, instruction) {
+    const prompt = `${instruction}:\n\n"${content}"\n\nReturn only the enhanced content without explanations or appending the type/anything infront of it.`
 
     const response = await fetch("https://api.getlia.live/api/prompt/enhance-note", {
       method: "POST",
@@ -4248,6 +4267,7 @@
         Authorization: `Bearer ${await accessToken()}`,
       },
       body: JSON.stringify({
+        type,
         prompt,
         content,
         context: chatbotState.noteContext,
@@ -4259,7 +4279,7 @@
       throw new Error(data.error?.message || "Failed to enhance note")
     }
 
-    return data.response
+    return data.enhancedNote
   }
 
   // Note Management Functions
@@ -4362,11 +4382,28 @@
   }
 
   async function generateNoteTitle(content) {
-    const firstLine = content.split("\n")[0].trim()
+    /*const firstLine = content.split("\n")[0].trim()
     if (firstLine.length > 50) {
       return firstLine.substring(0, 47) + "..."
     }
-    return firstLine || "Untitled Note"
+    return firstLine || "Untitled Note"*/
+
+    if (!content || content.trim().length === 0) {
+      return "Untitled Note"
+    }
+
+    // fetch title from API
+    const response = await fetch("https://api.getlia.live/api/note/generate-title", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${await accessToken()}`,
+      },
+      body: JSON.stringify({ content }),
+    })
+    const data = await response.json()
+    return data.title || "Untitled Note"
+    
   }
 
   function extractHashtags(content) {
@@ -4415,6 +4452,8 @@
   window.editNote = async (noteId) => {
     await loadNote(noteId)
     document.getElementById("lia-message-input").focus()
+    document.getElementById("lia-send-btn").disabled = false
+    showTemporaryNotification("📝 Note loaded for editing", "info")
   }
 
   window.duplicateNote = async (noteId) => {
@@ -4431,6 +4470,10 @@
 
     await saveNoteToStorage(duplicatedNote)
     await updateConversationList()
+
+    document.getElementById("lia-send-btn").disabled = true
+    document.getElementById("lia-message-input").value = ""
+
     showTemporaryNotification("📝 Note duplicated!", "success")
   }
 
@@ -4442,6 +4485,10 @@
     }
 
     await updateConversationList()
+
+    document.getElementById("lia-send-btn").disabled = true
+    document.getElementById("lia-message-input").value = ""
+
     showTemporaryNotification("🗑️ Note deleted", "info")
   }
 
@@ -5395,7 +5442,7 @@
       text-align: center;
       box-shadow: 0 25px 80px rgba(0, 0, 0, 0.3);
     ">
-      <div style="font-size: 48px; margin-bottom: 16px;">:rocket:</div>
+      <div style="font-size: 48px; margin-bottom: 16px;">🚀</div>
       <h2 style="margin: 0 0 16px 0; color: #0A66C2;">Upgrade to Pro</h2>
       <p style="margin: 0 0 24px 0; color: #666;">
         Reference Mode lets you click any LinkedIn post to analyze it with AI.
@@ -5645,22 +5692,165 @@
     position: fixed;
     top: 18%;
     right: 20px;
-    background: ${type === "success" ? "#10B981" : type === "error" ? "#EF4444" : "#0A66C2"};
     color: white;
     padding: 12px 16px;
     border-radius: 8px;
     font-size: 14px;
     z-index: 10002;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     animation: slideInRight 0.3s ease;
     max-width: 300px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    pointer-events: none;
   `
-    notification.textContent = message
+
+    // Color schemes
+    const colors = {
+      success: { avatar: "#10b981", bubble: "#f0fdf4", text: "#166534", border: "#bbf7d0" },
+      error: { avatar: "#ef4444", bubble: "#fef2f2", text: "#991b1b", border: "#fecaca" },
+      info: { avatar: "#0a66c2", bubble: "#eff6ff", text: "#1e40af", border: "#bfdbfe" },
+      warning: { avatar: "#f59e0b", bubble: "#fffbeb", text: "#92400e", border: "#fed7aa" },
+    }
+
+    const colorScheme = colors[type] || colors.info
+
+    // Avatar with pulsing effect
+    const avatarContainer = document.createElement("div")
+    avatarContainer.style.cssText = `
+      width: 44px;
+      height: 44px;
+      background: ${colorScheme.avatar};
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px ${colorScheme.avatar}40;
+      opacity: 0;
+      transform: scale(0);
+      transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+      flex-shrink: 0;
+      position: relative;
+    `
+
+    // Add pulsing ring
+    const pulseRing = document.createElement("div")
+    pulseRing.style.cssText = `
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      border: 2px solid ${colorScheme.avatar};
+      border-radius: 50%;
+      opacity: 0;
+      animation: pulse 2s infinite;
+    `
+
+    const pulseStyle = document.createElement("style")
+    pulseStyle.textContent = `
+      @keyframes pulse {
+        0% { transform: scale(1); opacity: 0.7; }
+        100% { transform: scale(1.2); opacity: 0; }
+      }
+    `
+    document.head.appendChild(pulseStyle)
+
+    avatarContainer.appendChild(pulseRing)
+    avatarContainer.innerHTML += `
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+        <rect x="2" y="9" width="4" height="12"/>
+        <circle cx="4" cy="4" r="2"/>
+        <circle cx="16" cy="4" r="2" fill="white"/>
+        <path d="M12 8a4 4 0 0 1 4-4" stroke="white"/>
+      </svg>
+    `
+
+    // Modern speech bubble
+    const speechBubble = document.createElement("div")
+    speechBubble.style.cssText = `
+      position: relative;
+      background: ${colorScheme.bubble};
+      color: ${colorScheme.text};
+      padding: 14px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+      border: 1px solid ${colorScheme.border};
+      max-width: 280px;
+      opacity: 0;
+      transform: scale(0.7) translateY(15px);
+      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      backdrop-filter: blur(10px);
+    `
+
+    // Curved tail for modern look
+    const bubbleTail = document.createElement("div")
+    bubbleTail.style.cssText = `
+      position: absolute;
+      left: -8px;
+      top: 15px;
+      width: 20px;
+      height: 20px;
+      background: ${colorScheme.bubble};
+      border: 1px solid ${colorScheme.border};
+      border-right: none;
+      border-bottom: none;
+      transform: rotate(-45deg);
+      border-radius: 4px 0 0 0;
+    `
+
+    const messageText = document.createElement("span")
+    speechBubble.appendChild(bubbleTail)
+    speechBubble.appendChild(messageText)
+
+    notification.appendChild(avatarContainer)
+    notification.appendChild(speechBubble)
+
+    document.body.appendChild(notification)
+
+    // Animation sequence
+    setTimeout(() => {
+      avatarContainer.style.opacity = "1"
+      avatarContainer.style.transform = "scale(1)"
+    }, 100)
+
+    setTimeout(() => {
+      speechBubble.style.opacity = "1"
+      speechBubble.style.transform = "scale(1) translateY(0)"
+    }, 400)
+
+    setTimeout(() => {
+      let i = 0
+      const typeMessage = () => {
+        if (i <= message.length) {
+          messageText.textContent = message.substring(0, i) + (i < message.length ? "▋" : "")
+          i++
+          setTimeout(typeMessage, 40)
+        }
+      }
+      typeMessage()
+    }, 600)
+
+    // Cleanup
+    setTimeout(() => {
+      notification.style.transform = "translateX(-50%) scale(0.8)"
+      notification.style.opacity = "0"
+      setTimeout(() => {
+        notification.remove()
+        pulseStyle.remove()
+      }, 2000)
+    }, 5000)
+
+    /*notification.textContent = message
     document.body.appendChild(notification)
     setTimeout(() => {
       notification.style.animation = "slideOutRight 0.3s ease"
       setTimeout(() => notification.remove(), 300)
-    }, 3000)
+    }, 3000)*/
   }
   // Make function globally available
   window.clearReferencedContent = clearReferencedContent

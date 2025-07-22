@@ -3566,6 +3566,11 @@
           <div class="lia-mode-indicator" id="lia-mode-indicator" style="display: none;">
             <!-- <span class="lia-mode-text">Notes Mode Active</span> -->
             <div class="lia-context-info" id="lia-context-info"></div>
+            <div class="lia-notes-info" id="lia-notes-info" title="Notes are stored locally, you must sync to save them.">
+              <button class="sync-note-btn linkedin-ai-button">
+                Sync Note
+              </button>
+            </div>
           </div>
         </div>
       </div>

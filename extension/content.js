@@ -4314,9 +4314,9 @@
           const tags = await enhanceNoteContent(
             type,
             content,
-            "Generate relevant tags for this content. Return only comma-separated tags, no explanations",
+            "Generate relevant tags for this content. Return only the content plus the space separated tags (as hashtags - e.g. #tag1 #tag2) one line after the conte",
           )
-          enhancedContent = content + "\n\nSuggested tags: " + tags
+          enhancedContent = tags
           break
       }
 
@@ -4328,7 +4328,7 @@
       messageInput.style.height = "auto"
       messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + "px"
 
-      showTemporaryNotification(`✨ Note ${type}d successfully!`, "success")
+      showTemporaryNotification(`✨ Note ${type === "tags" ? "tagged" : type + "d"} successfully!`, "success")
     } catch (error) {
       loadingDiv.remove()
       showTemporaryNotification(`Failed to ${type} note`, "error")

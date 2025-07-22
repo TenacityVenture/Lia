@@ -1307,46 +1307,6 @@
     
   }
 
-
-  async function handlepost_enabledant(editor, content) {
-    // Create suggestions container if it doesn't exist
-    let suggestionsContainer = editor.parentElement.querySelector(".linkedin-ai-suggestions")
-
-    if (!suggestionsContainer) {
-      suggestionsContainer = document.createElement("div")
-      suggestionsContainer.className = "linkedin-ai-suggestions"
-      editor.parentElement.appendChild(suggestionsContainer)
-    }
-
-    // Show loading state
-    suggestionsContainer.innerHTML = `
-      <div class="linkedin-ai-loading">
-        <div class="linkedin-ai-loading-spinner"></div>
-        <span>Generating suggestions...</span>
-      </div>
-    `
-
-    try {
-      // Get the current post content
-      // const postContent = editor.textContent.trim()
-
-      // Get post context (optional)
-      const postContext = getPostContext()
-
-      // Generate suggestions
-      const suggestions = await generatePostSuggestions(content, postContext)
-
-      // Display suggestions
-      displayPostSuggestions(suggestionsContainer, suggestions, editor)
-    } catch (error) {
-      suggestionsContainer.innerHTML = `
-        <div style="color: red; padding: 10px;">
-          Error: ${error.message || "Failed to generate suggestions"}
-        </div>
-      `
-    }
-  }
-
   async function handlereply_enabledant(commentInput) {
     // Create suggestions container if it doesn't exist
     const commentBox = commentInput.querySelector(".ql-container")
@@ -2089,76 +2049,6 @@
     }
 
     
-  }
-
-  async function generatePostSuggestions(postContent, context) {
-    // Check if API key is available
-
-    if (!settings.post_enabled) return;
-
-    // check if acces_token is available
-    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-    if (refresh_token == null) {
-      throw new Error("Please Sign in to continue")
-    };
-
-    // Prepare the prompt
-    let prompt = `Generate 3 professional LinkedIn post suggestions`
-
-    if (postContent) {
-
-      prompt += ` based on this draft: "${postContent}" written by ${context.postWriter}`
-    } else {
-      prompt += ` for a ${settings.industry} professional`
-    }
-
-    prompt += `. The tone should be ${settings.tone}.`
-
-    if (context.recentTopics && context.recentTopics.length > 0) {
-      prompt += ` Consider these trending topics: ${context.recentTopics.join(", ")}.`
-    }
-
-    prompt += ` Each post should be concise (under 200 words), engaging, and include relevant hashtags.`
-
-    // Call the OpenAI API
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${await accessToken()}`,
-      },
-      body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            role: "system",
-            content: `You are a professional LinkedIn content assistant. You help create engaging, professional posts for the ${settings.industry} industry in a ${settings.tone} tone.`,
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        temperature: 0.7,
-      }),
-    })
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(data.error?.message || "Failed to generate suggestions")
-    }
-
-    // Parse the response to extract the suggestions
-    const content = data.choices[0].message.content
-
-    // Split the content into separate suggestions
-    const suggestions = content
-      .split(/\d+\.\s+/)
-      .filter(Boolean)
-      .map((s) => s.trim())
-
-    return suggestions
   }
 
   async function generateCommentSuggestions(context) {
@@ -4075,7 +3965,9 @@
       lastModified: Date.now(),
     }
 
-    /*const note = {
+    /*
+      // example note structure
+      const note = {
       id: noteId,
       title: await generateNoteTitle(content),
       content: [
@@ -4477,9 +4369,7 @@
     return new Promise((resolve) => {
       chrome.storage.local.get(["lia_notes"], (result) => {
         const notes = result.lia_notes || []
-        console.log('note id', noteId, notes, result)
         const noteIndex = notes.findIndex((n) => n.id === noteId)
-        console.log('this is the note index', noteIndex)
         if (noteIndex >= 0) {
           const note = notes[noteIndex]
           note.content = note.content.filter((msg) => msg.contentId !== contentId)
@@ -5715,7 +5605,6 @@
             // if we are in notes mode
             if (chatbotState.notesMode) {
               const currentNote = await getNoteFromStorage(chatbotState.currentNoteId)
-              console.log(currentNote, 'currentnote lol')
               if (currentNote) {
                 // if current note is not null, then we can save the reference content
                 // add the reference content to current note

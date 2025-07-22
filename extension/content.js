@@ -3,7 +3,7 @@
   let settings = {
     tone: "professional",
     industry: "technology",
-    post_enabled: true,
+    chatbot_enabled: true,
     reply_enabled: true,
     rewrite_enabled: true,
     isRewriting: false,
@@ -25,7 +25,7 @@
   }
 
   // Load settings when content script initializes
-  chrome.storage.sync.get(["tone", "industry", "post_enabled", "reply_enabled", "rewrite_enabled"], (data) => {
+  chrome.storage.sync.get(["tone", "industry", "chatbot_enabled", "reply_enabled", "rewrite_enabled"], (data) => {
     settings = { ...settings, ...data }
     initializeExtension()
   })
@@ -33,7 +33,7 @@
   // Listen for settings updates
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "settingsUpdated") {
-      chrome.storage.sync.get(["tone", "industry", "post_enabled", "reply_enabled", "rewrite_enabled"], (data) => {
+      chrome.storage.sync.get(["tone", "industry", "chatbot_enabled", "reply_enabled", "rewrite_enabled"], (data) => {
         settings = { ...settings, ...data }
       })
     }
@@ -107,10 +107,8 @@
     return isDark(bgColor) ? 'dark' : 'light';
   }
 
-
   async function initializeExtension() {
     // Initialize the extension functionality
-    //setupPostCreationAssistant()
     setupCommentReplyAssistant()
     setuprewrite_enabledment()
     setupTextSelectionToolbar()
@@ -1210,73 +1208,6 @@
     setupTextSelectionToolbar()
   }
 
-  function setupPostCreationAssistant() {
-    if (!settings.post_enabled) return
-
-    // Find all post creation areas
-    const postEditors = document.querySelectorAll(".share-box-feed-entry__closed-share-box")
-
-    postEditors.forEach((editor) => {
-      // Check if we've already added our button
-      if (editor.querySelector(".linkedin-ai-button")) return
-
-      // Find the toolbar or create insertion point
-      const toolbar = editor.querySelector(".share-creation-state__footer") || editor.parentElement
-
-      if (toolbar) {
-        // post container
-        const aiPostContainer = document.createElement("form")
-        aiPostContainer.className = "linkedin-ai-post-container"
-
-        // ai post input
-        const aiPostInput = document.createElement("input")
-        aiPostInput.className = "linkedin-ai-post-input"
-        aiPostInput.setAttribute("placeholder", "What do you want to post?")
-        aiPostInput.setAttribute("spellcheck", "false")
-        aiPostInput.setAttribute("autocapitalize", "off")
-        
-        // Create AI assistant button
-        const aiButton = document.createElement("button")
-        aiButton.className = "linkedin-ai-button"
-        aiButton.setAttribute("type", "submit")
-        aiButton.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10Zm0 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/>
-          </svg>
-          AI Assist
-        `
-
-        // Event listeners
-
-        aiPostInput.addEventListener("keydown", (event) => {
-          if (event.key === "Enter") {
-            event.preventDefault()
-            const content = aiPostInput.value
-            handlepost_enabledant(editor, content)
-          }
-        })
-
-        aiButton.addEventListener("click", (event) => {
-          event.preventDefault()
-          const content = aiPostInput.value
-          handlepost_enabledant(editor, content)
-        })
-
-        // check if AI Button Exists
-        if (toolbar.querySelector(".linkedin-ai-button")) {
-          // do nothing
-        }
-        else {
-          // Add button and input to postContainer then postContainer into toolbar
-          aiPostContainer.appendChild(aiButton)
-          aiPostContainer.appendChild(aiPostInput)
-          toolbar.appendChild(aiPostContainer)
-        }
-
-      }
-    })
-  }
-
   function setupCommentReplyAssistant() {
     if (!settings.reply_enabled) return
 
@@ -1401,12 +1332,6 @@
         </div>
       `
     }
-
-    // try to add ai assist to .share-box
-    const shareButton = editor.querySelector('.share-box-feed-entry__top-bar .artdeco-button')
-    shareButton.addEventListener('click', () => {
-      setupPostCreationAssistant()
-    })
   }
 
   async function handlereply_enabledant(commentInput) {
@@ -2598,6 +2523,8 @@
   */
 
   async function initializeChatbot() {
+    const { chatbot_enabled } = await chrome.storage.sync.get(["chatbot_enabled"]);
+    if (!chatbot_enabled) return;
     if (window.location.href.includes("linkedin.com")) {
       await loadChatbotState()
 

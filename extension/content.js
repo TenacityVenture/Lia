@@ -7,6 +7,7 @@
     reply_enabled: true,
     rewrite_enabled: true,
     isRewriting: false,
+    linkedinTheme: "light"
   }
 
   let linkedinUserInfo = {
@@ -25,7 +26,7 @@
   }
 
   // Load settings when content script initializes
-  chrome.storage.sync.get(["tone", "industry", "chatbot_enabled", "reply_enabled", "rewrite_enabled"], (data) => {
+  chrome.storage.sync.get(["tone", "industry", "chatbot_enabled", "reply_enabled", "rewrite_enabled", "linkedinTheme"], (data) => {
     settings = { ...settings, ...data }
     initializeExtension()
   })
@@ -33,7 +34,7 @@
   // Listen for settings updates
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "settingsUpdated") {
-      chrome.storage.sync.get(["tone", "industry", "chatbot_enabled", "reply_enabled", "rewrite_enabled"], (data) => {
+      chrome.storage.sync.get(["tone", "industry", "chatbot_enabled", "reply_enabled", "rewrite_enabled", "linkedinTheme"], (data) => {
         settings = { ...settings, ...data }
       })
     }
@@ -86,7 +87,10 @@
       check();
     });
   }
-
+  // linkedin dark theme
+  // #1B1F23  
+  // button #71b7fb
+  // button hover #0a66c2
   async function detectLinkedInTheme() {
     const container = document.querySelector('.feed-shared-update-v2'); // or any reliable element
     if (!container) return null;
@@ -1215,8 +1219,6 @@
     const commentInputs = document.querySelectorAll(".comments-comment-texteditor")
 
     commentInputs.forEach((input) => {
-      const container = input.querySelector(".ql-container")
-
       // Check if we've already added our button
       if (input.querySelector(".linkedin-ai-button")) return
 
@@ -1227,6 +1229,12 @@
         // Create AI assistant button
         const aiButton = document.createElement("button")
         aiButton.className = "linkedin-ai-button"
+
+        // setup background color based on the current theme
+        if (settings.linkedinTheme === 'dark') {
+          aiButton.style.backgroundColor = '#71b7fb'
+        }
+        
         aiButton.style.fontSize = "12px"
         aiButton.style.padding = "4px 8px"
         aiButton.innerHTML = `
@@ -1266,6 +1274,11 @@
 
         const aiButton = document.createElement("button")
         aiButton.className = "linkedin-ai-button"
+        // setup background color based on the current theme
+        if (settings.linkedinTheme === 'dark') {
+          aiButton.style.backgroundColor = '#71b7fb'
+        }
+        
         aiButton.style.padding = "4px 8px"
         aiButton.innerHTML = `
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1345,6 +1358,11 @@
       suggestionsContainer = document.createElement("div")
       suggestionsContainer.className = "linkedin-ai-suggestions"
       commentBox.appendChild(suggestionsContainer)
+    }
+
+    // adapt background color based on the current linkedin theme
+    if (settings.linkedinTheme === 'dark') {
+      suggestionsContainer.style.backgroundColor = "#1B1F23"
     }
 
     // Show loading state
@@ -2365,7 +2383,7 @@
         ${suggestions
           .map(
             (suggestion, index) => `
-          <div class="linkedin-ai-suggestion" data-index="${index}">
+          <div class="linkedin-ai-suggestion" data-index="${index}" style="${settings.linkedinTheme === 'dark' ? 'background-color: #1B1F23;' : ""}">
             ${suggestion}
           </div>
         `,

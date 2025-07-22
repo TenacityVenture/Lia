@@ -123,9 +123,12 @@
               setupTextToSpeech()
               detectLinkedInTheme()
 
-              linkedinUserInfo = await window.getLinkedinUserInfo()
+              if (linkedinUserInfo.name === "" && linkedinUserInfo.headline === "") {
+                linkedinUserInfo = await window.getLinkedinUserInfo()
+              }
 
               if (chatbotState.referenceMode) {
+                // Re-add reference listeners if in reference mode
                 addReferenceListeners()
               }
             } catch (error) {
@@ -2558,19 +2561,6 @@
 
   }
 
-  // Create proxy AFTER loading state
-  /*const chatbotStateProxy = new Proxy(chatbotState, {
-    set(target, prop, value) {
-      target[prop] = value;
-      saveChatbotState();
-      return true;
-    }
-  });
-
-  // Make proxy available globally
-  window.chatbotState = chatbotStateProxy;*/
-
-
   /*
   referencedContent: {
     type: "unknown",
@@ -2588,7 +2578,7 @@
 
       createChatbotButton()
       createChatbotInterface()
-      
+
 
       if (chatbotState.notesMode) {
         // toggle notes mode for notes ui to show
@@ -2926,7 +2916,6 @@
       z-index: 100000;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
       transform: scale(0) translateY(20px);
       opacity: 0;
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -3578,7 +3567,11 @@
 
     const chatbotInterface = document.createElement("div")
     chatbotInterface.id = "lia-chatbot-interface"
-    chatbotInterface.className = "lia-chatbot-interface"
+    if (chatbotState.isMinimized) {
+      // call minimizeChatbot()
+      minimizeChatbot()
+    }
+    chatbotInterface.className = `lia-chatbot-interface ${chatbotState.isOpen ? 'open' : ''}`
 
     chatbotInterface.innerHTML = `
     <div class="lia-chatbot-header">
@@ -3888,7 +3881,7 @@
           <line x1="12" y1="11" x2="12" y2="17"/>
           <line x1="9" y1="14" x2="15" y2="14"/>
         </svg>
-        + New Note
+        New Note
       `
       messageInput.placeholder = "Write your note here..."
       messageInput.setAttribute("rows", "3")
@@ -3923,6 +3916,8 @@
       messageInput.placeholder = "What do you want to post?"
       inputActions.style.display = "none"
       modeIndicator.style.display = "none"
+
+      addReferenceListeners()
 
       liaSendBtn.innerHTML = `
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -4069,13 +4064,38 @@
     const noteId = chatbotState.currentNoteId || generateNoteId()
     //const noteId = chatbotState.currentNoteId || generateNoteId()
 
+    // Prepare note content as an array of message objects
+    let noteContent = [];
+    // If editing an existing note, preserve previous content
+    const prevNote = await getNoteFromStorage(noteId);
+    if (prevNote && Array.isArray(prevNote.content)) {
+      noteContent = [...prevNote.content];
+    }
+
+    // Add new content as a message object
+    if (content) {
+      if (typeof content === "string") {
+      noteContent.push({
+        contentId: generateContentId(),
+        type: "text",
+        text: content,
+      });
+      } else if (typeof content === "object" && content.type === "reference") {
+      noteContent.push({
+        contentId: generateContentId(),
+        type: "reference",
+        content: content,
+      });
+      }
+    }
+
     const note = {
       id: noteId,
       title: await generateNoteTitle(content),
-      content: content,
-      tags: extractHashtags(content),
+      content: noteContent,
+      tags: extractHashtags(typeof content === "string" ? content : ""),
       context: chatbotState.noteContext,
-      timestamp: chatbotState.currentNoteId ? (await getNoteFromStorage(noteId))?.timestamp || Date.now() : Date.now(),
+      timestamp: chatbotState.currentNoteId ? (prevNote?.timestamp || Date.now()) : Date.now(),
       lastModified: Date.now(),
     }
 
@@ -4083,7 +4103,17 @@
       id: noteId,
       title: await generateNoteTitle(content),
       content: [
-        // array of note content lines
+        // array of note contents - like chats messages
+        {
+          contentId: generateNoteId(),
+          type: "text",
+          text: content,
+        },
+        {
+          contentId: generateNoteId(),
+          type: "reference",
+          content: referenceMode ? chatbotState.referencedContent : "",
+        }
       ]
       tags: extractHashtags(content),
       context: chatbotState.noteContext,
@@ -4111,73 +4141,121 @@
 
   function addNoteToDisplay(note) {
     const messagesContainer = document.getElementById("lia-messages-container")
+    messagesContainer.style.opacity = "0.5" // Fade out for smooth transition
 
     // Clear welcome message if it exists
     const welcomeMsg = messagesContainer.querySelector(".lia-message.assistant")
     if (welcomeMsg && welcomeMsg.textContent.includes("Welcome to Notes Mode")) {
       welcomeMsg.remove()
     }
-
-    const noteDiv = document.createElement("div")
-    noteDiv.className = "lia-message note"
-    noteDiv.dataset.noteId = note.id
     
-    // Remove hastags from content for display
-    if (note.tags && note.tags.length > 0) {
-      note.tags.forEach(tag => {
-        note.content = note.content.replace(`#${tag}`, '')
-      })
+    // Remove hashtags from each message object in note.content for display
+    let displayContent = note.content;
+    if (Array.isArray(displayContent)) {
+      displayContent = displayContent.map(msgObj => {
+      if (msgObj.type === "text" && typeof msgObj.text === "string") {
+        let text = msgObj.text;
+        if (note.tags && note.tags.length > 0) {
+        note.tags.forEach(tag => {
+          text = text.replace(new RegExp(`#${tag}\\b`, "g"), "");
+        });
+        }
+        return { ...msgObj, text: text.trim() };
+      }
+      return msgObj;
+      });
     }
 
-    const formattedContent = formatNoteContent(note.content)
+    // Generate tags HTML
     const tagsHtml =
       note.tags.length > 0
-        ? `<div class="lia-note-tags">${note.tags.map((tag) => `<span class="lia-tag">${tag}</span>`).join("")}</div>`
-        : ""
+      ? `<div class="lia-note-tags">${note.tags.map((tag) => `<span class="lia-tag">${tag}</span>`).join("")}</div>`
+      : "";
 
-    noteDiv.innerHTML = `
-      <div class="lia-message-avatar">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
-          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-          <polyline points="14,2 14,8 20,8"/>
-        </svg>
-      </div>
-      <div class="lia-message-content lia-note-content">
-        <div class="lia-note-header">
-          <span class="lia-note-title">${note.title}</span>
-          <span class="lia-note-timestamp">${formatTimestamp(note.lastModified)}</span>
-        </div>
-        <div class="lia-note-body">${formattedContent}</div>
-        ${tagsHtml}
-        <div class="lia-note-actions">
-          <button class="lia-note-action-btn lia-edit-note-btn" data-id="${note.id}">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8z"/>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-            </svg>
-          </button>
-          <button class="lia-note-action-btn lia-duplicate-note-btn" data-id="${note.id}">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-            </svg>
-          </button>
-          <button class="lia-note-action-btn lia-delete-note-btn" data-id="${note.id}">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3,6 5,6 21,6"/>
-              <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
-            </svg>
-          </button>
-        </div>
-      </div>
-    `
 
-    messagesContainer.appendChild(noteDiv)
+    // note.content is now an array of message objects (type: "text" or "reference")
+    let formattedContent = "";
+    if (Array.isArray(displayContent)) {
+      formattedContent = displayContent
+      .map(msgObj => {
+        if (msgObj.type === "text") {
+        return `
+          <div class="lia-message note" data-note-id="${note.id}" data-content-note-id="${msgObj.contentId}">
+            <div class="lia-message-avatar">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+              </svg>
+              </div>
+              <div class="lia-message-content lia-note-content">
+              <div class="lia-note-header">
+                <span class="lia-note-title">${note.title}</span>
+                <span class="lia-note-timestamp">${formatTimestamp(note.lastModified)}</span>
+              </div>
+              <div class="lia-note-body">
+                <div class="lia-note-text">${formatNoteContent(msgObj.text)}</div>
+              </div>
+              ${tagsHtml}
+              <div class="lia-note-actions">
+                <!--<button class="lia-note-action-btn lia-edit-note-btn" data-id="${msgObj.contentId}">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8z"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>-->
+                <button class="lia-note-action-btn lia-duplicate-note-btn" data-id="${msgObj.contentId}">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                  </svg>
+                </button>
+                <button class="lia-note-action-btn lia-delete-note-btn" data-id="${msgObj.contentId}">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="3,6 5,6 21,6"/>
+                    <path d="M19,6v14a2,2,0,0,1-2,2H7a2,2,0,0,1-2-2V6m3,0V4a2,2,0,0,1,2-2h4a2,2,0,0,1,2,2V6"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>`;
+        } else if (msgObj.type === "reference") {
+        // Render referenced content (if any)
+        const ref = msgObj.content;
+        if (ref && typeof ref === "object") {
+          return `
+          <div class="lia-referenced-content">
+            <div class="lia-referenced-content-header">
+              <a href="${chatbotState.referencedContent.url}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                </svg>
+                Referenced ${ref.type || "content"}${ref.author ? ` by ${ref.author}` : ""}
+              </a>
+            </div>
+            <div class="lia-referenced-content-preview">
+            ${ref.text ? ref.text.substring(0, 150) : ""}
+            ${ref.text && ref.text.length > 150 ? "..." : ""}
+            </div>
+          </div>
+          `;
+        }
+        return "";
+        }
+        return "";
+      })
+      .join("");
+    } else {
+      // fallback for legacy notes
+      formattedContent = formatNoteContent(note.content);
+    }
+
+    messagesContainer.innerHTML = formattedContent;
+    //messagesContainer.appendChild(noteDiv)
     messagesContainer.scrollTop = messagesContainer.scrollHeight
 
     // Trigger animation
     setTimeout(() => {
-      noteDiv.style.opacity = "1"
+      messagesContainer.style.opacity = "1"
     }, 50)
   }
 
@@ -4260,7 +4338,7 @@
   async function enhanceNoteContent(type, content, instruction) {
     const prompt = `${instruction}:\n\n"${content}"\n\nReturn only the enhanced content without explanations or appending the type/anything infront of it.`
 
-    const response = await fetch("https://api.getlia.live/api/prompt/enhance-note", {
+    const response = await fetch("https://api.getlia.live/api/note/enhance-note", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -4316,15 +4394,41 @@
     // Update input with note content for editing
     const messageInput = document.getElementById("lia-message-input")
     
-    // restore hastags
+    // Restore hashtags for display in the input
     if (note.tags && note.tags.length > 0) {
-      note.content += `\n`
-      note.tags.forEach(tag => {
-        note.content += `#${tag} `
-      })
+      // Find the last text message in note.content
+      if (Array.isArray(note.content)) {
+      // Find last text message object
+      const lastTextMsg = [...note.content].reverse().find(msg => msg.type === "text");
+      let text = lastTextMsg ? lastTextMsg.text : "";
+      // Append hashtags if not already present
+      const tagsLine = note.tags.map(tag => `#${tag}`).join(" ");
+      if (tagsLine && !text.includes(tagsLine)) {
+        messageInput.value = (text + "\n" + tagsLine).trim();
+      } else {
+        messageInput.value = text;
+      }
+      } else {
+      // fallback for legacy notes
+      let text = typeof note.content === "string" ? note.content : "";
+      const tagsLine = note.tags.map(tag => `#${tag}`).join(" ");
+      if (tagsLine && !text.includes(tagsLine)) {
+        messageInput.value = (text + "\n" + tagsLine).trim();
+      } else {
+        messageInput.value = text;
+      }
+      }
+    } else {
+      // No tags, just restore last text message
+      if (Array.isArray(note.content)) {
+      const lastTextMsg = [...note.content].reverse().find(msg => msg.type === "text");
+      messageInput.value = lastTextMsg ? lastTextMsg.text : "";
+      } else {
+      messageInput.value = typeof note.content === "string" ? note.content : "";
+      }
     }
 
-    messageInput.value = note.content
+    //messageInput.value = note.content
     messageInput.style.height = "auto"
     messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + "px"
 
@@ -4340,6 +4444,23 @@
 
         if (existingIndex >= 0) {
           notes[existingIndex] = note
+        } else {
+          notes.unshift(note)
+        }
+
+        chrome.storage.local.set({ lia_notes: notes }, resolve)
+      })
+    })
+  }
+
+  async function saveNoteContentToStorage(note, content) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(["lia_notes"], (result) => {
+        const notes = result.lia_notes || []
+        const existingIndex = notes.findIndex((n) => n.id === note.id)
+
+        if (existingIndex >= 0) {
+          notes[existingIndex].content.push(content)
         } else {
           notes.unshift(note)
         }
@@ -4376,9 +4497,39 @@
     })
   }
 
+  async function deleteNoteContentFromStorage(noteId, contentId) {
+    return new Promise((resolve) => {
+      chrome.storage.local.get(["lia_notes"], (result) => {
+        const notes = result.lia_notes || []
+        console.log('note id', noteId, notes, result)
+        const noteIndex = notes.findIndex((n) => n.id === noteId)
+        console.log('this is the note index', noteIndex)
+        if (noteIndex >= 0) {
+          const note = notes[noteIndex]
+          note.content = note.content.filter((msg) => msg.contentId !== contentId)
+
+          // If no content left, delete the note
+          if (note.content.length === 0) {
+            notes.splice(noteIndex, 1)
+          } else {
+            notes[noteIndex] = note
+          }
+
+          chrome.storage.local.set({ lia_notes: notes }, resolve)
+        } else {
+          resolve()
+        }
+      })
+    })
+  }
+
   // Utility Functions
   function generateNoteId() {
     return "note_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9)
+  }
+
+  function generateContentId() {
+    return "content_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9)
   }
 
   async function generateNoteTitle(content) {
@@ -4477,6 +4628,27 @@
     showTemporaryNotification("📝 Note duplicated!", "success")
   }
 
+  window.duplicateNoteContent = async (noteId, contentId) => {
+    const note = await getNoteFromStorage(noteId)
+    if (!note) return
+
+    const content = note.content.find((item) => item.contentId === contentId)
+    if (!content) return
+
+    const duplicatedContent = {
+      ...content,
+      contentId: generateContentId(),
+      timestamp: Date.now(),
+      lastModified: Date.now(),
+    }
+
+    note.content.push(duplicatedContent)
+    await saveNoteContentToStorage(note, duplicatedContent)
+    await loadNote(noteId)
+
+    showTemporaryNotification("📝 Note content duplicated!", "success")
+  }
+
   window.deleteNote = async (noteId) => {
     await deleteNoteFromStorage(noteId)
 
@@ -4492,13 +4664,19 @@
     showTemporaryNotification("🗑️ Note deleted", "info")
   }
 
+  window.deleteNoteContent = async (noteId, contentId) => {
+    await deleteNoteContentFromStorage(noteId, contentId)
+    await loadNote(noteId)
+    
+    showTemporaryNotification("🗑️ Note content deleted", "info")
+  }
+
   async function toggleChatbot() {
     if (chatbotState.isOpen) {
       closeChatbot()
     } else {
       openChatbot()
     }
-
     // save chatbot state
     await saveChatbotState()
   }
@@ -4920,7 +5098,6 @@
 
   async function updateConversationList() {
       const conversationList = document.getElementById("lia-conversation-list")
-      //let conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
 
       if (chatbotState.notesMode) {
         // Load and display notes instead of conversations
@@ -5073,16 +5250,39 @@
     document.querySelectorAll(".lia-duplicate-note-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation()
-        window.duplicateNote(btn.dataset.id)
-        document.querySelectorAll(".lia-menu").forEach((m) => (m.style.display = "none"))
+
+        const noteId = btn.dataset.id
+        const parentNode = btn.closest(".lia-message")
+
+        const parentNoteId = parentNode ? parentNode.dataset.noteId : null
+
+        if (parentNoteId === noteId || !parentNoteId) {
+          // then duplicate the note by calling window.duplicateNote
+          window.duplicateNote(noteId)
+          document.querySelectorAll(".lia-menu").forEach((m) => (m.style.display = "none"))
+        } else {
+          window.duplicateNoteContent(parentNoteId, noteId)
+        }
+
       })
     })
 
     document.querySelectorAll(".lia-delete-note-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation()
-        window.deleteNote(btn.dataset.id)
-        document.querySelectorAll(".lia-menu").forEach((m) => (m.style.display = "none"))
+
+        const noteId = btn.dataset.id
+        const parentNode = btn.closest(".lia-message")
+
+        const parentNoteId = parentNode ? parentNode.dataset.noteId : null
+        
+        if (parentNoteId === noteId || !parentNoteId) {
+          // then delete the note by calling window.deleteNote
+          window.deleteNote(noteId)
+          document.querySelectorAll(".lia-menu").forEach((m) => (m.style.display = "none"))
+        } else {
+          window.deleteNoteContent(parentNoteId, noteId)
+        }
       })
     })
   }
@@ -5323,11 +5523,13 @@
             return `
                   <div class="lia-referenced-content">
                     <div class="lia-referenced-content-header">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                      </svg>
-                      Referenced ${refContent.type}
-                      ${refContent.author ? `by ${refContent.author}` : ""}
+                      <a href="${chatbotState.referencedContent.url}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+                        </svg>
+                        Referenced ${refContent.type}
+                        ${refContent.author ? `by ${refContent.author}` : ""}
+                      </a>
                     </div>
                     <div class="lia-referenced-content-preview">
                       ${refContent.text.substring(0, 150)}${refContent.text.length > 150 ? "..." : ""}
@@ -5377,8 +5579,18 @@
     if (chatbotState.referenceMode) {
       toggleBtn.classList.add("reference-active")
       toggleBtn.title = "Reference Mode: ON (Click posts to reference)"
+
+      // show different title when notes mode is enabled
+      if (chatbotState.notesMode) {
+        toggleBtn.title = "Reference Mode: ON (Click posts to save to current note)"
+      }
       initializeReferenceMode()
       showTemporaryNotification("📎 Reference Mode ON - Click any post to reference it", "success")
+
+      // show different notification when notes mode is enabled
+      if (chatbotState.notesMode) {
+        showTemporaryNotification("📎 Reference Mode ON - Click any post to save to current note", "success")
+      }
     } else {
       toggleBtn.classList.remove("reference-active")
       toggleBtn.title = "Reference Mode (Pro)"
@@ -5532,7 +5744,6 @@
     const clearReferenceBtns = document.querySelectorAll(".lia-clear-reference")
     if (clearReferenceBtns) {
       clearReferenceBtns.forEach(clearReferenceBtn => {
-        console.log('reference btns', clearReferenceBtn)
         clearReferenceBtn.addEventListener("click", (e) => {
           e.preventDefault()
           e.stopPropagation()
@@ -5541,20 +5752,48 @@
       })
     }
   }
-  function capturePostReference(postElement) {
+
+  async function capturePostReference(postElement) {
+    // check if there is an existing reference
+    // clear it
+    if (chatbotState.referencedContent) {
+      showTemporaryNotification("🔄 Replacing existing reference...", "info")
+      // clear all existing reference
+      const clearReferenceBtns = document.querySelectorAll(".lia-clear-reference")
+      if (clearReferenceBtns) {
+        clearReferenceBtns.forEach(clearReferenceBtn => {
+          clearReferencedContent(clearReferenceBtn)
+        })
+      }
+    }
+
     const content = extractPostContent(postElement)
     if (content) {
       chatbotState.referencedContent = content
+      // Save the reference content to chatbot state
+      await saveChatbotState()
+
       showReferencedContent()
-      showTemporaryNotification("✔ Content Referenced! Ask me about it.", "success")
+
+      // show notification
+      if (chatbotState.notesMode) {
+        showTemporaryNotification("✔ Content Referenced! You can now add it to your notes.", "success")
+      } else {
+        showTemporaryNotification("✔ Content Referenced! Ask me about it.", "success")
+      }
       // Auto-focus chat input
       const chatInput = document.getElementById("lia-message-input")
       if (chatInput) {
         chatInput.focus()
-        chatInput.placeholder = "Ask me about the referenced content..."
+        if (chatbotState.notesMode) {
+          chatInput.placeholder = "Write short note on the referenced content..."
+        } else {
+          chatInput.placeholder = "Ask me about the referenced content..."
+        }
       }
     }
   }
+  
   function extractPostContent(element) {
     try {
       const content = {
@@ -5637,11 +5876,13 @@
     refDiv.className = "lia-referenced-content"
     refDiv.innerHTML = `
     <div class="lia-referenced-content-header">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-      </svg>
-      Referenced ${chatbotState.referencedContent.type}
-      ${chatbotState.referencedContent.author ? `by ${chatbotState.referencedContent.author}` : ""}
+      <a href="${chatbotState.referencedContent.url}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+        </svg>
+        Referenced ${chatbotState.referencedContent.type}
+        ${chatbotState.referencedContent.author ? `by ${chatbotState.referencedContent.author}` : ""}
+      </a>
       <button class="lia-clear-reference">×</button>
     </div>
     <div class="lia-referenced-content-preview">
@@ -5651,13 +5892,19 @@
     messagesContainer.scrollTop = messagesContainer.scrollHeight
   }
 
-  function clearReferencedContent(clearReferenceBtn) {
+  async function clearReferencedContent(clearReferenceBtn) {
     chatbotState.referencedContent = null
+    // save chatbot state to remove referencedContent from it
+    await saveChatbotState()
     const refDiv = clearReferenceBtn.closest(".lia-referenced-content")
     if (refDiv) refDiv.remove()
     const chatInput = document.getElementById("lia-message-input")
     if (chatInput) {
-      chatInput.placeholder = "What do you want to post?"
+      if (chatbotState.notesMode) {
+        chatInput.placeholder = "Write your note here..."
+      } else {
+        chatInput.placeholder = "What do you want to post?"
+      }
     }
   }
 
@@ -5680,6 +5927,9 @@
     animation: slideInDown 0.3s ease;
   `
     indicator.textContent = "📎 Reference Mode Active - Click any post to analyze it"
+    if (chatbotState.notesMode) {
+      indicator.textContent = "📎 Reference Mode Active - Click any post to add it to your current note."
+    }
     document.body.appendChild(indicator)
   }
   function hideReferenceIndicator() {
@@ -5688,9 +5938,10 @@
   }
   function showTemporaryNotification(message, type = "info") {
     const notification = document.createElement("div")
+    const chatbotInterface = document.querySelector('.lia-chatbot-interface')
     notification.style.cssText = `
     position: fixed;
-    top: 18%;
+    top: -25%;
     right: 20px;
     color: white;
     padding: 12px 16px;
@@ -5810,7 +6061,7 @@
     notification.appendChild(avatarContainer)
     notification.appendChild(speechBubble)
 
-    document.body.appendChild(notification)
+    chatbotInterface.appendChild(notification)
 
     // Animation sequence
     setTimeout(() => {

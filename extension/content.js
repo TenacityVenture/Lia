@@ -1322,7 +1322,8 @@
 
     // adapt background color based on the current linkedin theme
     if (settings.linkedinTheme === 'dark') {
-      suggestionsContainer.style.backgroundColor = "#1B1F23"
+      suggestionsContainer.style.backgroundColor = "#293139"
+      suggestionsContainer.style.border = "0"
     }
 
     // Show loading state
@@ -2257,23 +2258,16 @@
       container.remove()
     })
 
-    // Add click event to regenerate button
-    const regenerateButton = container.querySelector(".linkedin-ai-regenerate")
-    regenerateButton.addEventListener("click", () => {
-      const aiPostInput = container.parentElement.querySelector(".linkedin-ai-post-input")
-      const content = aiPostInput.value
-      handlepost_enabledant(editor, content)
-    })
   }
 
   function displayCommentSuggestions(container, suggestions, commentInput) {
     container.innerHTML = `
-      <h3>AI Reply Suggestions</h3>
+      <h3 style=${settings.linkedinTheme === 'dark' ? 'color: #71b7fb' : ''}>AI Reply Suggestions</h3>
       <div class="linkedin-ai-suggestion-list">
         ${suggestions
           .map(
             (suggestion, index) => `
-          <div class="linkedin-ai-suggestion" data-index="${index}" style="${settings.linkedinTheme === 'dark' ? 'background-color: #1B1F23;' : ""}">
+          <div class="linkedin-ai-suggestion" data-index="${index}" style="${settings.linkedinTheme === 'dark' ? 'background-color: #1B1F23; color: #BEBEBE; border: 0;' : ""}">
             ${suggestion}
           </div>
         `,
@@ -2281,8 +2275,8 @@
           .join("")}
       </div>
       <div class="linkedin-ai-actions">
-        <button class="linkedin-ai-dismiss">Dismiss</button>
-        <button class="linkedin-ai-regenerate">Regenerate</button>
+        <button class="linkedin-ai-dismiss" style=${settings.linkedinTheme === 'dark' ? 'color: #71b7fb' : ''}>Dismiss</button>
+        <button class="linkedin-ai-regenerate" style=${settings.linkedinTheme === 'dark' ? 'color: #71b7fb' : ''}>Regenerate</button>
       </div>
     `
 
@@ -3757,7 +3751,6 @@
       messageInput.placeholder = "Write your note here..."
       messageInput.setAttribute("rows", "3")
       inputActions.style.display = "flex"
-      modeIndicator.style.display = "block"
 
       // Lia Send Button inner html should be change to the correct svg for note
       liaSendBtn.innerHTML = `
@@ -4828,7 +4821,7 @@
 
   async function generateChatResponse(message) {
     // check if post suggestion enabled
-    if (!settings.post_enabled) return
+    if (!settings.chatbot_enabled) return
 
     // Create body for request
     const body = {

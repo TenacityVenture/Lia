@@ -39,7 +39,7 @@ async function getLiaUserInfo () {
   let me = await getMe(access_token);
   if (!me.ok) {
     // try refreshing the token
-    const newToken = await refreshToken(refresh_token);
+    const newToken = await liaRefreshToken(refresh_token);
     // get me again
     me = await getMe(newToken);
 
@@ -57,6 +57,32 @@ async function getMe(token) {
   });
 
   return me; // Return the response object directly
+}
+
+// refreshToken function
+// lia refresh token
+const liaRefreshToken = async (refresh_token) => {
+  try {
+    const response = await fetch('https://api.getlia.live/api/auth/refresh-token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+    
+      },
+      // include credentials to allow cookies to be sent
+      credentials: 'include',
+      body: JSON.stringify({ refresh_token }),
+    });
+
+    const data = await response.json();
+
+    chrome.storage.local.set({ access_token: data.access_token, refresh_token: data.refresh_token });
+    return data.access_token;
+
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    return null;
+  }
 }
 
 

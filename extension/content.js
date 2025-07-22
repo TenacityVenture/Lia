@@ -75,7 +75,7 @@
     });
   }
 
-  function detectLinkedInTheme() {
+  async function detectLinkedInTheme() {
     const container = document.querySelector('.feed-shared-update-v2'); // or any reliable element
     if (!container) return null;
 
@@ -90,7 +90,7 @@
     };
 
     // save to sync instead of local
-    chrome.storage.sync.set({ linkedinTheme: isDark(bgColor) ? 'dark' : 'light' });
+    await chrome.storage.sync.set({ linkedinTheme: isDark(bgColor) ? 'dark' : 'light' });
 
     return isDark(bgColor) ? 'dark' : 'light';
   }
@@ -104,7 +104,7 @@
     setupTextSelectionToolbar()
     setupTextToSpeech()
 
-    detectLinkedInTheme();
+    await detectLinkedInTheme();
 
     linkedinUserInfo = await window.getLinkedinUserInfo()
 
@@ -1499,6 +1499,8 @@
 
     // Show loading state by adding a subtle overlay
     const loadingOverlay = createLoadingOverlay(editor)
+    // show temporary message of LIA is rewriting
+    showTemporaryMessage(editor, 'LIA is rewriting..')
 
     try {
       // Generate improved version
@@ -2922,7 +2924,7 @@
       border: 1px solid rgba(0, 0, 0, 0.08);
       backdrop-filter: blur(20px);
 
-      border-bottom-right-radius: 0;
+      /*border-bottom-right-radius: 0;*/
     }
 
     .lia-chatbot-interface.right-radius-bottom-and-width {
@@ -2939,6 +2941,7 @@
     .lia-chatbot-interface.minimized {
       height: 60px;
       overflow: hidden;
+      width: ${chatbotState.notesMode ? '280' : '260'}px;
     }
 
     .lia-chatbot-header {
@@ -3293,6 +3296,8 @@
     .lia-input-container {
       padding: 20px;
       border-top: 1px solid #e9ecef;
+      border-bottom-left-radius: 20px;
+      border-bottom-right-radius: 20px;
       background: linear-gradient(180deg, #ffffff, #f8f9fa);
     }
 
@@ -3567,10 +3572,6 @@
 
     const chatbotInterface = document.createElement("div")
     chatbotInterface.id = "lia-chatbot-interface"
-    if (chatbotState.isMinimized) {
-      // call minimizeChatbot()
-      minimizeChatbot()
-    }
     chatbotInterface.className = `lia-chatbot-interface ${chatbotState.isOpen ? 'open' : ''}`
 
     chatbotInterface.innerHTML = `
@@ -4223,9 +4224,9 @@
         const ref = msgObj.content;
         if (ref && typeof ref === "object") {
           return `
-          <div class="lia-referenced-content">
+          <div class="lia-referenced-content" title="Click to open">
             <div class="lia-referenced-content-header">
-              <a href="${chatbotState.referencedContent.url}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">
+              <a href="${chatbotState.referencedContent ? chatbotState.referencedContent.url : ""}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
                 </svg>
@@ -4741,8 +4742,6 @@
     chatbotInterface.classList.toggle("minimized")
     chatbotState.isMinimized = true
 
-    
-    
 
     // Auto-restore after 3 seconds
     /*setTimeout(() => {
@@ -5521,9 +5520,9 @@
           if (msg.role === "reference") {
             const refContent = JSON.parse(msg.content)
             return `
-                  <div class="lia-referenced-content">
+                  <div class="lia-referenced-content" title="Click to open">
                     <div class="lia-referenced-content-header">
-                      <a href="${chatbotState.referencedContent.url}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">
+                      <a href="${chatbotState.referencedContent ? chatbotState.referencedContent.url : ""}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
                         </svg>
@@ -5730,11 +5729,35 @@
         post.style.position = "relative"
         post.appendChild(overlay)
         // Add click listener
-        post.addEventListener("click", (e) => {
+        post.addEventListener("click", async (e) => {
           if (chatbotState.referenceMode) {
             e.preventDefault()
             e.stopPropagation()
-            capturePostReference(post)
+            await capturePostReference(post)
+
+            // save reference note content to current note in storage
+            // if we are in notes mode
+            if (chatbotState.notesMode) {
+              const currentNote = await getNoteFromStorage(chatbotState.currentNoteId)
+              console.log(currentNote, 'currentnote lol')
+              if (currentNote) {
+                // if current note is not null, then we can save the reference content
+                // add the reference content to current note
+                currentNote.content.push({
+                  contentId: generateContentId(),
+                  type: "reference",
+                  content: chatbotState.referencedContent,
+                })
+                // update last modified
+                currentNote.lastModified = Date.now()
+
+                saveNoteToStorage(currentNote)
+                saveChatbotState()
+                
+                // save reference content to notes
+                //saveNoteContentToStorage(chatbotState.currentNoteId, noteContent)
+              }
+            }
           }
         })
       })
@@ -5770,10 +5793,11 @@
     const content = extractPostContent(postElement)
     if (content) {
       chatbotState.referencedContent = content
+      
+      showReferencedContent()
+
       // Save the reference content to chatbot state
       await saveChatbotState()
-
-      showReferencedContent()
 
       // show notification
       if (chatbotState.notesMode) {
@@ -5873,10 +5897,11 @@
     const existingRef = messagesContainer.querySelector(".lia-referenced-content")
     if (existingRef) existingRef.remove()
     const refDiv = document.createElement("div")
+    refDiv.title = "Click to open"
     refDiv.className = "lia-referenced-content"
     refDiv.innerHTML = `
     <div class="lia-referenced-content-header">
-      <a href="${chatbotState.referencedContent.url}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">
+      <a href="${chatbotState.referencedContent ? chatbotState.referencedContent.url : ""}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: none;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
         </svg>
@@ -5941,7 +5966,7 @@
     const chatbotInterface = document.querySelector('.lia-chatbot-interface')
     notification.style.cssText = `
     position: fixed;
-    top: -25%;
+    top: -15%;
     right: 20px;
     color: white;
     padding: 12px 16px;

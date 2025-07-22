@@ -1,11 +1,11 @@
 chrome.runtime.onInstalled.addListener(() => {
     // Initialize default settings
-    chrome.storage.sync.get(['tone', 'industry', 'rewrite_enabled', 'reply_enabled', 'post_enabled'], (data) => {
+    chrome.storage.sync.get(['tone', 'industry', 'rewrite_enabled', 'reply_enabled', 'chatbot_enabled'], (data) => {
       // Only set defaults for values that don't exist
       const defaults = {
         tone: data.tone || "professional",
         industry: data.industry || "technology",
-        post_enabled: data.post_enabled !== undefined ? data.post_enabled : true,
+        chatbot_enabled: data.chatbot_enabled !== undefined ? data.chatbot_enabled : true,
         reply_enabled: data.reply_enabled !== undefined ? data.reply_enabled : true,
         rewrite_enabled: data.rewrite_enabled !== undefined ? data.rewrite_enabled : true,
       }

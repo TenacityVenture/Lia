@@ -29,4 +29,37 @@ async function getLinkedinUserInfo () {
   }
 }
 
+async function getLiaUserInfo () {
+  const { access_token, refresh_token } = await chrome.storage.local.get(['access_token', 'refresh_token']);
+  if (!access_token || !refresh_token) {
+    return null; // No tokens available, user is not authenticated
+  }
+
+  // fetch user from api-server
+  let me = await getMe(access_token);
+  if (!me.ok) {
+    // try refreshing the token
+    const newToken = await refreshToken(refresh_token);
+    // get me again
+    me = await getMe(newToken);
+
+    if (!newToken) {
+      return;
+    }
+  }
+
+  return me.json(); // Return the LIA user data as JSON
+}
+
+async function getMe(token) {
+  const me = await fetch('https://api.getlia.live/api/user/me', {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+
+  return me; // Return the response object directly
+}
+
+
 window.getLinkedinUserInfo = getLinkedinUserInfo
+window.getLiaUserInfo = getLiaUserInfo
+window.getMe = getMe

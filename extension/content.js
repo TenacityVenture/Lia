@@ -15,6 +15,15 @@
     linkToProfile: ""
   }
 
+  let liaUser = null;
+
+  const getUserAvatar = () => {
+    if (liaUser && liaUser.profile_picture_url) {
+      return `<img class="lia-chat-user-avatar" src="${liaUser.profile_picture_url}" alt="User Avatar" />`;
+    }
+    return 'U';
+  }
+
   // Load settings when content script initializes
   chrome.storage.sync.get(["tone", "industry", "post_enabled", "reply_enabled", "rewrite_enabled"], (data) => {
     settings = { ...settings, ...data }
@@ -31,7 +40,7 @@
   })
 
   // Listen for auth tokens after sign-in or signup on the website
-  window.addEventListener('message', (event) => {
+  window.addEventListener('message', async (event) => {
     if (event.origin !== 'https://www.getlia.live') return;
     if (event.source !== window) return;
 
@@ -41,6 +50,7 @@
         access_token: event.data.access_token,
         refresh_token: event.data.refresh_token
       });
+      liaUser = await window.getLiaUserInfo()
       initializeChatbot()
     }
 
@@ -49,10 +59,12 @@
       chrome.storage.local.remove(['access_token', 'refresh_token'], () => {
         console.log('Access token and refresh token cleared from storage.');
       });
+
+      liaUser = null;
     }
   });
 
-  // uitlity functions
+  // utility functions
 
   // check if element exists in dom / waits for it to exist by keep trying
   function waitForElement(selector, maxAttempts = 100, interval = 1000) {
@@ -106,7 +118,14 @@
 
     await detectLinkedInTheme();
 
+    // get LinkedIn user info
     linkedinUserInfo = await window.getLinkedinUserInfo()
+
+    // lia user
+    liaUser = await window.getLiaUserInfo()
+    if (!liaUser) {
+      console.warn('LIA user not found, user might not be authenticated');
+    }
 
     let mutationTimeout
 
@@ -125,6 +144,10 @@
 
               if (linkedinUserInfo.name === "" && linkedinUserInfo.headline === "") {
                 linkedinUserInfo = await window.getLinkedinUserInfo()
+              }
+
+              if (liaUser === null) {
+                liaUser = await window.getLiaUserInfo()
               }
 
               if (chatbotState.referenceMode) {
@@ -3255,6 +3278,13 @@
       animation: avatarPulse 2s ease-in-out infinite;
     }
 
+    .lia-message.user .lia-chat-user-avatar {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
     @keyframes avatarPulse {
       0%, 100% { transform: scale(1); }
       50% { transform: scale(1.05); }
@@ -4688,6 +4718,7 @@
     chatbotInterface.classList.remove("minimized")
     chatbotState.isOpen = true
     chatbotState.isMinimized = false
+    liaUser = await window.getLiaUserInfo()
 
     await loadChatbotState()
 
@@ -4904,7 +4935,7 @@
     } else {
       // User messages
       messageDiv.innerHTML = `
-        <div class="lia-message-avatar">U</div>
+        <div class="lia-message-avatar">${getUserAvatar()}</div>
         <div class="lia-message-content">${formatLinks(content)}</div>
       `;
     }
@@ -5539,7 +5570,7 @@
           
             return `
                 <div class="lia-message ${msg.role}">
-                  <div class="lia-message-avatar">${msg.role === "user" ? "U" : `
+                  <div class="lia-message-avatar">${msg.role === "user" ? getUserAvatar() : `
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                       <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
                       <rect x="2" y="9" width="4" height="12"/>

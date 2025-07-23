@@ -3557,7 +3557,8 @@
               </svg>
             </button>
           </div>
-          <div class="lia-mode-indicator" id="lia-mode-indicator">
+          ${chatbotState.notesMode ? 
+          `<div class="lia-mode-indicator" id="lia-mode-indicator">
             <!-- <span class="lia-mode-text">Notes Mode Active</span> -->
             <div class="lia-context-info" id="lia-context-info"></div>
             <div class="lia-notes-info" id="lia-notes-info" title="Notes are stored locally, you must sync to save them.">
@@ -3565,7 +3566,7 @@
                 Sync Note
               </button>
             </div>
-          </div>
+          </div>` : ''}
         </div>
       </div>
     </div>

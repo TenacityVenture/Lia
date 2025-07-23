@@ -61,11 +61,53 @@ exports.generateTitle = async (req, res) => {
 
 exports.saveNotes = async (req, res) => {
   const userId = req.user.sub;
-
   const { notes } = req.body;
+
   if (!notes || !Array.isArray(notes) || notes.length === 0) {
     return res.status(400).json({ error: 'Notes are required and should be an array' });
   }
+
+  const notesIds = notes.map(note => note.id).filter(Boolean);
+
+  // Fetch all existing notes for the user
+  const { data: existingNotes, error: fetchError } = await supabase
+    .from('notes')
+    .select('id')
+    .eq('user_id', userId);
+
+  if (fetchError) return res.status(500).json({ error: fetchError.message });
+
+  const existingIds = existingNotes.map(note => note.id);
+  const toDeleteIds = existingIds.filter(id => !notesIds.includes(id));
+
+  if (notesIds.length === 0) {
+    // Delete everything
+    await supabase.from('notes').delete().eq('user_id', userId);
+    await supabase.from('note_messages').delete().eq('user_id', userId);
+    return res.status(200).json({ success: true });
+  }
+
+  // Delete removed notes
+  if (toDeleteIds.length > 0) {
+    const { error: deleteNotesError } = await supabase
+      .from('notes')
+      .delete()
+      .in('id', toDeleteIds);
+    if (deleteNotesError) return res.status(500).json({ error: deleteNotesError.message });
+
+    const { error: deleteMessagesError } = await supabase
+      .from('note_messages')
+      .delete()
+      .in('note_id', toDeleteIds);
+    if (deleteMessagesError) return res.status(500).json({ error: deleteMessagesError.message });
+  }
+
+  // 🔄 Optional: delete all messages for incoming notes in a single batch
+  const { error: batchDeleteError } = await supabase
+    .from('note_messages')
+    .delete()
+    .in('note_id', notesIds);
+  if (batchDeleteError) return res.status(500).json({ error: batchDeleteError.message });
 
   for (const note of notes) {
     const {
@@ -76,10 +118,10 @@ exports.saveNotes = async (req, res) => {
       lastModified,
       context,
       content
-    } = note
+    } = note;
 
-    // Insert note into "notes" table
-    const { error: noteError } = await supabase.from('notes').insert([{
+    // Upsert the note
+    const { error: noteError } = await supabase.from('notes').upsert([{
       id,
       user_id: userId,
       title,
@@ -87,45 +129,58 @@ exports.saveNotes = async (req, res) => {
       created_at: new Date(timestamp).toISOString(),
       updated_at: new Date(lastModified).toISOString(),
       context
-    }])
+    }]);
 
-    if (noteError) return res.status(500).json({ error: noteError.message })
+    if (noteError) return res.status(500).json({ error: noteError.message });
 
-    // Insert all content blocks into "note_messages"
-    const contentInserts = content.map((block, index) => {
-      const base = {
-        note_id: id,
-        user_id: userId,
-        content_id: block.contentId,
-        type: block.type,
-        sort_index: index
-      }
+    // Build content inserts safely
+    const contentInserts = content
+      .map((block, index) => {
+        if (!block || !block.type || !block.contentId) return null;
 
-      if (block.type === 'text') {
-        return { ...base, text: block.text }
-      } else if (block.type === 'reference') {
-        const ref = block.content
-        return {
-          ...base,
-          ref_author: ref.author,
-          ref_text: ref.text,
-          ref_url: ref.url,
-          ref_timestamp: ref.timestamp,
-          ref_likes: ref.engagement?.likes,
-          ref_comments: ref.engagement?.comments
+        const base = {
+          note_id: id,
+          user_id: userId,
+          content_id: block.contentId,
+          type: block.type,
+          sort_index: index
+        };
+
+        if (block.type === 'text') {
+          if (!block.text) return null;
+          return { ...base, text: block.text };
         }
-      }
-    })
 
-    const { error: messageError } = await supabase
-      .from('note_messages')
-      .insert(contentInserts)
+        if (block.type === 'reference') {
+          const ref = block.content;
+          if (!ref || !ref.text) return null;
 
-    if (messageError) return res.status(500).json({ error: messageError.message })
+          return {
+            ...base,
+            ref_author: ref.author,
+            ref_text: ref.text,
+            ref_url: ref.url,
+            ref_timestamp: ref.timestamp,
+            ref_likes: ref.engagement?.likes,
+            ref_comments: ref.engagement?.comments
+          };
+        }
+
+        return null;
+      })
+      .filter(Boolean); // remove any null entries
+
+    if (contentInserts.length > 0) {
+      const { error: messageError } = await supabase
+        .from('note_messages')
+        .insert(contentInserts);
+
+      if (messageError) return res.status(500).json({ error: messageError.message });
+    }
   }
 
-  res.status(200).json({ success: true })
-}
+  res.status(200).json({ success: true });
+};
 
 exports.getNotes = async (req, res) => {
   const userId = req.user.sub;

@@ -141,3 +141,11 @@ exports.generateNoteTitle = async (req, res, content) => {
   const title = choices[0].message.content || 'New Chat';
   return { title };
 }
+
+exports.streamToBuffer = async (stream) => {
+  const chunks = [];
+  for await (const chunk of stream) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}

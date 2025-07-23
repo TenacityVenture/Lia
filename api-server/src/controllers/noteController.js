@@ -133,8 +133,10 @@ exports.saveNotes = async (req, res) => {
 
     if (noteError) return res.status(500).json({ error: noteError.message });
 
+    const contentBlocks = Array.isArray(content) ? content : [];
+
     // Build content inserts safely
-    const contentInserts = content
+    const contentInserts = contentBlocks
       .map((block, index) => {
         if (!block || !block.type || !block.contentId) return null;
 

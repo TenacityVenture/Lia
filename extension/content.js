@@ -3557,16 +3557,13 @@
               </svg>
             </button>
           </div>
-          ${chatbotState.notesMode ? 
-          `<div class="lia-mode-indicator" id="lia-mode-indicator">
+          <div class="lia-mode-indicator" id="lia-mode-indicator">
             <!-- <span class="lia-mode-text">Notes Mode Active</span> -->
             <div class="lia-context-info" id="lia-context-info"></div>
             <div class="lia-notes-info" id="lia-notes-info" title="Notes are stored locally, you must sync to save them.">
-              <button class="sync-note-btn linkedin-ai-button">
-                Sync Note
-              </button>
+              
             </div>
-          </div>` : ''}
+          </div>
         </div>
       </div>
     </div>
@@ -3731,10 +3728,68 @@
     const inputActions = document.getElementById("lia-input-actions")
     const modeIndicator = document.getElementById("lia-mode-indicator")
     const liaSendBtn = document.getElementById("lia-send-btn")
+    modeIndicator.style.display = "flex"
+
+    const syncButton = document.createElement('button')
+    syncButton.classList.add('sync-note-btn')
+    syncButton.textContent = 'Sync Notes'
+
+    syncButton.addEventListener('click', async () => {
+      const body = {notes: await getNotesFromStorage()}
+      // save notes to server
+      const response = await fetch('https://api.getlia.live/api/note/notes', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await accessToken()}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify(body)
+      })
+
+      if (!response.ok) {
+        console.error('Error syncing notes:', response.statusText)
+        showTemporaryNotification('Error syncing notes', 'error')
+        return
+      }
+
+      const data = await response.json()
+      if (data.success) {
+        console.log('Notes synced successfully')
+        showTemporaryNotification('Notes synced successfully', 'success')
+      }
+    })
 
     messageInput.value = ""
 
     if (chatbotState.notesMode) {
+      // fetch notes from server
+      const response = await fetch('https://api.getlia.live/api/note/notes', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await accessToken()}`,
+        },
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        console.error('Error fetching notes:', response.statusText)
+        showTemporaryNotification('Error fetching notes', 'error')
+        return
+      }
+
+      const notes = await response.json()
+      if (notes) {
+        console.log('Notes fetched successfully')
+        
+        // update notes in storage
+        chatbotState.notes = notes
+        saveChatbotState()
+
+        showTemporaryNotification('Notes fetched successfully', 'success')
+      }
+
       // Switch to Notes Mode
       notesToggle.classList.add("notes-active")
       notesToggle.title = "Notes Mode: ON"
@@ -3770,6 +3825,8 @@
       showNotesWelcome()
       await loadNotes()
 
+      modeIndicator.querySelector('.lia-notes-info').appendChild(syncButton)
+
       showTemporaryNotification("📝 Notes Mode ON - Capture and organize your thoughts", "success")
     } else {
       // Switch back to Chat Mode
@@ -3782,7 +3839,7 @@
       inputActions.style.display = "none"
       modeIndicator.style.display = "none"
 
-      addReferenceListeners()
+      if (chatbotState.referenceMode) addReferenceListeners();
 
       liaSendBtn.innerHTML = `
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3793,6 +3850,8 @@
       // Load conversations
       showChatWelcome()
       await loadChatHistory()
+
+      modeIndicator.querySelector('.sync-note-btn').remove()
 
       showTemporaryNotification("💬 Chat Mode ON", "info")
     }
@@ -4120,6 +4179,10 @@
     //messagesContainer.appendChild(noteDiv)
     messagesContainer.scrollTop = messagesContainer.scrollHeight
 
+    if (note.content === '') {
+      showNotesWelcome()
+    }
+    
     // Trigger animation
     setTimeout(() => {
       messagesContainer.style.opacity = "1"
@@ -5433,11 +5496,16 @@
   // ===== RERERENCE MODE SYSTEM =====
   async function toggleReferenceMode() {
     // Check if user has pro access
-    const proAccess = await checkProAccess()
-    if (!proAccess) {
-      showProUpgradeModal()
-      return
+    // only check if reference mode is already off
+    if (chatbotState.referenceMode === false) {
+      const proAccess = await checkProAccess()
+      if (!proAccess) {
+        showProUpgradeModal()
+        return
+      
+      }
     }
+    
     chatbotState.referenceMode = !chatbotState.referenceMode
     const toggleBtn = document.getElementById("lia-reference-toggle")
     if (chatbotState.referenceMode) {
@@ -5665,7 +5733,7 @@
 
       // show notification
       if (chatbotState.notesMode) {
-        showTemporaryNotification("✔ Content Referenced! You can now add it to your notes.", "success")
+        showTemporaryNotification("✔ Content Referenced! And saved to your current notes.", "success")
       } else {
         showTemporaryNotification("✔ Content Referenced! Ask me about it.", "success")
       }

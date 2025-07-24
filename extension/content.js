@@ -5720,7 +5720,6 @@
     // check if there is an existing reference
     // clear it
     if (chatbotState.referencedContent) {
-      showTemporaryNotification("🔄 Replacing existing reference...", "info")
       // clear all existing reference
       const clearReferenceBtns = document.querySelectorAll(".lia-clear-reference")
       if (clearReferenceBtns) {

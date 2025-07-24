@@ -31,10 +31,21 @@ const limiter = rateLimit({
 // Middlewares
 //app.use(cors());
 // Enable CORS for specific origins
+const extensionIds = process.env.LOCAL_IDS ? process.env.LOCAL_IDS.split(',') : [];
+const extensionOrigins = extensionIds.map(id => `chrome-extension://${id.trim()}`);
+
 app.use(cors({
-  origin: ['https://www.getlia.live', `chrome-extension://${process.env.EXTENSION_ID}`, 'http://localhost:3000', 'https://www.linkedin.com'], // production domain and extension ID
+  origin: [
+    'https://www.getlia.live',
+    `chrome-extension://${process.env.EXTENSION_ID}`, // main extension id
+    ...extensionOrigins, // for development (my team will have different id for the same extension because they'll all have it locally)
+    'http://localhost:3000',
+    'https://www.linkedin.com'
+  ],
   methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-  credentials: true}))
+  credentials: true
+}));
+
 app.use(cookieParser()); // To parse cookies
 app.use(express.json()); // To parse JSON requests
 app.use(limiter); // Apply rate limiting middleware

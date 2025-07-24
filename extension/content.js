@@ -48,8 +48,7 @@
     if (event.data.type === 'SEND_JWTs') {
       chrome.runtime.sendMessage({
         type: 'STORE_JWTs',
-        access_token: event.data.access_token,
-        refresh_token: event.data.refresh_token
+        access_token: event.data.access_token
       });
       liaUser = await window.getLiaUserInfo()
       initializeChatbot()
@@ -57,7 +56,7 @@
 
     // clear tokens when logout on the website
     if (event.data.type === 'CLEAR_JWTs') {
-      chrome.storage.local.remove(['access_token', 'refresh_token'], () => {
+      chrome.storage.local.remove(['access_token'], () => {
         console.log('Access token and refresh token cleared from storage.');
       });
 
@@ -87,29 +86,6 @@
       check();
     });
   }
-  // linkedin dark theme
-  // #1B1F23  
-  // button #71b7fb
-  // button hover #0a66c2
-  async function detectLinkedInTheme() {
-    const container = document.querySelector('.feed-shared-update-v2'); // or any reliable element
-    if (!container) return null;
-
-    const style = getComputedStyle(container);
-    const bgColor = style.backgroundColor;
-
-    // Function to check brightness
-    const isDark = (color) => {
-      const [r, g, b] = color.match(/\d+/g).map(Number);
-      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-      return brightness < 128; // below this is considered dark
-    };
-
-    // save to sync instead of local
-    await chrome.storage.sync.set({ linkedinTheme: isDark(bgColor) ? 'dark' : 'light' });
-
-    return isDark(bgColor) ? 'dark' : 'light';
-  }
 
   async function initializeExtension() {
     // Initialize the extension functionality
@@ -118,7 +94,7 @@
     setupTextSelectionToolbar()
     setupTextToSpeech()
 
-    await detectLinkedInTheme();
+    await window.detectLinkedInTheme();
 
     // get LinkedIn user info
     linkedinUserInfo = await window.getLinkedinUserInfo()
@@ -142,7 +118,7 @@
               setuprewrite_enabledment()
               setupTextSelectionToolbar()
               setupTextToSpeech()
-              detectLinkedInTheme()
+              await window.detectLinkedInTheme()
 
               if (linkedinUserInfo.name === "" && linkedinUserInfo.headline === "") {
                 linkedinUserInfo = await window.getLinkedinUserInfo()
@@ -2057,8 +2033,8 @@
     if (!settings.reply_enabled) return;
 
     // check if acces_token is available
-    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-    if (refresh_token == null) {
+    const { access_token } = await chrome.storage.local.get(['access_token']);
+    if (access_token == null) {
       throw new Error("Please Sign in to continue")
     };
 
@@ -2111,8 +2087,8 @@
 
     if (data.error && data.message === 'Invalid Token') {
       // refresh the token
-      const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-      await refreshToken(refresh_token);
+      const { access_token } = await chrome.storage.local.get(['access_token']);
+      await refreshToken(access_token);
 
       // retry again
       const new_data = await generate();
@@ -2134,8 +2110,8 @@
     if (!settings.reply_enabled) return;
 
     // check if acces_token is available
-    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-    if (refresh_token == null) {
+    const { access_token } = await chrome.storage.local.get(['access_token']);
+    if (access_token == null) {
       throw new Error("Please Sign in to continue")
     };
 
@@ -2198,8 +2174,8 @@
 
     if (data.error && data.message === 'Invalid Token') {
       // refresh the token
-      const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-      await refreshToken(refresh_token);
+      const { access_token } = await chrome.storage.local.get(['access_token']);
+      await refreshToken(access_token);
 
       // retry again
       const new_data = await generate();
@@ -2332,7 +2308,6 @@
 
   // helper functions
   const refreshToken = async () => {
-    const refresh_token = await getRefreshToken();
     try {
       const response = await fetch('https://api.getlia.live/api/auth/refresh-token', {
         method: 'POST',
@@ -2341,12 +2316,12 @@
         },
         // include credentials to allow cookies to be sent
         credentials: 'include',
-        body: JSON.stringify({ refresh_token }),
+        body: JSON.stringify({ refresh_token: 'no refresh token required - using cookie instead' }),
       });
 
       const data = await response.json();
 
-      chrome.storage.local.set({ access_token: data.access_token, refresh_token: data.refresh_token });
+      await chrome.storage.local.set({ access_token: data.access_token });
       return data.access_token;
 
     } catch (error) {
@@ -2362,14 +2337,6 @@
       throw new Error("Please Sign in to continue")
     }
     return access_token;
-  }
-
-  const getRefreshToken = async () => {
-    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-    if (!refresh_token) {
-      throw new Error("Please Sign in to continue")
-    }
-    return refresh_token;
   }
 
   // ===== CHATBOT SYSTEM =====
@@ -3561,9 +3528,7 @@
             <!-- <span class="lia-mode-text">Notes Mode Active</span> -->
             <div class="lia-context-info" id="lia-context-info"></div>
             <div class="lia-notes-info" id="lia-notes-info" title="Notes are stored locally, you must sync to save them.">
-              <button class="sync-note-btn linkedin-ai-button">
-                Sync Note
-              </button>
+              
             </div>
           </div>
         </div>
@@ -3730,10 +3695,108 @@
     const inputActions = document.getElementById("lia-input-actions")
     const modeIndicator = document.getElementById("lia-mode-indicator")
     const liaSendBtn = document.getElementById("lia-send-btn")
+    modeIndicator.style.display = "flex"
+
+    const syncButton = document.createElement('button')
+    syncButton.classList.add('sync-note-btn')
+    syncButton.textContent = 'Sync Notes'
+
+    syncButton.addEventListener('click', async () => {
+      const body = {notes: await getNotesFromStorage()}
+      const syncNotes = async () => {
+        // save notes to server inorder to sync
+        const response = await fetch('https://api.getlia.live/api/note/notes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await accessToken()}`,
+          },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        })
+
+        if (!response.ok) {
+          console.error('Error syncing notes:', response.statusText)
+          throw new Error('Failed to sync notes')
+        }
+
+        const data = await response.json()
+        if (data.success) {
+          console.log('Notes synced successfully')
+          showTemporaryNotification('Notes synced successfully', 'success')
+        }
+
+        if (!data.success) {
+          throw new Error('Failed to sync notes')
+        }
+        return data.success;
+      }
+
+      try {
+        await syncNotes()
+      } catch (error) {
+        // try refreshing token
+        await refreshToken()
+        try {
+          await syncNotes() // try syncing notes again
+        } catch (error) {
+          console.error('Error syncing notes:', error)
+          showTemporaryNotification('Error syncing notes', 'error')
+        }
+      }
+    })
 
     messageInput.value = ""
 
     if (chatbotState.notesMode) {
+      // fetch notes from server
+      const fetchNotes = async () => {
+        // fetch notes from server
+        const response = await fetch('https://api.getlia.live/api/note/notes', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await accessToken()}`,
+          },
+          credentials: 'include',
+        })
+
+        if (!response.ok) {
+          console.error('Error fetching notes:', response.statusText)
+          throw new Error('Failed to fetch notes')
+        }
+
+        const notes = await response.json()
+        if (notes) {
+          console.log('Notes fetched successfully')
+          
+          // update notes in storage
+          chatbotState.notes = notes
+          saveChatbotState()
+
+          showTemporaryNotification('Notes fetched successfully', 'success')
+        }
+
+        if (!notes) {
+          console.log('Failed to fetch notes')
+          throw new Error('Failed to fetch notes')
+        }
+      }
+
+      try {
+        await fetchNotes()
+      } catch (error) {
+        // try refreshing token
+        await refreshToken()
+        try {
+          await fetchNotes() // try fetching notes again
+        } catch (error) {
+          console.error('Error fetching notes:', error)
+          showTemporaryNotification('Error fetching notes', 'error')
+        }
+      }
+        
+
       // Switch to Notes Mode
       notesToggle.classList.add("notes-active")
       notesToggle.title = "Notes Mode: ON"
@@ -3769,6 +3832,8 @@
       showNotesWelcome()
       await loadNotes()
 
+      modeIndicator.querySelector('.lia-notes-info').appendChild(syncButton)
+
       showTemporaryNotification("📝 Notes Mode ON - Capture and organize your thoughts", "success")
     } else {
       // Switch back to Chat Mode
@@ -3781,7 +3846,7 @@
       inputActions.style.display = "none"
       modeIndicator.style.display = "none"
 
-      addReferenceListeners()
+      if (chatbotState.referenceMode) addReferenceListeners();
 
       liaSendBtn.innerHTML = `
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3792,6 +3857,8 @@
       // Load conversations
       showChatWelcome()
       await loadChatHistory()
+
+      modeIndicator.querySelector('.sync-note-btn').remove()
 
       showTemporaryNotification("💬 Chat Mode ON", "info")
     }
@@ -4119,6 +4186,10 @@
     //messagesContainer.appendChild(noteDiv)
     messagesContainer.scrollTop = messagesContainer.scrollHeight
 
+    if (note.content === '') {
+      showNotesWelcome()
+    }
+    
     // Trigger animation
     setTimeout(() => {
       messagesContainer.style.opacity = "1"
@@ -4836,6 +4907,7 @@
         "Content-Type": "application/json",
         Authorization: `Bearer ${await accessToken()}`,
       },
+      credentials: "include",
       body: JSON.stringify(body),
     })
 
@@ -5432,11 +5504,16 @@
   // ===== RERERENCE MODE SYSTEM =====
   async function toggleReferenceMode() {
     // Check if user has pro access
-    const proAccess = await checkProAccess()
-    if (!proAccess) {
-      showProUpgradeModal()
-      return
+    // only check if reference mode is already off
+    if (chatbotState.referenceMode === false) {
+      const proAccess = await checkProAccess()
+      if (!proAccess) {
+        showProUpgradeModal()
+        return
+      
+      }
     }
+
     chatbotState.referenceMode = !chatbotState.referenceMode
     const toggleBtn = document.getElementById("lia-reference-toggle")
     if (chatbotState.referenceMode) {
@@ -5643,7 +5720,6 @@
     // check if there is an existing reference
     // clear it
     if (chatbotState.referencedContent) {
-      showTemporaryNotification("🔄 Replacing existing reference...", "info")
       // clear all existing reference
       const clearReferenceBtns = document.querySelectorAll(".lia-clear-reference")
       if (clearReferenceBtns) {
@@ -5664,7 +5740,7 @@
 
       // show notification
       if (chatbotState.notesMode) {
-        showTemporaryNotification("✔ Content Referenced! You can now add it to your notes.", "success")
+        showTemporaryNotification("✔ Content Referenced! And saved to your current notes.", "success")
       } else {
         showTemporaryNotification("✔ Content Referenced! Ask me about it.", "success")
       }

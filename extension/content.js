@@ -48,8 +48,7 @@
     if (event.data.type === 'SEND_JWTs') {
       chrome.runtime.sendMessage({
         type: 'STORE_JWTs',
-        access_token: event.data.access_token,
-        refresh_token: event.data.refresh_token
+        access_token: event.data.access_token
       });
       liaUser = await window.getLiaUserInfo()
       initializeChatbot()
@@ -57,7 +56,7 @@
 
     // clear tokens when logout on the website
     if (event.data.type === 'CLEAR_JWTs') {
-      chrome.storage.local.remove(['access_token', 'refresh_token'], () => {
+      chrome.storage.local.remove(['access_token'], () => {
         console.log('Access token and refresh token cleared from storage.');
       });
 
@@ -2057,8 +2056,8 @@
     if (!settings.reply_enabled) return;
 
     // check if acces_token is available
-    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-    if (refresh_token == null) {
+    const { access_token } = await chrome.storage.local.get(['access_token']);
+    if (access_token == null) {
       throw new Error("Please Sign in to continue")
     };
 
@@ -2111,8 +2110,8 @@
 
     if (data.error && data.message === 'Invalid Token') {
       // refresh the token
-      const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-      await refreshToken(refresh_token);
+      const { access_token } = await chrome.storage.local.get(['access_token']);
+      await refreshToken(access_token);
 
       // retry again
       const new_data = await generate();
@@ -2134,8 +2133,8 @@
     if (!settings.reply_enabled) return;
 
     // check if acces_token is available
-    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-    if (refresh_token == null) {
+    const { access_token } = await chrome.storage.local.get(['access_token']);
+    if (access_token == null) {
       throw new Error("Please Sign in to continue")
     };
 
@@ -2198,8 +2197,8 @@
 
     if (data.error && data.message === 'Invalid Token') {
       // refresh the token
-      const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-      await refreshToken(refresh_token);
+      const { access_token } = await chrome.storage.local.get(['access_token']);
+      await refreshToken(access_token);
 
       // retry again
       const new_data = await generate();
@@ -2332,7 +2331,6 @@
 
   // helper functions
   const refreshToken = async () => {
-    const refresh_token = await getRefreshToken();
     try {
       const response = await fetch('https://api.getlia.live/api/auth/refresh-token', {
         method: 'POST',
@@ -2341,12 +2339,12 @@
         },
         // include credentials to allow cookies to be sent
         credentials: 'include',
-        body: JSON.stringify({ refresh_token }),
+        body: JSON.stringify({ refresh_token: 'no refresh token required - using cookie instead' }),
       });
 
       const data = await response.json();
 
-      chrome.storage.local.set({ access_token: data.access_token, refresh_token: data.refresh_token });
+      await chrome.storage.local.set({ access_token: data.access_token });
       return data.access_token;
 
     } catch (error) {
@@ -2362,14 +2360,6 @@
       throw new Error("Please Sign in to continue")
     }
     return access_token;
-  }
-
-  const getRefreshToken = async () => {
-    const { refresh_token } = await chrome.storage.local.get(['refresh_token']);
-    if (!refresh_token) {
-      throw new Error("Please Sign in to continue")
-    }
-    return refresh_token;
   }
 
   // ===== CHATBOT SYSTEM =====
@@ -3736,27 +3726,46 @@
 
     syncButton.addEventListener('click', async () => {
       const body = {notes: await getNotesFromStorage()}
-      // save notes to server
-      const response = await fetch('https://api.getlia.live/api/note/notes', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await accessToken()}`,
-        },
-        credentials: 'include',
-        body: JSON.stringify(body)
-      })
+      const syncNotes = async () => {
+        // save notes to server inorder to sync
+        const response = await fetch('https://api.getlia.live/api/note/notes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await accessToken()}`,
+          },
+          credentials: 'include',
+          body: JSON.stringify(body)
+        })
 
-      if (!response.ok) {
-        console.error('Error syncing notes:', response.statusText)
-        showTemporaryNotification('Error syncing notes', 'error')
-        return
+        if (!response.ok) {
+          console.error('Error syncing notes:', response.statusText)
+          throw new Error('Failed to sync notes')
+        }
+
+        const data = await response.json()
+        if (data.success) {
+          console.log('Notes synced successfully')
+          showTemporaryNotification('Notes synced successfully', 'success')
+        }
+
+        if (!data.success) {
+          throw new Error('Failed to sync notes')
+        }
+        return data.success;
       }
 
-      const data = await response.json()
-      if (data.success) {
-        console.log('Notes synced successfully')
-        showTemporaryNotification('Notes synced successfully', 'success')
+      try {
+        await syncNotes()
+      } catch (error) {
+        // try refreshing token
+        await refreshToken()
+        try {
+          await syncNotes() // try syncing notes again
+        } catch (error) {
+          console.error('Error syncing notes:', error)
+          showTemporaryNotification('Error syncing notes', 'error')
+        }
       }
     })
 
@@ -3764,31 +3773,52 @@
 
     if (chatbotState.notesMode) {
       // fetch notes from server
-      const response = await fetch('https://api.getlia.live/api/note/notes', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await accessToken()}`,
-        },
-        credentials: 'include',
-      })
+      const fetchNotes = async () => {
+        // fetch notes from server
+        const response = await fetch('https://api.getlia.live/api/note/notes', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await accessToken()}`,
+          },
+          credentials: 'include',
+        })
 
-      if (!response.ok) {
-        console.error('Error fetching notes:', response.statusText)
-        showTemporaryNotification('Error fetching notes', 'error')
-        return
+        if (!response.ok) {
+          console.error('Error fetching notes:', response.statusText)
+          throw new Error('Failed to fetch notes')
+        }
+
+        const notes = await response.json()
+        if (notes) {
+          console.log('Notes fetched successfully')
+          
+          // update notes in storage
+          chatbotState.notes = notes
+          saveChatbotState()
+
+          showTemporaryNotification('Notes fetched successfully', 'success')
+        }
+
+        if (!notes) {
+          console.log('Failed to fetch notes')
+          throw new Error('Failed to fetch notes')
+        }
       }
 
-      const notes = await response.json()
-      if (notes) {
-        console.log('Notes fetched successfully')
+      try {
+        await fetchNotes()
+      } catch (error) {
+        // try refreshing token
+        await refreshToken()
+        try {
+          await fetchNotes() // try fetching notes again
+        } catch (error) {
+          console.error('Error fetching notes:', error)
+          showTemporaryNotification('Error fetching notes', 'error')
+        }
+      }
         
-        // update notes in storage
-        chatbotState.notes = notes
-        saveChatbotState()
-
-        showTemporaryNotification('Notes fetched successfully', 'success')
-      }
 
       // Switch to Notes Mode
       notesToggle.classList.add("notes-active")
@@ -4900,6 +4930,7 @@
         "Content-Type": "application/json",
         Authorization: `Bearer ${await accessToken()}`,
       },
+      credentials: "include",
       body: JSON.stringify(body),
     })
 
@@ -5505,7 +5536,7 @@
       
       }
     }
-    
+
     chatbotState.referenceMode = !chatbotState.referenceMode
     const toggleBtn = document.getElementById("lia-reference-toggle")
     if (chatbotState.referenceMode) {

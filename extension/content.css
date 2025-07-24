@@ -153,11 +153,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    justify-content: center;
+    width: 100%;
+    margin-top: 10px;
   }
 
   .lia-mode-indicator .sync-note-btn {
-    color: #fff;
+    color: #0a66c2;
   }
 
   /* add to chat styles */

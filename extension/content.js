@@ -86,29 +86,6 @@
       check();
     });
   }
-  // linkedin dark theme
-  // #1B1F23  
-  // button #71b7fb
-  // button hover #0a66c2
-  async function detectLinkedInTheme() {
-    const container = document.querySelector('.feed-shared-update-v2'); // or any reliable element
-    if (!container) return null;
-
-    const style = getComputedStyle(container);
-    const bgColor = style.backgroundColor;
-
-    // Function to check brightness
-    const isDark = (color) => {
-      const [r, g, b] = color.match(/\d+/g).map(Number);
-      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-      return brightness < 128; // below this is considered dark
-    };
-
-    // save to sync instead of local
-    await chrome.storage.sync.set({ linkedinTheme: isDark(bgColor) ? 'dark' : 'light' });
-
-    return isDark(bgColor) ? 'dark' : 'light';
-  }
 
   async function initializeExtension() {
     // Initialize the extension functionality
@@ -117,7 +94,7 @@
     setupTextSelectionToolbar()
     setupTextToSpeech()
 
-    await detectLinkedInTheme();
+    await window.detectLinkedInTheme();
 
     // get LinkedIn user info
     linkedinUserInfo = await window.getLinkedinUserInfo()
@@ -141,7 +118,7 @@
               setuprewrite_enabledment()
               setupTextSelectionToolbar()
               setupTextToSpeech()
-              detectLinkedInTheme()
+              await window.detectLinkedInTheme()
 
               if (linkedinUserInfo.name === "" && linkedinUserInfo.headline === "") {
                 linkedinUserInfo = await window.getLinkedinUserInfo()

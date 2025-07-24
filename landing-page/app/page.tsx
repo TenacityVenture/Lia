@@ -147,7 +147,7 @@ export default function Home() {
                 )}
             </Button>
             <Button asChild size="sm" className="hidden sm:flex">
-              <Link href="https://chrome.google.com/webstore" target="_blank">
+              <Link href="https://chromewebstore.google.com/detail/heoeljdamfonjeellpecmbdboabniimp" target="_blank">
                 Download
               </Link>
             </Button>
@@ -167,7 +167,7 @@ export default function Home() {
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Button asChild size="lg">
-                <Link href="https://chrome.google.com/webstore" target="_blank">
+                <Link href="https://chromewebstore.google.com/detail/heoeljdamfonjeellpecmbdboabniimp" target="_blank">
                   Download Extension
                 </Link>
               </Button>
@@ -453,7 +453,7 @@ export default function Home() {
               Download the LIA extension today and start creating more engaging, professional content with the power of AI.
             </p>
             <Button asChild size="lg" variant="secondary">
-              <Link href="https://chrome.google.com/webstore" target="_blank">
+              <Link href="https://chromewebstore.google.com/detail/heoeljdamfonjeellpecmbdboabniimp" target="_blank">
                 Download Extension
               </Link>
             </Button>

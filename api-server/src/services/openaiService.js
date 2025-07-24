@@ -136,8 +136,8 @@ exports.getCompletionPostImprovements = async (req, prompt, userInfo) => {
 
           ### RULES:
             - Return only the improved text without quotes or explanations.
-            - Replace **sometext** with bold Unicode characters (𝘦.𝘨. 𝗯𝗼𝗹𝗱)
-            - Replace *sometext* with italic Unicode characters (𝘦.𝘨. 𝘪𝘵𝘢𝘭𝘪𝘤)
+            - Replace any text in **the text** with bold Unicode characters (𝘦.𝘨. 𝗯𝗼𝗹𝗱)
+            - Replace any text in *the text* with italic Unicode characters (𝘦.𝘨. 𝘪𝘵𝘢𝘭𝘪𝘤)
             - Do not use markdown or HTML or ** or * or _ or __ formatting
             - Do not change the meaning or introduce new ideas
             - IMPORTANT: Preserve any @mentions exactly as they appear (like @PersonName or @Company Name). Do not change the names after @ symbols.
@@ -174,9 +174,10 @@ exports.getCompletionPostRewrite = async (req, prompt) => {
               - Make the language more confident, concise, and suitable for LinkedIn
 
               FORMATTING RULES:
-              - Replace **text** with bold Unicode characters always (e.g. 𝗯𝗼𝗹𝗱)
-              - Replace *text* with italic Unicode characters always (e.g. 𝘪𝘵𝘢𝘭𝘪𝘤)
+              - Replace any text in **the text** with bold Unicode characters always (e.g. 𝗯𝗼𝗹𝗱)
+              - Replace any text in *the text* with italic Unicode characters always (e.g. 𝘪𝘵𝘢𝘭𝘪𝘤)
               - Do not use markdown or HTML
+               - IMPORTANT: Preserve any @mentions exactly as they appear (like @PersonName or @Company Name). Do not change the names after @ symbols.
 
               Return only the rewritten post. Do not include explanations or commentary.
             `

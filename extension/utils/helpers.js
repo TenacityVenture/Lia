@@ -1,3 +1,8 @@
+const debouncedSetLinkedInUserInfo = debounce(async (data) => {
+  await setIfChanged(data)
+  console.log('LinkedIn user info saved in storage.');
+}, 1000);
+
 async function getLinkedinUserInfo () {
   const container = document.querySelector('.artdeco-card')
   let detailsContainer = null
@@ -10,10 +15,8 @@ async function getLinkedinUserInfo () {
     const headline = detailsContainer.querySelector('.profile-card-headline').textContent
     const linkToProfile = `https://www.linkedin.com${detailsContainer.querySelector('a').getAttribute('href')}`
 
-    // store in chrome storage
-    await chrome.storage.local.set({ name, headline, linkToProfile }, () => {
-      console.log('name, headline, linkToProfile saved in storage.')
-    })
+    debouncedSetLinkedInUserInfo({ name, headline, linkToProfile });
+    
     return {
       name,
       headline,
@@ -30,8 +33,8 @@ async function getLinkedinUserInfo () {
 }
 
 async function getLiaUserInfo () {
-  const { access_token, refresh_token } = await chrome.storage.local.get(['access_token', 'refresh_token']);
-  if (!access_token || !refresh_token) {
+  const { access_token } = await chrome.storage.local.get(['access_token']);
+  if (!access_token) {
     return null; // No tokens available, user is not authenticated
   }
 
@@ -39,7 +42,7 @@ async function getLiaUserInfo () {
   let me = await getMe(access_token);
   if (!me.ok) {
     // try refreshing the token
-    const newToken = await liaRefreshToken(refresh_token);
+    const newToken = await liaRefreshToken();
     // get me again
     me = await getMe(newToken);
 
@@ -59,9 +62,36 @@ async function getMe(token) {
   return me; // Return the response object directly
 }
 
+// linkedin dark theme
+// #1B1F23  
+// button #71b7fb
+// button hover #0a66c2
+async function detectLinkedInTheme() {
+  const container = document.querySelector('.feed-shared-update-v2'); // or any reliable element
+  if (!container) return null;
+
+  const style = getComputedStyle(container);
+  const bgColor = style.backgroundColor;
+
+  // Function to check brightness
+  const isDark = (color) => {
+    const [r, g, b] = color.match(/\d+/g).map(Number);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness < 128; // below this is considered dark
+  };
+
+  const debounceLinkedinTheme = debounce(async () => {
+    await setIfChanged('sync', { linkedinTheme: isDark(bgColor) ? 'dark' : 'light' })
+  });
+
+  debounceLinkedinTheme();
+
+  return isDark(bgColor) ? 'dark' : 'light';
+}
+
 // refreshToken function
 // lia refresh token
-const liaRefreshToken = async (refresh_token) => {
+const liaRefreshToken = async () => {
   try {
     const response = await fetch('https://api.getlia.live/api/auth/refresh-token', {
       method: 'POST',
@@ -71,12 +101,16 @@ const liaRefreshToken = async (refresh_token) => {
       },
       // include credentials to allow cookies to be sent
       credentials: 'include',
-      body: JSON.stringify({ refresh_token }),
     });
 
     const data = await response.json();
 
-    chrome.storage.local.set({ access_token: data.access_token, refresh_token: data.refresh_token });
+    const debounceSetAccessToken = debounce(async () => {
+      await setIfChanged('local', { access_token: data.access_token })
+    })
+
+    debounceSetAccessToken()
+    
     return data.access_token;
 
   } catch (error) {
@@ -85,7 +119,35 @@ const liaRefreshToken = async (refresh_token) => {
   }
 }
 
+// utility
+function debounce(func, wait = 1000) {
+  let timeout;
+  return function (...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func.apply(this, args), wait);
+  };
+}
+
+async function setIfChanged(area = 'local', newData = {}) {
+  const keys = Object.keys(newData);
+  const oldData = await chrome.storage[area].get(keys);
+
+  const changedData = {};
+  for (const key of keys) {
+    if (JSON.stringify(oldData[key]) !== JSON.stringify(newData[key])) {
+      changedData[key] = newData[key];
+    }
+  }
+
+  if (Object.keys(changedData).length > 0) {
+    await chrome.storage[area].set(changedData);
+    console.log(`[${area}] Storage updated:`, changedData);
+  } else {
+    console.log(`[${area}] No changes detected. Skipping set.`);
+  }
+}
 
 window.getLinkedinUserInfo = getLinkedinUserInfo
 window.getLiaUserInfo = getLiaUserInfo
 window.getMe = getMe
+window.detectLinkedInTheme = detectLinkedInTheme

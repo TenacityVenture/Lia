@@ -3,9 +3,9 @@ document.addEventListener('DOMContentLoaded', async () => {
   const auth = document.getElementById('authenticated');
   const plan = document.getElementById('plan');
 
-  const { access_token, refresh_token } = await chrome.storage.local.get(['access_token', 'refresh_token']);
+  const { access_token } = await chrome.storage.local.get(['access_token']);
 
-  if (!access_token || !refresh_token) {
+  if (!access_token) {
     unauth.style.display = 'flex';
     return;
   }
@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (!me.ok) {
     // try refreshing the token
-    const newToken = await refreshToken(refresh_token);
+    const newToken = await refreshToken();
     // get me again
     me = await getMe(newToken);
 
@@ -109,7 +109,7 @@ document.getElementById('signin-btn')?.addEventListener('click', () => {
 });
 
 // refreshToken function
-const refreshToken = async (refresh_token) => {
+const refreshToken = async () => {
   try {
     const response = await fetch('https://api.getlia.live/api/auth/refresh-token', {
       method: 'POST',
@@ -119,12 +119,11 @@ const refreshToken = async (refresh_token) => {
       },
       // include credentials to allow cookies to be sent
       credentials: 'include',
-      body: JSON.stringify({ refresh_token }),
     });
 
     const data = await response.json();
 
-    chrome.storage.local.set({ access_token: data.access_token, refresh_token: data.refresh_token });
+    await chrome.storage.local.set({ access_token: data.access_token });
     return data.access_token;
 
   } catch (error) {

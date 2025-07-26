@@ -4,7 +4,26 @@
   "version": "0.2",
   "description": "AI-powered assistant for LinkedIn posts and comments. Generate, edit, improve and enhance your LinkedIn presence with ease.",
   "permissions": ["storage"],
-  "host_permissions": ["https://www.linkedin.com/*"],
+  "host_permissions": [
+    "https://www.linkedin.com/feed/*",
+    "https://www.linkedin.com/in/*",
+    "https://www.linkedin.com/company/*",
+    "https://www.linkedin.com/groups/*",
+    "https://www.linkedin.com/posts/*",
+    "https://www.linkedin.com/newsletters/*",
+    "https://www.linkedin.com/pulse/*",
+    "https://www.linkedin.com/showcase/*",
+    "https://www.linkedin.com/events/*",
+    "https://www.linkedin.com/jobs/*",
+    "https://www.linkedin.com/search/*",
+    "https://www.linkedin.com/people/*",
+    "https://www.linkedin.com/hashtag/*",
+    "https://www.linkedin.com/notifications/*",
+    "https://www.linkedin.com/settings/*",
+    "https://www.linkedin.com/messaging/*",
+    "https://www.linkedin.com/sales/*",
+    "https://www.linkedin.com/learning/*"
+  ],
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {

@@ -130,7 +130,13 @@ function debounce(func, wait = 1000) {
 
 async function setIfChanged(area = 'local', newData = {}) {
   const keys = Object.keys(newData);
-  const oldData = await chrome.storage[area].get(keys);
+
+  let oldData
+  if (area === 'local') {
+    await chrome.storage.local.get(keys);
+  } else {
+    await chrome.storage.sync.get(keys);
+  }
 
   const changedData = {};
   for (const key of keys) {

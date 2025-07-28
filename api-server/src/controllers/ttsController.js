@@ -1,6 +1,3 @@
-const supabase = require('../utils/supabaseClient');
-const { openai } = require('../services/openaiService');
-const usageLogger = require('../services/usageLogger');
 const pollyClient = require('../utils/pollyClient');
 const { SynthesizeSpeechCommand } = require('@aws-sdk/client-polly');
 

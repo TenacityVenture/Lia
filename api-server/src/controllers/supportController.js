@@ -38,7 +38,7 @@ exports.sendMessage = async (req, res) => {
         console.log(`User ${userId} sent message: ${message}`);
 
         // save the message to a database
-        const { data, error } = await supabase
+        const { _, error } = await supabase
             .from('support_messages')
             .insert({
                 user_id: userId,

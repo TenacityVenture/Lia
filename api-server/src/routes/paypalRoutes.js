@@ -1,7 +1,6 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const { authenticate } = require('../middlewares/authMiddleware');
-const { getPaypalAccessToken } = require('../services/getPaypalAccessToken');
 const { 
     createOrders, 
     captureOrder

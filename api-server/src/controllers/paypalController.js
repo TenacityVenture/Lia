@@ -85,7 +85,7 @@ exports.createOrders = async (req, res) => {
 
     // Store each cart item as a separate order in Supabase
     const item = req.body.cart[0];
-    const { data, error } = await supabase.from('orders').insert({
+    const { _, error } = await supabase.from('orders').insert({
       plan: (item.planKey === 'starter' ? 'standard' : item.planKey === 'professional' ? 'pro' : item.planKey) || '',
       paypal_order_id: orderData.id,
       user_id: req.user.sub, // User id is available in request

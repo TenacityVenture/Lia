@@ -385,7 +385,6 @@ module.exports = {
     syncOAuthUser,
     syncGoogleOAuthUser,
     logoutUser,
-    changePassword,
-    syncGoogleOAuthUser
+    changePassword
 };
 

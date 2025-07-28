@@ -1,6 +1,7 @@
 const supabase = require('../utils/supabaseClient');
 const { openai } = require('../services/openaiService');
-const { getModel, getChatSystemMessage } = require('../utils/helpers')
+const { getModel } = require('../utils/helpers')
+const { chatSystemMessage } = require('../utils/helpers/systemMessages');
 
 /** Create a new chat
 * @param {Object} req - Express request object
@@ -184,7 +185,7 @@ exports.message = async (req, res) => {
       
     // 2. GET AI response
     //first lets insert a key role to start of the messages array
-    const systemMessage = getChatSystemMessage(userInfo);
+    const systemMessage = chatSystemMessage(userInfo);
 
     const openaiRes = await openai.chat.completions.create({
       model: await getModel(req),

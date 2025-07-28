@@ -2,14 +2,14 @@
   "name": "api-server",
   "version": "1.0.0",
   "description": "The following table outlines the core API endpoints available in the LIA API server. These endpoints are designed to handle user authentication, content generation, usage tracking, and billing.",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "start": "nodemon src/server.js",
     "lint": "eslint",
     "test": "jest"
   },
   "keywords": [],
-  "author": "",
+  "author": "Tenacity Venture",
   "license": "ISC",
   "dependencies": {
     "@aws-sdk/client-polly": "^3.846.0",

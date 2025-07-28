@@ -67,7 +67,7 @@ async function getMe(token) {
 // button #71b7fb
 // button hover #0a66c2
 async function detectLinkedInTheme() {
-  const container = document.querySelector('.feed-shared-update-v2'); // or any reliable element
+  const container = document.querySelector('body');
   if (!container) return null;
 
   const style = getComputedStyle(container);
@@ -81,7 +81,7 @@ async function detectLinkedInTheme() {
   };
 
   const debounceLinkedinTheme = debounce(async () => {
-    await setIfChanged('sync', { linkedinTheme: isDark(bgColor) ? 'dark' : 'light' })
+    await setIfChanged('local', { linkedinTheme: isDark(bgColor) ? 'dark' : 'light' })
   });
 
   debounceLinkedinTheme();
@@ -133,9 +133,9 @@ async function setIfChanged(area = 'local', newData = {}) {
 
   let oldData
   if (area === 'local') {
-    await chrome.storage.local.get(keys);
+    oldData = await chrome.storage.local.get(keys);
   } else {
-    await chrome.storage.sync.get(keys);
+    oldData = await chrome.storage.sync.get(keys);
   }
 
   const changedData = {};

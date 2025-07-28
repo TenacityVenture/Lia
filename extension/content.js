@@ -4147,7 +4147,26 @@
       },
       body: JSON.stringify({ content }),
     })
+
+    // falback
+    function fallbackTitle() {
+      const firstLine = content.split("\n")[0].trim()
+      if (firstLine.length > 50) {
+        return firstLine.substring(0, 47) + "..."
+      }
+      return firstLine || "Untitled Note"
+    }
+
+    if (!response.ok) {
+      return fallbackTitle() // fallback to normal note titling
+    }
+
     const data = await response.json()
+
+    if (!data.title) {
+      return fallbackTitle()
+    }
+    
     return data.title || "Untitled Note"
     
   }

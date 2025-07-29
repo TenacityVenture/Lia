@@ -1,6 +1,6 @@
 const supabase = require('../utils/supabaseClient');
 const { openai } = require('../services/openaiService');
-const { getModel } = require('../utils/helpers')
+const { getModelName } = require('../utils/helpers/modelSelector');
 const { chatSystemMessage } = require('../utils/helpers/systemMessages');
 
 /** Create a new chat
@@ -169,7 +169,7 @@ exports.message = async (req, res) => {
       const titlePrompt = `Generate a concise title for a LinkedIn chat based on this message: "${message}". Maximum 4 words. Return only the title without any quotes or additional text.`;
       
       const { choices } = await openai.chat.completions.create({
-        model: await getModel(req),
+        model: await getModelName(req),
         messages: [{ role: 'system', content: titlePrompt }],
       });
 
@@ -188,7 +188,7 @@ exports.message = async (req, res) => {
     const systemMessage = chatSystemMessage(userInfo);
 
     const openaiRes = await openai.chat.completions.create({
-      model: await getModel(req),
+      model: await getModelName(req),
       messages: [
         systemMessage,
         ...messages

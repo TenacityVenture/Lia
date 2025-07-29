@@ -1,6 +1,8 @@
 const OpenAI = require('openai');
-// getModel function to determine the OpenAI model based on user plan
-const { getModel } = require('../utils/helpers');
+// getModelName function to determine the OpenAI model based on user plan
+const { getModelName } = require('../utils/helpers/modelSelector');
+
+// System messages for different AI interactions
 const { 
   commentSystemMessage,
   postImprovementSystemMessage,
@@ -17,7 +19,7 @@ exports.openai = openai; // Export the OpenAI instance for use in other modules
 
 exports.getCompletion = async (req, prompt) => {
   const response = await openai.chat.completions.create({
-    model: await getModel(req), // Pass req to get the model based on user plan
+    model: await getModelName(req), // Pass req to get the model based on user plan
     messages: [{ role: 'user', content: prompt }],
     max_tokens: 500,
   });
@@ -29,7 +31,7 @@ exports.getCompletion = async (req, prompt) => {
 
 exports.getCompletionSuggestComment = async (req, prompt, userInfo) => {
   const response = await openai.chat.completions.create({
-    model: await getModel(req), // Pass req to get the model based on user plan
+    model: await getModelName(req), // Pass req to get the model based on user plan
     messages: [
       commentSystemMessage(userInfo),
       { 
@@ -62,7 +64,7 @@ exports.getCompletionSuggestPost = async (messages) => {
 
 exports.getCompletionPostImprovements = async (req, prompt, userInfo) => {
   const response = await openai.chat.completions.create({
-    model: await getModel(req), // Pass req
+    model: await getModelName(req), // Pass req
     messages: [
       postImprovementSystemMessage(userInfo),
       { 
@@ -81,7 +83,7 @@ exports.getCompletionPostImprovements = async (req, prompt, userInfo) => {
 
 exports.getCompletionPostRewrite = async (req, prompt) => {
   const response = await openai.chat.completions.create({
-    model: await getModel(req), // Pass req
+    model: await getModelName(req), // Pass req
     messages: [
       postRewriteSystemMessage(),
       { 
@@ -101,7 +103,7 @@ exports.getCompletionPostRewrite = async (req, prompt) => {
 // assist with writing a message
 exports.getCompletionAiSendMessage = async (req, prompt) => {
   const response = await openai.chat.completions.create({
-    model: await getModel(req), // Pass req
+    model: await getModelName(req), // Pass req
     messages: [
       {
         role: 'system',
@@ -125,7 +127,7 @@ exports.getCompletionAiSendMessage = async (req, prompt) => {
 // AI Enhance Note
 exports.getCompletionEnhanceNote = async (req, prompt, content, context) => {
   const response = await openai.chat.completions.create({
-    model: await getModel(req), // Pass req
+    model: await getModelName(req), // Pass req
     messages: [
       {
         role: 'system',

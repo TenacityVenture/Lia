@@ -81,7 +81,6 @@ const registerUser = async (req, res) => {
   // check the registration provider used
   // const provider = user.provider || 'email';
 
-
   // Insert into the `users` table to synchronize with auth.users
   await supabase.from('users').upsert({
     id: user.id, // same UUID as auth.users
@@ -95,6 +94,12 @@ const registerUser = async (req, res) => {
     plan_started_at: new Date(),
     plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
   }, { onConflict: 'id' });
+
+//* Upsert into user_tts_quota
+  await supabase
+    .from('user_tts_quota')
+    .upsert({ user_id: user.id, tier: "free", quota_left: 3000 })
+    .eq('user_id', user.id);
 
   /**
    * Just like loginUser, Supabase gives us both an access_token and refresh_token at registration. 
@@ -219,6 +224,13 @@ const syncOAuthUser = async (req, res) => {
       social_provider: 'linkedin',
       plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
     });
+
+    //* Upsert into user_tts_quota
+    await supabase
+      .from('user_tts_quota')
+      .upsert({ user_id: user.id, tier: "free", quota_left: 3000 })
+      .eq('user_id', user.id);
+
   }
 
   // send refresh token in a secure cookie
@@ -280,6 +292,13 @@ const syncGoogleOAuthUser = async (req, res) => {
       social_provider: 'google',
       plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
     });
+
+    //* Upsert into user_tts_quota
+    await supabase
+      .from('user_tts_quota')
+      .upsert({ user_id: user.id, tier: "free", quota_left: 3000 })
+      .eq('user_id', user.id);
+
   }
 
   // send refresh token in a secure cookie

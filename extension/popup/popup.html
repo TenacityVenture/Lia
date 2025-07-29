@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LIA Settings</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container" id="unauthenticated" style="display: flex;">
+    <h1>Welcome to LIA ✨</h1>
+    <p>Your intelligent LinkedIn assistant</p>
+    <button id="signin-btn" class="primary-button">Sign in with LinkedIn</button>
+    <span style="text-align: center">or <a href="https://getlia.live/signup" target="_blank">Create ACcount</a></span>
+  </div>
+
+  <div class="container" id="authenticated" style="display: none;">
+    <header>
+      <h2 style="position: relative">Hello 👋 <span id="username">...</span><span id="plan"></span></h2>
+      <p class="highlight">You've enhanced <strong id="rewrite-count">0</strong> posts with LIA</p>
+    </header>
+
+    <div class="settings container">
+      <label>Writing Tone:</label>
+      <select id="tone">
+        <option value="professional">Professional</option>
+        <option value="casual">Casual</option>
+        <option value="enthusiastic">Enthusiastic</option>
+        <option value="informative">Informative</option>
+      </select>
+
+      <label>Industry:</label>
+      <select id="industry">
+        <option value="tech">Tech</option>
+        <option value="finance">Finance</option>
+        <option value="education">Education</option>
+        <option value="marketing">Marketing</option>
+      </select>
+    </div>
+
+    <div class="features container">
+      <label><input type="checkbox" id="rewrite-enabled" checked /> Enable Post Rewrite</label>
+      <label><input type="checkbox" id="reply-enabled" checked /> Enable Comment Replies</label>
+      <label><input type="checkbox" id="chatbot-enabled" checked /> Enable Chatbot Mode</label>
+    </div>
+
+    <button id="save-btn" class="primary-button" style="margin-top: 5px;">Save Settings</button>
+
+    <footer>
+      <p>LIA v0.1 by Tenacity</p>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

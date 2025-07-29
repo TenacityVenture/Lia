@@ -115,16 +115,16 @@ For more details on how to use these endpoints, refer to the API documentation o
 api-server/
 ├── src/
 │   ├── controllers/
-│   │   ├── authController.js
-│   │   ├── promptController.js
-│   │   ├── usageController.js
-│   │   └── billingController.js
+│   │   ├── authControllerttsHelpers.js
+│   │   ├── promptControllerttsHelpers.js
+│   │   ├── usageControllerttsHelpers.js
+│   │   └── billingControllerttsHelpers.js
 │   ├── routes/
-│   │   ├── authRoutes.js
-│   │   ├── promptRoutes.js
-│   │   ├── usageRoutes.js
-│   │   └── billingRoutes.js
-│   └── server.js
+│   │   ├── authRoutesttsHelpers.js
+│   │   ├── promptRoutesttsHelpers.js
+│   │   ├── usageRoutesttsHelpers.js
+│   │   └── billingRoutesttsHelpers.js
+│   └── serverttsHelpers.js
 ```
 
 - Each controller focuses only on its job (clean separation).

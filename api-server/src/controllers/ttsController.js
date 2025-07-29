@@ -1,15 +1,15 @@
-const supabase = require('../utils/supabaseClient');
-const usageLogger = require('../services/usageLogger');
 
-const {pollyClient, s3Client} = require('../utils/aws-sdks');
-const { SynthesizeSpeechCommand } = require('@aws-sdk/client-polly');
-const { PutObjectCommand } = require('@aws-sdk/client-s3');
-
-const { v4: uuidv4 } = require("uuid")
-
-// const fs = require('fs');
 const crypto = require('crypto');
-const {streamToBuffer} = require("../utils/helpers");
+
+const {
+  getUserQuota,
+  findAudioCache,
+  synthesizeToBuffer,
+  uploadToS3,
+  insertAudioCache,
+  decrementUserQuota,
+  logAudioUsage
+} = require("../utils/ttsHelpers");
 
 
 //* generate speech
@@ -40,29 +40,19 @@ exports.generateSpeech = async (req, res) => {
    }
 
    //* fetch user's usage tts character quota
-   const { data: usage, error: usageErr } = await supabase
-     .from("usage")
-     .select("char_quota_remaining")
-     .eq("user_id", userId)
-     .single();
-
-   if (usageErr || !usage) {
-     console.error("Quota fetch failed:", usageErr?.message);
-     return res.status(500).json({ error: "Unable to retrieve character quota" });
-   }
+   const quotaData = await getUserQuota(userId);
 
    //* Check for null or undefined quota
-   if (usage.char_quota_remaining == null) {
+   if (quotaData.quota_left == null) {
      return res.status(403).json({
-       error: "You don't have any TTS credits yet. Please upgrade or wait for reset.",
+       error: "No TTS quota found; please upgrade or contact support.",
      });
    }
 
-   //* check if quota is less than the charCount
-   if (usage.char_quota_remaining < charCount) {
+    //* check if quota is less than the charCount
+   if (quotaData.quota_left < charCount) {
      return res.status(402).json({
-       error: `You only have ${usage.char_quota_remaining} characters left, but this content needs ${charCount}.`,
-       suggestion: "Please reduce the length of the content or upgrade your plan.",
+       error: `Insufficient quota: have ${quotaData.quota_left}, need ${charCount}.`,
      });
    }
 
@@ -71,113 +61,52 @@ exports.generateSpeech = async (req, res) => {
      .update(text)
      .digest('hex');
 
-   const { data: cacheHit, error: cacheHitErr } = await supabase
-     .from('tts_audio_cache')
-     .select("s3_key")
-     .eq("user_id", userId)
-     .eq("voice_id", voice)
-     .eq("text_hash", textHash)
-     .eq("engine", engine)
-     .single();
+   const cacheEntry = await findAudioCache(voice, engine, textHash);
 
    let audioUrl = "";
    let fromCache = false;
 
    //* if tts is cached return url
-   if (cacheHit) {
+   if (cacheEntry) {
+     //*  ✅ cache hit
      fromCache = true;
-     audioUrl = `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${cacheHit.s3_key}`
+     audioUrl = `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${cacheEntry.s3_key}`;
+
+     //* Log usage (no quota deduction)
+     await logAudioUsage(userId, cacheEntry.id, text, voice, engine);
+
+     return res.status(200).json({
+       success: true,
+       source: 'cache',
+       audioUrl,
+     });
    }
 
    //* if it's not cached generate tts and save to bucket
-   if(!fromCache) {
-     //* Determine if we should use generative or standard/neural
-     console.log("\n-------------GENERATING SPEECH---------------\n")
-     const command = new SynthesizeSpeechCommand({
-       Text: text,
-       OutputFormat: 'mp3',
-       VoiceId: voice,
-       Engine: engine,
-     });
+   console.log("\n-------------GENERATING SPEECH---------------\n")
 
-     //* send the command to AWS Polly
-     const response = await pollyClient.send(command);
-     const audioStream = response.AudioStream;
-     console.log(audioStream);
-     console.log("\n----------------SPEECH GENERATED SUCCESSFULLY---------------\n")
+   const audioBuffer = await synthesizeToBuffer(text, voice, engine);
 
-     //* Pipe audio to local file (for now; replace this with S3 in next step)
-     // await pipe(audioStream, fs.createWriteStream("test.mp3"));
-     // console.log("Audio saved to test.mp3 ✅");
+   console.log("\n----------------SENDING AUDIO TO S3 URL---------------\n")
 
-     console.log("\n----------------SENDING AUDIO TO S3 URL---------------\n")
-     //* create the folder for the tts audio in s3
-     const s3Key = `tts-audio/${uuidv4()}.mp3`;
-     const audioBuffer = await streamToBuffer(audioStream);
+   //* Upload to S3 and insert cache row
+   const s3Key = await uploadToS3(audioBuffer);
 
-     //* save to s3 bucket and return the URL
-     const uploadCommand = new PutObjectCommand({
-       Bucket: process.env.S3_BUCKET_NAME,
-       Key: s3Key,
-       Body: audioBuffer,
-       ContentLength: audioBuffer.length,
-       ContentType: "audio/mpeg"
-     })
+   const newCache = await insertAudioCache(voice, engine, textHash, s3Key);
 
-     await s3Client.send(uploadCommand);
-     audioUrl = `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
+   audioUrl = `https://${process.env.S3_BUCKET_NAME}.s3.amazonaws.com/${s3Key}`;
 
-     //* cache the tts audio
-     await supabase.from('tts_audio_cache')
-       .insert({
-         user_id: userId,
-         voice_id: voice,
-         text_hash: textHash,
-         engine: engine,
-         s3_key: s3Key,
-       });
-   }
+  //* Deduct quota and log usage
+   await decrementUserQuota(userId, charCount)
+   await logAudioUsage(userId, newCache.id, text, voice, engine);
 
-   //* deduct quota if new audio was generated
-   if (!fromCache) {
-     console.log("\n----------------DEDUCTING QUOTA REMAINING AND UPDATING---------------\n")
-     //* subtract the remaining quota to that of the charCount and
-     //* then update the char_quota_remaining column
-     const newCharQuota = usage.char_quota_remaining - charCount;
-     const { error: updateErr } = await supabase
-       .from("usage")
-       .update({ char_quota_remaining: newCharQuota })
-       .eq("user_id", userId);
-
-     if (updateErr) {
-       console.error("Quota update failed:", updateErr.message);
-       return res.status(500).json({ error: "Failed to update character quota" });
-     }
-   }
-
-   //* log the usage in audio usage table
-   const { error } = await supabase
-     .from('audio_usage')
-     .insert({
-       user_id: userId,
-       text,
-       voice,
-       engine
-     });
-
-   if (error) {
-     console.error('Error logging audio usage:', error.message);
-   }
-
-     //* return the audio url
+   //* return the audio url
    return res.status(200).json({
      success: true,
-     source: fromCache ? "tts-audio-cache" : "generated",
+     source: "generated",
      audioUrl
    });
 
-   // return res.status(200).json({ audioUrl: 'test.mp3' }); // {audioUrl: 'https://example.com/audio.mp3' };
-   // return the audio file URL
  } catch (err) {
    console.error("TTS generation failed:", err.message);
    return res.status(500).json({ error: "Internal Server Error" });

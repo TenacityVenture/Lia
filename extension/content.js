@@ -752,17 +752,6 @@
     }
   }
 
-  function createLinkedInFormattedHTML(text, originalHTML) {
-    // Simple text replacement that preserves basic formatting
-    // This is a basic implementation - you might want to enhance this
-    // to better preserve mentions and other LinkedIn-specific elements
-
-    // For now, just return the text as plain HTML
-    // In a more sophisticated version, you'd parse the original HTML
-    // and try to preserve mentions, links, etc.
-    return text.replace(/\n/g, "<br>")
-  }
-
   async function animateTextReplacement(element, originalText, newText) {
     return new Promise((resolve) => {
       // Phase 1: Highlight the original text
@@ -1168,73 +1157,6 @@
     return data.response
   }
 
-  async function animateTextRewrite(editor, originalText, newText) {
-    return new Promise((resolve) => {
-
-      // Create a temporary container for the animation
-      const animationContainer = document.createElement("div")
-      animationContainer.style.cssText = `
-        position: relative;
-        min-height: ${editor.offsetHeight}px;
-      `
-
-      // Store original editor styles
-      const originalStyles = {
-        opacity: editor.style.opacity,
-        transition: editor.style.transition,
-      }
-
-      // Add smooth transition
-      editor.style.transition = "opacity 0.3s ease"
-
-      // Phase 1: Fade out original text
-      editor.style.opacity = "0.3"
-
-      setTimeout(() => {
-        // Phase 2: Character-by-character rewrite simulation
-        let currentIndex = 0
-        const maxLength = Math.max(originalText.length, newText.length)
-
-        const typewriterInterval = setInterval(() => {
-          if (currentIndex <= newText.length) {
-            const partialText = newText.substring(0, currentIndex)
-            editor.textContent = partialText
-
-            // Add a blinking cursor effect
-            if (currentIndex < newText.length) {
-              editor.textContent += "|"
-            }
-
-            currentIndex++
-          } else {
-            // Animation complete
-            clearInterval(typewriterInterval)
-            editor.textContent = newText
-
-            // Phase 3: Fade back in with final text
-            editor.style.opacity = "1"
-
-            // Restore original styles
-            setTimeout(() => {
-              editor.style.opacity = originalStyles.opacity
-              editor.style.transition = originalStyles.transition
-
-              // Dispatch input event to trigger LinkedIn's handlers
-              const inputEvent = new Event("input", { bubbles: true })
-              editor.dispatchEvent(inputEvent)
-
-              // Show success indicator
-              showTemporaryMessage(editor, "✨ Text improved!", "success")
-
-              resolve()
-            }, 300)
-          }
-        }, 30) // Adjust speed here (lower = faster)
-      }, 300)
-
-    })
-  }
-
   /**
    * Shows a temporary message above the editor with a fade-in and fade-out animation.
    *
@@ -1398,28 +1320,6 @@
         pulseStyle.remove()
       }, 1500)
     }, 4500)
-  }
-
-
-
-  function getPostContext() {
-    // Try to get context from the page (like hashtags, trending topics, etc.)
-    const context = {
-      industry: settings.tone,
-      recentTopics: [],
-    }
-
-    // Look for trending topics or hashtags
-    const trendingElements = document.querySelectorAll(
-      ".feed-shared-news-module__headline, .feed-shared-news-module__sub-headline",
-    )
-    trendingElements.forEach((element) => {
-      if (element.textContent.trim()) {
-        context.recentTopics.push(element.textContent.trim())
-      }
-    })
-
-    return context
   }
 
   function getCommentContext(commentInput) {
@@ -1680,12 +1580,8 @@
         replyContext.replyContext = true
         return replyContext;
       }
-
-
       return context
     }
-
-    
   }
 
   async function generateCommentSuggestions(context) {
@@ -1737,8 +1633,6 @@
           userInfo: {...linkedinUserInfo}
         })
       })
-
-      
 
       return await response.json()
     }
@@ -1852,50 +1746,6 @@
     return suggestions
   }
 
-  function displayPostSuggestions(container, suggestions, editor) {
-    container.innerHTML = `
-      <h3>AI Post Suggestions</h3>
-      <div class="linkedin-ai-suggestion-list">
-        ${suggestions
-          .map(
-            (suggestion, index) => `
-          <div class="linkedin-ai-suggestion" data-index="${index}">
-            ${suggestion}
-          </div>
-        `,
-          )
-          .join("")}
-      </div>
-      <div class="linkedin-ai-actions">
-        <button class="linkedin-ai-dismiss">Dismiss</button>
-        <button class="linkedin-ai-regenerate">Regenerate</button>
-      </div>
-    `
-
-    // Add click event to suggestions
-    const suggestionElements = container.querySelectorAll(".linkedin-ai-suggestion")
-    suggestionElements.forEach((element) => {
-      element.addEventListener("click", function () {
-        const index = this.getAttribute("data-index")
-        const suggestion = suggestions[index]
-
-        // Insert the suggestion into the editor
-        const editorBox = editor.querySelector('.share-box-feed-entry__top-bar .artdeco-button')
-        insertTextIntoEditor(editorBox, suggestion)
-
-        // Remove the suggestions container
-        container.remove()
-      })
-    })
-
-    // Add click event to dismiss button
-    const dismissButton = container.querySelector(".linkedin-ai-dismiss")
-    dismissButton.addEventListener("click", () => {
-      container.remove()
-    })
-
-  }
-
   function displayCommentSuggestions(container, suggestions, commentInput) {
     container.innerHTML = `
       <h3 style=${settings.linkedinTheme === 'dark' ? 'color: #71b7fb' : ''}>AI Reply Suggestions</h3>
@@ -1940,7 +1790,8 @@
 
     // Add click event to regenerate button
     const regenerateButton = container.querySelector(".linkedin-ai-regenerate")
-    regenerateButton.addEventListener("click", () => {
+    regenerateButton.addEventListener("click", (e) => {
+      e.preventDefault()
       handlereply_enabledant(commentInput)
     })
   }
@@ -1954,6 +1805,7 @@
       const inputEvent = new Event("input", { bubbles: true })
       editor.dispatchEvent(inputEvent)
     }
+
     // For textarea elements
     else if (editor.tagName === "TEXTAREA") {
       editor.value = text
@@ -3653,7 +3505,6 @@
     if (!content) return
 
     const noteId = chatbotState.currentNoteId || generateNoteId()
-    //const noteId = chatbotState.currentNoteId || generateNoteId()
 
     // Prepare note content as an array of message objects
     let noteContent = [];
@@ -4128,12 +3979,6 @@
   }
 
   async function generateNoteTitle(content) {
-    /*const firstLine = content.split("\n")[0].trim()
-    if (firstLine.length > 50) {
-      return firstLine.substring(0, 47) + "..."
-    }
-    return firstLine || "Untitled Note"*/
-
     if (!content || content.trim().length === 0) {
       return "Untitled Note"
     }
@@ -5317,12 +5162,14 @@
       modal.remove()
     })
   }
+
   function initializeReferenceMode() {
     // Add hover listeners to LinkedIn posts
     addReferenceListeners()
     // Add reference mode indicator
     showReferenceIndicator()
   }
+
   function disableReferenceMode() {
     // Remove all reference overlays and listeners
     document.querySelectorAll(".lia-reference-overlay").forEach((el) => el.remove())
@@ -5331,6 +5178,7 @@
     })
     hideReferenceIndicator()
   }
+
   function addReferenceListeners() {
     // LinkedIn post selectors
     const postSelectors = [
@@ -5508,6 +5356,7 @@
       return null
     }
   }
+
   function showReferencedContent() {
     const messagesContainer = document.getElementById("lia-messages-container")
     if (!messagesContainer || !chatbotState.referencedContent) return
@@ -5575,10 +5424,12 @@
     }
     document.body.appendChild(indicator)
   }
+
   function hideReferenceIndicator() {
     const indicator = document.getElementById("lia-reference-indicator")
     if (indicator) indicator.remove()
   }
+
   function showTemporaryNotification(message, type = "info") {
     const notification = document.createElement("div")
     const chatbotInterface = document.querySelector('.lia-chatbot-interface')
@@ -5746,9 +5597,9 @@
       setTimeout(() => notification.remove(), 300)
     }, 3000)*/
   }
+  
   // Make function globally available
   window.clearReferencedContent = clearReferencedContent
- 
 
   // Make the chatbot interface draggable
   function makeChatbotDraggable() {

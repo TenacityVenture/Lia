@@ -2685,6 +2685,14 @@
 
     .lia-message-input:active {
       background: none !important;
+      border: none !important;
+      outline: none !important;
+    }
+
+    .lia-message-input:focus {
+      border: none;
+      background: none;
+      outline: none;
     }
 
     .lia-send-btn {

@@ -161,6 +161,21 @@
     color: #0a66c2;
   }
 
+  textarea.lia-message-input {
+    outline: none;
+    border: none;
+  }
+
+  textarea.lia-message-input:active {
+    border: none;
+    outline: none;
+  }
+
+  textarea.lia-message-input:hover {
+    border: none;
+    outline: none;
+  }
+
   /* add to chat styles */
 
   /* Markdown styling */

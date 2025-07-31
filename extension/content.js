@@ -914,7 +914,7 @@
         const qlEditor = document.querySelector(".share-box .ql-editor");
         aiButton.addEventListener("click", () => {
           if (settings.isRewriting) {
-            showTemporaryMessage(qlEditor, "LIA is rewriting text. Please wait until the process is complete.")
+            showTemporaryMessage(qlEditor, "LIA is rewriting text. Please wait for the process is complete.")
           } else {
             handleRewriteAssistant(qlEditor)
           }
@@ -3320,7 +3320,12 @@
       // Switch to Notes Mode
       notesToggle.classList.add("notes-active")
       notesToggle.title = "Notes Mode: ON"
-      modeTitle.textContent = "LIA Notes"
+
+      //modeTitle.textContent = "LIA Notes"
+
+      // typeWriter effect for modeTitle
+      await window.typeWriter("LIA Notes", modeTitle)
+
       sidebarHeader.textContent = "Recent Notes"
       newChatBtn.innerHTML = `
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3359,7 +3364,12 @@
       // Switch back to Chat Mode
       notesToggle.classList.remove("notes-active")
       notesToggle.title = "Notes Mode"
-      modeTitle.textContent = "LIA"
+      
+      //modeTitle.textContent = "LIA"
+
+      // Typewriter effect for mode title
+      await window.typeWriter("LIA", modeTitle)
+
       sidebarHeader.textContent = "Recent Chats"
       newChatBtn.innerHTML = `+ New Chat`
       messageInput.placeholder = "What do you want to post?"

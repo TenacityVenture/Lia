@@ -11,7 +11,7 @@ export default function LoginPage() {
     <div className="container relative h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
       <Link
         href="/"
-        className="absolute left-4 top-4 md:left-8 md:top-8 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
+        className="absolute left-4 top-4 lg:hidden inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Home
@@ -23,16 +23,16 @@ export default function LoginPage() {
                 src="/images/writing.jpg"
                 alt="Background"
                 fill
-                className="object-cover opacity-30"
+                className="object-cover opacity-95"
             />
         </div>
         <div className="relative z-20 flex items-center gap-2 text-lg font-medium">
           <Link href="/" className="flex items-center justify-center gap-1">
             <Image src="/logo.svg" alt="LIA Logo" width={24} height={24} />
-            <span>LIA</span>
+            <span className="text-primary">LIA</span>
           </Link> 
         </div>
-        <div className="relative z-20 mt-auto">
+        {/*<div className="relative z-20 mt-auto">
             <AnimatePresence>
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -48,11 +48,11 @@ export default function LoginPage() {
                     </blockquote>
                 </motion.div>
             </AnimatePresence>
-        </div>
+        </div>*/}
       </div>
 
-      <div className="lg:p-8">
-        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+      <div className="p-8">
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 py-20 sm:w-[350px]">
           <div className="flex flex-col space-y-2 text-center">
             <h1 className="text-2xl font-semibold tracking-tight">Welcome back</h1>
             <p className="text-sm text-muted-foreground">Enter your credentials below to access your account</p>

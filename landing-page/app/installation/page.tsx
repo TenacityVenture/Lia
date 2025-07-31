@@ -45,7 +45,7 @@ export default function InstallationPage() {
                 height={450} 
                 className="w-full"
               />
-              <p className="absolute top-2/4 left-2/4 -translate-x-2/4 -translate-y-2/4 z-20 font-bold text-lg">We are not on the chromwebstore yet! If you are a developer you can clone the <a href="https://github.com/davidddeveloper/lia" className="block underline text-blue-600">repo</a> on github</p>
+              
             </div>
             <ol className="list-decimal pl-5 space-y-2">
               <li>Visit the <Link href="https://chrome.google.com/webstore" className="text-primary hover:underline" target="_blank">Chrome Web Store</Link></li>
@@ -64,9 +64,9 @@ export default function InstallationPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Step 2: Get Your OpenAI API Key</CardTitle>
+            <CardTitle>Step 2: Create an account on the LIA website</CardTitle>
             <CardDescription>
-              LIA uses OpenAI's API to generate intelligent content
+              Visit <a href="https://www.getlia.live" className='text-primary hover:underline'>www.getlia.live</a> and register an account on the LIA website
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -80,15 +80,15 @@ export default function InstallationPage() {
               />
             </div>
             <ol className="list-decimal pl-5 space-y-2">
-              <li>Create or log in to your <Link href="https://platform.openai.com/signup" className="text-primary hover:underline" target="_blank">OpenAI account</Link></li>
-              <li>Navigate to the API section</li>
-              <li>Create a new API key</li>
-              <li>Copy your API key to use in the next step</li>
+              <li>Create an account using <span className='text-primary'>Email and Password</span>, <span className='text-primary'>Google</span> or <span className='text-primary'>LinkedIn</span> </li>
+             
+              <li>Navigate to dashboard to see your analytics of your usage of the extension</li>
+              <li>Navigate also to profile if you want to update your profile information</li>
             </ol>
             <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4 text-amber-800 dark:text-amber-200 mt-4">
               <p className="text-sm flex items-start">
                 <Key className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
-                <span>Your API key is private and should never be shared. LIA stores your key locally in your browser and never sends it to our servers.</span>
+                <span>Your account is private and safe with us. LIA stores your account on our encrypted servers and never shared.</span>
               </p>
             </div>
           </CardContent>
@@ -112,9 +112,8 @@ export default function InstallationPage() {
               />
             </div>
             <ol className="list-decimal pl-5 space-y-2">
-              <li>Click the LIA icon in your Chrome toolbar</li>
-              <li>Click the settings icon or "Configure" button</li>
-              <li>Enter your OpenAI API key</li>
+              <li>Click the LIA icon in your Chrome toolbar / addon if you're on Edge</li>
+              <li>A popup will show where you can configure LIA to you liking</li>
               <li>Select your industry and preferred tone</li>
               <li>Choose which features you want to enable</li>
               <li>Click "Save" to apply your settings</li>
@@ -134,21 +133,6 @@ export default function InstallationPage() {
               <div className="space-y-2">
                 <div className="rounded-lg overflow-hidden border">
                   <Image 
-                    src="/images/post-creation.png" 
-                    alt="Post Creation" 
-                    width={250} 
-                    height={200} 
-                    className="w-full"
-                  />
-                </div>
-                <h3 className="font-medium">Post Creation</h3>
-                <p className="text-sm text-muted-foreground">
-                  Click the "AI Assist" button when creating a new post
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="rounded-lg overflow-hidden border">
-                  <Image 
                     src="/images/comment-reply.png" 
                     alt="Comment Reply" 
                     width={250} 
@@ -161,21 +145,36 @@ export default function InstallationPage() {
                   Use the "AI Reply" button when responding to comments
                 </p>
               </div>
-              {/*<div className="space-y-2">
+              <div className="space-y-2">
                 <div className="rounded-lg overflow-hidden border">
                   <Image 
-                    src="/installation/post-improvement.jpg" 
+                    src="/images/lia-ai-rewrite.png" 
                     alt="Post Improvement" 
                     width={250} 
                     height={200} 
                     className="w-full"
                   />
                 </div>
-                <h3 className="font-medium">Post Improvement</h3>
+                <h3 className="font-medium">Post Rewriting</h3>
                 <p className="text-sm text-muted-foreground">
-                  Click "Improve Post" on your existing content
+                  Click "AI Rewrite" on your existing content inorder for LIA to rewrites it
                 </p>
-              </div>*/}
+              </div>
+              <div className="space-y-2">
+                <div className="rounded-lg overflow-hidden border">
+                  <Image 
+                    src="/images/lia-chatbot.png" 
+                    alt="Chatbot Mode" 
+                    width={250} 
+                    height={200} 
+                    className="w-full"
+                  />
+                </div>
+                <h3 className="font-medium">Chatbot Mode</h3>
+                <p className="text-sm text-muted-foreground">
+                  Ask LIA about anything related to LinkedIn content creation
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>

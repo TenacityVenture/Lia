@@ -16,7 +16,7 @@ export function Steps() {
 
   const steps = [
     { id: 1, title: "Install Extension" },
-    { id: 2, title: "Get API Key" },
+    { id: 2, title: "Create an Account" },
     { id: 3, title: "Configure LIA" },
     { id: 4, title: "Start Using" },
   ]

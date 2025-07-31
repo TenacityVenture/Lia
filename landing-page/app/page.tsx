@@ -229,7 +229,7 @@ export default function Home() {
         </section>
 
         {/* Testimonials Section */}
-        <section id="testimonials" className="container py-20 space-y-8">
+        {/*<section id="testimonials" className="container py-20 space-y-8">
           <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">
             <h2 className="font-heading text-3xl font-bold sm:text-4xl">
               What Users Are Saying
@@ -259,7 +259,7 @@ export default function Home() {
               avatar="/images/male3.jpg"
             />
           </div>
-        </section>
+        </section>*/}
 
         {/* Pricing Section */}
         <section id="pricing" className="container py-20 space-y-8">

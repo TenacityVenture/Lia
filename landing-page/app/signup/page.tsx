@@ -11,7 +11,7 @@ export default function SignupPage() {
     <div className="container relative h-screen flex-col items-center justify-center grid lg:max-w-none lg:grid-cols-2 lg:px-0">
       <Link
         href="/"
-        className="absolute left-4 top-4 md:hidden md:z-50 md:left-2/4 md:top-8 inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
+        className="absolute left-4 top-4 lg:hidden inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Home
@@ -23,22 +23,22 @@ export default function SignupPage() {
                 src="/images/writing.jpg"
                 alt="Background"
                 fill
-                className="object-cover opacity-30"
+                className="object-cover opacity-95"
             />
         </div>
         <div className="relative z-20 flex items-center gap-2 text-lg font-medium">
           <Link href="/" className="flex items-center justify-center gap-1">
             <Image src="/logo.svg" alt="LIA Logo" width={24} height={24} />
-            <span>LIA</span>
+            <span className="text-primary">LIA</span>
           </Link> 
         </div>
-        <div className="relative z-20 mt-auto">
+        {/*<div className="relative z-20 mt-auto">
           <AnimatePresence>
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.5, duration: 0.5 }}
-                className="absolute bottom-8 right-8 p-4 shadow-lg dark:bg-slate-800">
+                className="absolute bottom-8 right-8 p-4 shadow-lg bg-primary/30 rounded-md dark:bg-slate-800">
                 <blockquote className="space-y-2">
                     <p className="text-lg">
                     LIA has completely transformed how I engage on LinkedIn. The AI-powered suggestions have helped me create
@@ -48,13 +48,13 @@ export default function SignupPage() {
                 </blockquote>
             </motion.div>
           </AnimatePresence>
-        </div>
+        </div>*/}
       </div>
 
-      <div className="lg:p-8">
-        <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+      <div className="p-8">
+        <div className="mx-auto flex w-full flex-col justify-center space-y-6 py-20 sm:w-[350px]">
           <div className="flex flex-col space-y-2 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">Getting Started</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Get Started</h1>
             <p className="text-sm text-muted-foreground">
               Enter your details below to create your account and get started with LIA
             </p>

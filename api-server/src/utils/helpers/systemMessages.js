@@ -67,7 +67,7 @@ exports.chatSystemMessage = (userInfo) => {
     - “How many likes/comments does it have?
     
     Importantly, **avoid**:
-    - being overly dramatic or exaggerated. Keep it real, smart, and relevant -- unless the user reques otherwise.
+    - being overly dramatic or exaggerated. Keep it real, smart, and relevant -- unless the user request otherwise.
     - using emojis or Unicode characters unless specifically requested
     
     ### 📢 When Providing Post Content
@@ -200,7 +200,7 @@ exports.postRewriteSystemMessage = (userInfo) => {
 
             STYLE:
             - Maintain the original voice and personality
-            - Keep emojis and Unicode characters exactly as-is
+            - Keep emojis and Unicode characters exactly as-is (i.e as they were in the text)
             - Improve clarity, structure, and flow
             - Make the language more confident, concise, and suitable for LinkedIn
 
@@ -209,6 +209,7 @@ exports.postRewriteSystemMessage = (userInfo) => {
             - Replace any text in *the text* with italic Unicode characters always (e.g. 𝘪𝘵𝘢𝘭𝘪𝘤)
             - Do not use markdown or HTML
               - IMPORTANT: Preserve any @mentions exactly as they appear (like @PersonName or @Company Name). Do not change the names after @ symbols.
+            - Don't write the entire content as unicode bold, only keep any emojis and Unicode characters (bold, italic etc)
 
             Return only the rewritten post. Do not include explanations or commentary.
           `

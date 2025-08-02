@@ -10,12 +10,6 @@
     linkedinTheme: "light"
   }
 
-  let linkedinUserInfo = {
-    name: "",
-    headline: "",
-    linkToProfile: ""
-  }
-
   let liaUser = null;
 
   const getUserAvatar = () => {
@@ -95,9 +89,6 @@
 
     await window.detectLinkedInTheme();
 
-    // get LinkedIn user info
-    linkedinUserInfo = await window.getLinkedinUserInfo()
-
     // lia user
     liaUser = await window.getLiaUserInfo()
     if (!liaUser) {
@@ -118,10 +109,6 @@
               setupTextSelectionToolbar()
 
               await window.detectLinkedInTheme()
-
-              if (linkedinUserInfo.name === "" && linkedinUserInfo.headline === "") {
-                linkedinUserInfo = await window.getLinkedinUserInfo()
-              }
 
               if (liaUser === null) {
                 liaUser = await window.getLiaUserInfo()
@@ -665,7 +652,7 @@
         Authorization: `Bearer ${await accessToken()}`,
       },
       credentials: 'include',
-      body: JSON.stringify({prompt, type, userInfo: linkedinUserInfo}),
+      body: JSON.stringify({prompt, type}),
     })
 
     const data = await response.json()
@@ -1629,8 +1616,7 @@
           Authorization: `Bearer ${await accessToken()}`,
         },
         body: JSON.stringify({
-          comment_text: prompt,
-          userInfo: {...linkedinUserInfo}
+          comment_text: prompt
         })
       })
 
@@ -1714,8 +1700,7 @@
           Authorization: `Bearer ${await accessToken()}`,
         },
         body: JSON.stringify({
-          comment_text: prompt,
-          userInfo: {...linkedinUserInfo}
+          comment_text: prompt
         })
       })
 
@@ -4439,8 +4424,7 @@
     // Create body for request
     const body = {
       message: message,
-      reference: chatbotState.referencedContent,
-      userInfo: {...linkedinUserInfo}
+      reference: chatbotState.referencedContent
     }
 
     const response = await fetch(`https://api.getlia.live/api/chat/${chatbotState.currentConversationId}/message`, {

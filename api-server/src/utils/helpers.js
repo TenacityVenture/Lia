@@ -41,9 +41,10 @@ exports.getChatSystemMessage = (userInfo) => {
 
     ${userInfo ? `
         The LinkedIn user interacting with you is (i.e the currently login LinkedIn user making the request):
-        - Name: ${userInfo.name}
-        - Headline: ${userInfo.headline}
-        - Link To Profile: ${userInfo.linkToProfile}
+        - Name: ${userInfo.linkedin_name}
+        - Headline: ${userInfo.linkedin_headline}
+        - About: ${userInfo.linkedin_about}
+        - Link To Profile: ${userInfo.linkedin_profile_url}
 
         Tailor your tone, comments, and suggestions to match their professional voice and audience.
         ` : ``}

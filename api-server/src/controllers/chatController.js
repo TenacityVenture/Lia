@@ -105,7 +105,7 @@ exports.message = async (req, res) => {
   const userId = req.user.sub;
   const chatId = req.params.chatId;
   const { message, reference } = req.body;
-  let { userInfo } = req.body;
+  let { userInfo } = req.user;
 
   if (!message) {
     return res.status(400).json({ error: 'Message content is required' });
@@ -137,9 +137,10 @@ exports.message = async (req, res) => {
 
   if (!userInfo) {
     userInfo = {
-      name: "empty",
-      headline: "empty",
-      linkToProfile: "empty"
+      linkedin_name: "empty",
+      linkedin_headline: "empty",
+      linkedin_about: "empty",
+      linkedin_profile_url: "empty"
     }
   }
 

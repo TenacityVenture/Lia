@@ -40,7 +40,7 @@ exports.rewritePost = async (req, res) => {
 exports.suggestReply = async (req, res) => {
   const { comment_text } = req.body;
   const userId = req.user.sub;
-  let { userInfo } = req.body;
+  let { userInfo } = req.user;
 
   if (!comment_text) {
     return res.status(400).json({ error: 'Missing comment_text' });
@@ -48,9 +48,10 @@ exports.suggestReply = async (req, res) => {
 
   if (!userInfo) {
     userInfo = {
-      name: "empty",
-      headline: "empty",
-      linkToProfile: "empty"
+      linkedin_name: "empty",
+      linkedin_headline: "empty",
+      linkedin_about: "empty",
+      linkedin_profile_url: "empty"
     }
   }
 
@@ -101,7 +102,7 @@ exports.aiImprovePost = async (req, res) => {
   
   // the prompt has already been structured in the extension
   const { prompt, type } = req.body; // Expecting a string prompt
-  let { userInfo } = req.body;
+  let { userInfo } = req.user; 
 
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'Invalid prompt format' });
@@ -112,9 +113,10 @@ exports.aiImprovePost = async (req, res) => {
 
   if (!userInfo) {
     userInfo = {
-      name: "empty",
-      headline: "empty",
-      linkToProfile: "empty"
+      linkedin_name: "empty",
+      linkedin_headline: "empty",
+      linkedin_about: "empty",
+      linkedin_profile_url: "empty"
     }
   }
 

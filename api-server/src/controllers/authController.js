@@ -139,25 +139,9 @@ const refreshAccessToken = async (req, res) => {
 
   let refreshToken = req.cookies.refresh_token;
 
-  // fallback for extension if the refresh_token is not in cookies
-  if (!refreshToken) {
-    // If the refresh token is not in cookies, we can check the body for the refresh_token
-    // This is useful for the extension where we might sometimes not have cookies (90% of the time we do have cookies,
-    // so this is just a fallback).
-    let bodyRefreshToken = null;
-    if (req.body && req.body.refresh_token) {
-      bodyRefreshToken = req.body.refresh_token;
-    }
-    if (bodyRefreshToken) {
-      // If we got it from the body, we can use it
-      refreshToken = bodyRefreshToken;
-    }
-
-  }
-
   // If there's no cookie, the client isn't allowed to refresh — simple as that
   if (!refreshToken) {
-    return res.status(401).json({ error: 'Refresh token missing', message: 'No refresh token provided in cookies or body' });
+    return res.status(401).json({ error: 'Refresh token missing', message: 'No refresh token provided in cookies' });
   }
 
   // Asking Supabase to refresh the session using the token from our cookie

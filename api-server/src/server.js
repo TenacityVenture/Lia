@@ -98,6 +98,15 @@ app.get('/health', (req, res) => {
   res.send('LIA API is healthy ✅');
 });
 
+// Debug route - especially useful for checking cookies and body
+// This route can be used to debug issues with cookies or request body
+app.get('/debug-token', (req, res) => {
+  res.json({
+    cookies: req.cookies,
+    body: req.body,
+  });
+});
+
 // Start server
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {

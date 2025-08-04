@@ -7,9 +7,10 @@ exports.chatSystemMessage = (userInfo) => {
 
     ${userInfo ? `
         The LinkedIn user interacting with you is (i.e the currently login LinkedIn user making the request):
-        - Name: ${userInfo.name}
-        - Headline: ${userInfo.headline}
-        - Link To Profile: ${userInfo.linkToProfile}
+        - Name: ${userInfo.linkedin_name}
+        - Headline: ${userInfo.linkedin_headline}
+        - About: ${userInfo.linkedin_about}
+        - Link To Profile: ${userInfo.linkedin_profile_url}
 
         Tailor your tone, comments, and suggestions to match their professional voice and audience.
         ` : ``}
@@ -108,9 +109,10 @@ exports.commentSystemMessage = (userInfo) => {
 
         ${userInfo ? `
         The LinkedIn user you're assisting is (i.e the currently login LinkedIn user making the request):
-        - Name: ${userInfo.name}
-        - Headline: ${userInfo.headline}
-        - Profile: ${userInfo.linkToProfile}
+        - Name: ${userInfo.linkedin_name}
+        - Headline: ${userInfo.linkedin_headline}
+        - About: ${userInfo.linkedin_about}
+        - Link To Profile: ${userInfo.linkedin_profile_url}
         
         Use this information to match the user's professional tone and audience. Based on the conversation, you should be able to detect:
         - If the user is replying to a comment on their own post
@@ -169,9 +171,10 @@ exports.postImprovementSystemMessage = (userInfo) => {
       content: `You are Lia, a professional LinkedIn content editor. Improve text while maintaining the original voice and message.
 
         ${userInfo ? `The LinkedIn user interacting with you is (i.e the currently login LinkedIn user making the request):
-        - Name: ${userInfo.name}
-        - Headline: ${userInfo.headline}
-        - Link To Profile: ${userInfo.linkToProfile}
+        - Name: ${userInfo.linkedin_name}
+        - Headline: ${userInfo.linkedin_headline}
+        - About: ${userInfo.linkedin_about}
+        - Link To Profile: ${userInfo.linkedin_profile_url}
 
         Tailor your tone to match their professional voice and audience.`
         : ``}

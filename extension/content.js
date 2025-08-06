@@ -194,9 +194,31 @@
     return /[^\u0000-\u007F]/.test(text);
   }
 
+  // Check if all characters in the string are bold Unicode
+  function isBoldUnicode(text) {
+    return [...text].every(char => {
+      const code = char.codePointAt(0);
+      return (
+        (code >= 0x1D400 && code <= 0x1D419) || // bold A-Z
+        (code >= 0x1D41A && code <= 0x1D433) || // bold a-z
+        (code >= 0x1D7CE && code <= 0x1D7D7)    // bold 0-9
+      );
+    });
+  }
+
+  // Check if all characters in the string are italic Unicode
+  function isItalicUnicode(text) {
+    return [...text].every(char => {
+      const code = char.codePointAt(0);
+      return (
+        (code >= 0x1D434 && code <= 0x1D44D) || // italic A-Z
+        (code >= 0x1D44E && code <= 0x1D467) || // italic a-z
+        char === 'ℎ' // special italic h
+      );
+    });
+  }
+
   function setupTextSelectionToolbar() {
-    // Remove existing popup if it exists
-    const existingPopup = document.getElementById('linkedin-ai-text-toolbar')
 
     // Create the enhanced toolbar
     const toolbar = document.createElement('div')
@@ -397,7 +419,7 @@
 
   function handleTextFormatting(type) {
     const selection = window.getSelection()
-    const selectedText = selection.toString().trim()
+    const selectedText = selection.toString()
     
     if (!selectedText) return
 
@@ -405,7 +427,9 @@
 
     switch (type) {
       case 'bold':
-        if (isUnicode(selectedText)) {
+        if (isItalicUnicode(selectedText.trim())) {
+          formattedText = fromUnicodeToNormal(selectedText, 'italic') // convert to normal
+        } if (isUnicode(selectedText.trim())) {
           formattedText = fromUnicodeToNormal(selectedText, 'bold') // convert to normal text
         } else {
           // Use Unicode bold characters or formatting symbols
@@ -413,7 +437,9 @@
         }
         break
       case 'italic':
-        if (isUnicode(selectedText)) {
+        if (isBoldUnicode(selectedText.trim())) {
+          formattedText = fromUnicodeToNormal(selectedText, 'bold') // convert to normal text
+        } if (isUnicode(selectedText.trim())) {
           formattedText = fromUnicodeToNormal(selectedText, 'italic') // convert to normal text
         } else {
           // Use Unicode italic or formatting symbols
@@ -655,28 +681,43 @@
       body: JSON.stringify({prompt, type}),
     })
 
-    const data = await response.json()
-
     if (!response.ok) {
       throw new Error(data.error?.message || "Failed to transform text")
     }
+    
+    const data = await response.json()
 
     return data.response
   }
 
   function replaceSelectedText(newText) {
-    const selection = window.getSelection()
-    if (selection.rangeCount > 0) {
-      const range = selection.getRangeAt(0)
-      range.deleteContents()
-      range.insertNode(document.createTextNode(newText))
-      
-      // Trigger input event for LinkedIn
-      const editor = range.commonAncestorContainer.parentElement
-      if (editor) {
-        const inputEvent = new Event("input", { bubbles: true })
-        editor.dispatchEvent(inputEvent)
-      }
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const selectedText = selection.toString();
+    if (!selectedText) return;
+
+    // Replace exactly what's selected
+    range.deleteContents();
+    const textNode = document.createTextNode(newText);
+    range.insertNode(textNode);
+
+    // Move caret after inserted text
+    range.setStartAfter(textNode);
+    range.setEndAfter(textNode);
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    // Dispatch input event
+    let editor = textNode.parentElement;
+    while (editor && !editor.isContentEditable) {
+      editor = editor.parentElement;
+    }
+
+    if (editor) {
+      const inputEvent = new Event('input', { bubbles: true });
+      editor.dispatchEvent(inputEvent);
     }
   }
 
@@ -1702,9 +1743,7 @@
         body: JSON.stringify({
           comment_text: prompt
         })
-      })
-
-      
+      })  
 
       return await response.json()
     }

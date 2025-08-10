@@ -3246,6 +3246,8 @@
     syncButton.textContent = 'Sync Notes'
 
     syncButton.addEventListener('click', async () => {
+      showTemporaryNotification('Syncing notes...', 'info')
+      // Sync notes with server
       const body = {notes: await getNotesFromStorage()}
       const syncNotes = async () => {
         // save notes to server inorder to sync
@@ -3337,6 +3339,7 @@
         } catch (error) {
           console.error('Error fetching notes:', error)
           showTemporaryNotification('Error fetching notes', 'error')
+          return
         }
       }
         
@@ -3718,10 +3721,10 @@
                 Referenced ${ref.type || "content"}${ref.author ? ` by ${ref.author}` : ""}
               </a>
             </div>
-            <div class="lia-referenced-content-preview">
-            ${ref.text ? ref.text.substring(0, 150) : ""}
-            ${ref.text && ref.text.length > 150 ? "..." : ""}
-            </div>
+            <a href="${chatbotState.referencedContent ? chatbotState.referencedContent.url : ""}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; font-weight: normal" class="lia-referenced-content-preview" title="Click to open">
+              ${ref.text ? ref.text.substring(0, 150) : ""}
+              ${ref.text && ref.text.length > 150 ? "..." : ""}
+            </a>
           </div>
           `;
         }
@@ -5031,9 +5034,9 @@
                         ${refContent.author ? `by ${refContent.author}` : ""}
                       </a>
                     </div>
-                    <div class="lia-referenced-content-preview">
+                    <a href="${chatbotState.referencedContent ? chatbotState.referencedContent.url : ""}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; font-weight: normal" class="lia-referenced-content-preview" title="Click to open">
                       ${refContent.text.substring(0, 150)}${refContent.text.length > 150 ? "..." : ""}
-                    </div>
+                    </a>
                   </div>
                 `
           } else {
@@ -5072,10 +5075,14 @@
     // only check if reference mode is already off
     if (chatbotState.referenceMode === false) {
       const proAccess = await checkProAccess()
-      if (!proAccess) {
+      if (!proAccess && proAccess !== 'Request failed: Unauthorized') {
         showProUpgradeModal()
         return
       
+      }
+      if (proAccess === 'Request failed: Unauthorized') {
+        showTemporaryNotification("Please sign in to access Reference Mode", "error")
+        return
       }
     }
 
@@ -5130,6 +5137,8 @@
         credentials: "include"
       })
       data = await response.json()
+
+      return 'Request failed: Unauthorized'
     }
 
     // return plan
@@ -5418,9 +5427,9 @@
       </a>
       <button class="lia-clear-reference">×</button>
     </div>
-    <div class="lia-referenced-content-preview">
+    <a href="${chatbotState.referencedContent ? chatbotState.referencedContent.url : ""}" target="_blank" rel="noopener noreferrer" style="text-decoration: none; font-weight: normal" class="lia-referenced-content-preview" title="Click to open">
       ${chatbotState.referencedContent.text.substring(0, 150)}${chatbotState.referencedContent.text.length > 150 ? "..." : ""}
-    </div>`
+    </a>`
     messagesContainer.appendChild(refDiv)
     messagesContainer.scrollTop = messagesContainer.scrollHeight
   }

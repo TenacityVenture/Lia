@@ -120,16 +120,20 @@ async function setIfChanged(area = 'local', newData = {}) {
 }
 
 // typewriter effect function
-async function typeWriter(plainContent, element) {
-  if (i <= plainContent.length) {
-    const currentText = plainContent.slice(0, i);
-    element.innerHTML = currentText + (i < plainContent.length ? '<span class="lia-cursor">|</span>' : '');
-    i++;
-    setTimeout(typeWriter, 10);
-  } else {
-    // Final formatting
-    element.innerHTML = plainContent;
+function typeWriter(plainContent, element) {
+  let i = 0;
+  function write() {
+    if (i <= plainContent.length) {
+      const currentText = plainContent.slice(0, i);
+      element.innerHTML = currentText + (i < plainContent.length ? '<span class="lia-cursor">|</span>' : '');
+      i++;
+      setTimeout(write, 60);
+    } else {
+      // Final formatting
+      element.innerHTML = plainContent;
+    }
   }
+  write();
 }
 
 window.getLiaUserInfo = getLiaUserInfo

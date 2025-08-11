@@ -40,12 +40,12 @@ export default function OnboardingPage() {
     },
   })
 
-  useEffect(() => {
+  /*useEffect(() => {
     const fromSignup = searchParams.get("from") === "signup"
     if (!fromSignup) {
       router.push("/login")
     }
-  }, [searchParams, router])
+  }, [searchParams, router])*/
 
   const nextStep = () => setCurrentStep((prev) => Math.min(prev + 1, 2))
   const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 0))

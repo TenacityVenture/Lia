@@ -186,18 +186,33 @@ exports.message = async (req, res) => {
       
     // 2. GET AI response
     //first lets insert a key role to start of the messages array
-    const systemMessage = chatSystemMessage(userInfo);
+    //const systemMessage = chatSystemMessage(userInfo);
 
-    const openaiRes = await openai.chat.completions.create({
+    /*const openaiRes = await openai.chat.completions.create({
       model: await getModelName(req),
       messages: [
         systemMessage,
         ...messages
       ],
       temperature: 0.7, // controlled creativity
+    });*/
+
+    const response = await invokeAI({
+      req,
+      messages: [
+        chatSystemMessage(userInfo),
+        ...messages,
+      ],
+      temperature: 0.7, // controlled creativity
     });
 
-    const aiResponse = openaiRes.choices[0].message.content || 'No response from AI';
+    if (!result || !result.Content || !result.Usage) {
+      throw new Error('AI response is invalid');
+    }
+
+    /*const aiResponse = openaiRes.choices[0].message.content || 'No response from AI';
+    const usage = openaiRes.usage.total_tokens || 0; // Fallback to 0 if not available*/
+    const aiResponse = response || 'No response from AI';
     const usage = openaiRes.usage.total_tokens || 0; // Fallback to 0 if not available
 
     // 3. Save user + assistant messages

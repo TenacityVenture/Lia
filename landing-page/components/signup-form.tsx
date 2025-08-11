@@ -25,7 +25,7 @@ const formSchema = z.object({
   password: z.string().min(8, {
     message: "Password must be at least 8 characters.",
   }),
-  marketingEmails: z.boolean().default(false).optional(),
+  marketing_emails: z.boolean().default(false).optional(),
 })
 
 export function SignupForm() {
@@ -38,7 +38,7 @@ export function SignupForm() {
       name: "",
       email: "",
       password: "",
-      marketingEmails: false,
+      marketing_emails: false,
     },
   })
 
@@ -206,7 +206,7 @@ export function SignupForm() {
 
         <FormField
           control={form.control}
-          name="marketingEmails"
+          name="marketing_emails"
           render={({ field }) => (
             <FormItem className="flex flex-row items-start space-x-3 space-y-0">
               <FormControl>

@@ -28,10 +28,13 @@ import {
 type ProfileFormData = {
   name: string
   email: string
-  linkedin_handle: string
+  linkedin_name: string 
+  linkedin_profile_url: string
+  linkedin_headline: string
+  linkedin_about: string
   username: string
   company: string
-  title: string
+  job_title: string
   bio?: string
 }
 
@@ -40,10 +43,13 @@ type UserProfile = {
   name: string
   username: string
   email: string
-  linkedin_handle: string
+  linkedin_name: string 
+  linkedin_profile_url: string
+  linkedin_headline: string
+  linkedin_about: string
   profile_picture_url: string
   company: string
-  jobTitle: string
+  job_title: string
   bio?: string
   created_at?: string
 }
@@ -58,11 +64,13 @@ export default function ProfilePage() {
   const [formData, setFormData] = useState<ProfileFormData>({
     name: "",
     email: "",
-    linkedin_handle: "",
+    linkedin_name: "",
+    linkedin_profile_url: "",
+    linkedin_headline: "",
+    linkedin_about: "",
     username: "",
     company: "",
-    title: "",
-    bio: "",
+    job_title: "",
   })
 
   const [user, setUser] = useState<UserProfile>({
@@ -70,11 +78,13 @@ export default function ProfilePage() {
     name: "",
     username: "",
     email: "",
-    linkedin_handle: "",
+    linkedin_name: "",
+    linkedin_profile_url: "",
+    linkedin_headline: "",
+    linkedin_about: "",
     profile_picture_url: "",
     company: "",
-    jobTitle: "",
-    bio: "",
+    job_title: "",
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -102,10 +112,12 @@ export default function ProfilePage() {
           name: formData.name,
           email: formData.email,
           company: formData.company,
-          jobTitle: formData.title,
+          job_title: formData.job_title,
           username: formData.username,
-          linkedin_handle: ('https://www.linkedin.com/in/' + formData.linkedin_handle),
-          bio: formData.bio,
+          linkedin_name: formData.linkedin_name,
+          linkedin_profile_url: ('https://www.linkedin.com/in/' + formData.linkedin_profile_url.replace('https://www.linkedin.com/in/', '')),
+          linkedin_headline: formData.linkedin_headline,
+          linkedin_about: formData.linkedin_about,
         }),
         credentials: "include",
       })
@@ -121,10 +133,9 @@ export default function ProfilePage() {
           name: formData.name,
           email: formData.email,
           company: formData.company,
-          jobTitle: formData.title,
+          job_title: formData.job_title,
           username: formData.username,
-          linkedin_handle: formData.linkedin_handle,
-          bio: formData.bio,
+          linkedin_profile_url: formData.linkedin_profile_url,
         }))
         setSaveSuccess("Profile updated successfully!")
         setHasChanges(false)
@@ -162,11 +173,13 @@ export default function ProfilePage() {
         setFormData({
           name: data.name || "",
           email: data.email || "",
-          linkedin_handle: data.linkedin_handle || "",
+          linkedin_name: data.linkedin_name || "",
+          linkedin_profile_url: data.linkedin_profile_url || "",
+          linkedin_headline: data.linkedin_headline || "",
+          linkedin_about: data.linkedin_about || "",
           username: data.username || "",
           company: data.company || "",
-          title: data.jobTitle || "",
-          bio: data.bio || "",
+          job_title: data.job_title || "",
         })
       }
     } catch (error) {
@@ -254,16 +267,16 @@ export default function ProfilePage() {
                     <MailIcon className="h-4 w-4 text-muted-foreground" />
                     <span className="truncate">{user.email}</span>
                   </div>
-                  {user.linkedin_handle && (
+                  {user.linkedin_profile_url && (
                     <div className="flex items-center gap-2 text-sm">
                       <ExternalLinkIcon className="h-4 w-4 text-muted-foreground" />
                       <a
-                        href={`https://linkedin.com/in/${user.linkedin_handle}`}
+                        href={`https://linkedin.com/in/${user.linkedin_profile_url.replace("https://www.linkedin.com/in/", "")}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:underline truncate"
                       >
-                        linkedin.com/in/{user.linkedin_handle}
+                        linkedin.com/in/{user.linkedin_profile_url.replace("https://www.linkedin.com/in/", "")}
                       </a>
                     </div>
                   )}
@@ -329,6 +342,20 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="linkedin_name">
+                    LinkedIn Full Name
+                  </Label>
+                  <Input
+                    id="linkedin_name"
+                    name="linkedin_name"
+                    type="linkedin_name"
+                    value={formData.linkedin_name}
+                    onChange={handleChange}
+                    placeholder="Same as your LinkedIn Full Name"
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="email">
                     <MailIcon className="h-4 w-4 inline mr-2" />
                     Email Address
@@ -344,7 +371,7 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="linkedin_handle">
+                  <Label htmlFor="linkedin_profile_url">
                     <ExternalLinkIcon className="h-4 w-4 inline mr-2" />
                     LinkedIn Handle
                   </Label>
@@ -353,9 +380,9 @@ export default function ProfilePage() {
                       linkedin.com/in/
                     </span>
                     <Input
-                      id="linkedin_handle"
-                      name="linkedin_handle"
-                      value={formData.linkedin_handle}
+                      id="linkedin_profile_url"
+                      name="linkedin_profile_url"
+                      value={formData.linkedin_profile_url.replace("https://www.linkedin.com/in/", "")}
                       onChange={handleChange}
                       placeholder="your-handle"
                       className="rounded-l-none"
@@ -378,14 +405,14 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="title">
+                    <Label htmlFor="job_title">
                       <BriefcaseIcon className="h-4 w-4 inline mr-2" />
                       Job Title
                     </Label>
                     <Input
-                      id="title"
-                      name="title"
-                      value={formData.title}
+                      id="job_title"
+                      name="job_title"
+                      value={formData.job_title}
                       onChange={handleChange}
                       placeholder="Enter your job title"
                     />
@@ -393,17 +420,31 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Textarea
-                    id="bio"
-                    name="bio"
-                    value={formData.bio}
+                  <Label htmlFor="linkedin_headline">
+                    LinkedIn Headline
+                  </Label>
+                  <Input
+                    id="linkedin_headline"
+                    name="linkedin_headline"
+                    type="linkedin_headline"
+                    value={formData.linkedin_headline}
                     onChange={handleChange}
-                    placeholder="Tell us about yourself..."
+                    placeholder="Same as your LinkedIn headline"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="linkedin_about">LinkedIn About</Label>
+                  <Textarea
+                    id="linkedin_about"
+                    name="linkedin_about"
+                    value={formData.linkedin_about}
+                    onChange={handleChange}
+                    placeholder="Tell us about yourself...same as your LinkedIn about section"
                     rows={4}
                     className="resize-none"
                   />
-                  <p className="text-xs text-muted-foreground">{formData.bio?.length || 0}/500 characters</p>
+                  <p className="text-xs text-muted-foreground">{formData.linkedin_about?.length || 0}/500 characters</p>
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

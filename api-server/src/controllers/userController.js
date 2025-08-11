@@ -62,6 +62,28 @@ exports.updateProfile = async (req, res) => {
   res.json({ message: 'Profile updated successfully.' });
 };
 
+exports.updateProfileLinkedinInfo = async (req, res) => {
+  const userId = req.user.sub;
+  const { linkedin_name, linkedin_headline, linkedin_about, linkedin_profile_url } = req.body;
+
+  const linkedinRegex = /^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9-_]{3,}$/i;
+
+  // Making sure users are not passing malicious
+  // or broken links
+  if (linkedin_profile_url && !linkedinRegex.test(linkedin_profile_url)) {
+    return res.status(400).json({ error: 'Invalid LinkedIn URL format' });
+  }
+
+  const { error } = await supabase
+    .from('users')
+    .update({ linkedin_name, linkedin_headline, linkedin_about, linkedin_profile_url })
+    .eq('id', userId);
+
+  if (error) return res.status(400).json({ error: 'Update failed', details: error.message });
+
+  res.json({ message: 'Profile updated successfully.' });
+};
+
 exports.getSubscription = async (req, res) => {
   const userId = req.user.sub;
   

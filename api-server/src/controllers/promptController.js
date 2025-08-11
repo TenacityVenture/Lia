@@ -1,5 +1,4 @@
-// src/controllers/promptController.js
-const openaiService = require('../services/openaiService');
+const aiService = require('../services/aiService');
 const usageLogger = require('../services/usageLogger');
 
 exports.rewritePost = async (req, res) => {
@@ -17,7 +16,7 @@ exports.rewritePost = async (req, res) => {
   }
 
   try {
-    const {Content: rewritten, Usage: usage} = await openaiService.getCompletionPostRewrite(req, prompt);
+    const {Content: rewritten, Usage: usage} = await aiService.getCompletionPostRewrite(req, prompt);
 
     // log usage to usage table in supabase
     await usageLogger.log({ 
@@ -58,7 +57,7 @@ exports.suggestReply = async (req, res) => {
   try {
     //const prompt = `Suggest a professional, thoughtful reply to this LinkedIn comment:\n\n"${comment_text}"`;
     const prompt = comment_text; // the comment text itself is the prompt -- structured in the extension
-    const {Content: suggestion, Usage: usage} = (await openaiService.getCompletionSuggestComment(req, prompt, userInfo));
+    const {Content: suggestion, Usage: usage} = (await aiService.getCompletionSuggestComment(req, prompt, userInfo));
 
     // Log usage
     await usageLogger.log({
@@ -124,7 +123,7 @@ exports.aiImprovePost = async (req, res) => {
 
   try {
     // generate the AI response
-    const {Content: response, Usage: usage} = await openaiService.getCompletionPostImprovements(req, prompt, userInfo);
+    const {Content: response, Usage: usage} = await aiService.getCompletionPostImprovements(req, prompt, userInfo);
     if (!response) {
       return res.status(400).json({ error: 'AI response is empty' });
     }
@@ -183,7 +182,7 @@ exports.aiSendMessage = async (req, res) => {
       Profile URL: ${context.linkedInUser.linkedinUrl}` : ''}`;
   
     // generate the AI response
-    const {Content: suggestion, Usage: usage} = await openaiService.getCompletionAiSendMessage(req, prompt);
+    const {Content: suggestion, Usage: usage} = await aiService.getCompletionAiSendMessage(req, prompt);
     if (!suggestion) {
       return res.status(400).json({ error: 'AI response is empty' });
     }

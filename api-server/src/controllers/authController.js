@@ -56,7 +56,7 @@ const loginUser = async (req, res) => {
  * @returns {Promise<void>}
  */
 const registerUser = async (req, res) => {
-  const { email, password, name, username } = req.body;
+  const { email, password, name, username, marketing_emails } = req.body;
 
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -94,6 +94,7 @@ const registerUser = async (req, res) => {
     plan: 'free',
     plan_started_at: new Date(),
     plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+    marketing_emails: marketing_emails || false
   }, { onConflict: 'id' });
 
   /**

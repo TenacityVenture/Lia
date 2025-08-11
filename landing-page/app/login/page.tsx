@@ -2,7 +2,6 @@
 import Link from "next/link"
 import Image from "next/image"
 import { ArrowLeft } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
 
 import { LoginForm } from "@/components/login-form"
 

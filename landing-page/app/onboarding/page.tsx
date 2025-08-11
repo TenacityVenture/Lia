@@ -70,6 +70,7 @@ export default function OnboardingPage() {
         nextStep()
       }
     } catch (error) {
+      console.error("Error updating profile:", error)
       form.setError("root", { message: "Something went wrong" })
     } finally {
       setIsSubmitting(false)
@@ -181,8 +182,8 @@ export default function OnboardingPage() {
                 className="space-y-8"
               >
                 <div className="space-y-2">
-                  <h2 className="text-2xl font-semibold text-primary dark:text-white">What's your LinkedIn handle?</h2>
-                  <p className="text-gray-600 dark:text-gray-400">We'll use this to personalize your experience</p>
+                  <h2 className="text-2xl font-semibold text-primary dark:text-white">What&apos;s your LinkedIn handle?</h2>
+                  <p className="text-gray-600 dark:text-gray-400">We&apos;ll use this to personalize your experience</p>
                 </div>
 
                 <div className="space-y-4">
@@ -336,7 +337,7 @@ export default function OnboardingPage() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <h2 className="text-2xl font-semibold text-primary dark:text-white">You're all set</h2>
+                  <h2 className="text-2xl font-semibold text-primary dark:text-white">You&apos;re all set</h2>
                   <p className="text-gray-600 dark:text-gray-400">
                     Lia is ready to assist you with intelligent LinkedIn interactions
                   </p>

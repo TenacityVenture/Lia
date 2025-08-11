@@ -64,15 +64,11 @@ exports.updateProfile = async (req, res) => {
 
 exports.updateProfileLinkedinInfo = async (req, res) => {
   const userId = req.user.sub;
-  const { linkedin_name, linkedin_headline, linkedin_about, linkedin_profile_url } = req.body;
-
-  const linkedinRegex = /^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9-_]{3,}$/i;
-
-  // Making sure users are not passing malicious
-  // or broken links
-  if (linkedin_profile_url && !linkedinRegex.test(linkedin_profile_url)) {
-    return res.status(400).json({ error: 'Invalid LinkedIn URL format' });
-  }
+  const { linkedin_name, linkedin_headline, linkedin_about } = req.body;
+  
+  let { linkedin_profile_url } = req.body;
+  linkedin_profile_url = `https://www.linkedin.com/in/${linkedin_profile_url.replace(/https?:\/\/(www\.)?linkedin\.com\/in\//, '')}`;
+  
 
   const { error } = await supabase
     .from('users')

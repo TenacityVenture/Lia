@@ -6,10 +6,11 @@ module.exports = {
     pro: 'gpt-4',
   },
   bedrock: {
-    free: 'anthropic.claude-3-haiku-20240307',
-    standard: 'anthropic.claude-3-sonnet-20240229',
-    pro: 'anthropic.claude-3-opus-20240229',
+    free: 'anthropic.claude-3-haiku-20240307-v1:0',
+    standard: 'anthropic.claude-3-5-sonnet-20240620-v1:0',
+    pro: 'anthropic.claude-3-sonnet-20240229-v1:0',
   },
+  
   mistral: {
     free: 'mistral-small',
     standard: 'mistral-medium',

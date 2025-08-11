@@ -66,12 +66,33 @@ export default function DashboardHeader() {
     getUser()
   }, [])
 
+  if (!user || !user.id) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="container flex h-screen items-center justify-center fixed z-40 w-full bg-white"
+      >
+        <div className="text-center">
+          <Image src="/logo.svg" alt="LIA Logo" width={48} height={48} className="mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-4">Loading...</h1>
+          <p className="text-muted-foreground mb-6">Please wait while we load your dashboard.</p>
+        </div>
+      </motion.div>
+    )
+  }
+
   // check if the user has linkedin_name etc
   // if it doesn't we know that they haven't completed the onboarding process
-  const isOnboardingComplete = user.linkedin_name && user.linkedin_profile_url && user.linkedin_headline && user.linkedin_about
+  const isOnboardingComplete =
+  Boolean(user.linkedin_name?.trim()) &&
+  Boolean(user.linkedin_profile_url?.trim()) &&
+  Boolean(user.linkedin_headline?.trim()) &&
+  Boolean(user.linkedin_about?.trim());
+
   if (!isOnboardingComplete) {
     return (
-      // redirect to onboarding
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

@@ -76,7 +76,7 @@ export default function DashboardHeader() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="container flex h-screen items-center justify-center"
+        className="container flex h-screen items-center justify-center fixed z-40 w-full bg-white"
       >
         <div className="text-center">
           <Image src="/logo.svg" alt="LIA Logo" width={48} height={48} className="mx-auto mb-4" />

@@ -1947,6 +1947,8 @@
         loadChatHistory()
       }
 
+      hideQuickSuggestions()
+
       //makeChatbotDraggable() remove dragging feature for now
     }
   }
@@ -2215,6 +2217,168 @@
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
+    }
+
+    /* Quick suggestions slider styles */
+    .lia-quick-suggestions {
+      position: relative;
+      background: linear-gradient(135deg, #f8f9fa, #ffffff);
+      border: 1px solid #e9ecef;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .lia-quick-suggestions.hidden {
+      opacity: 0;
+      transform: translateY(-10px);
+      max-height: 0;
+      padding: 0;
+      margin: 0;
+    }
+
+    .lia-suggestions-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .lia-suggestions-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #0a66c2;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .lia-suggestions-close {
+      background: none;
+      border: none;
+      color: #6c757d;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .lia-suggestions-close:hover {
+      background: #e9ecef;
+      color: #495057;
+    }
+
+    .lia-suggestions-slider {
+      position: relative;
+    }
+
+    .lia-suggestions-track {
+      display: flex;
+      gap: 12px;
+      transition: transform 0.3s ease;
+      padding: 4px 0;
+    }
+
+    .lia-suggestion-card {
+      display: flex;
+      gap: 15px;
+      min-width: 200px;
+      max-width: 250px;
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lia-suggestion-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(10, 102, 194, 0.1), transparent);
+      transition: left 0.5s;
+    }
+
+    .lia-suggestion-card:hover::before {
+      left: 100%;
+    }
+
+    .lia-suggestion-card:hover {
+      border-color: #0a66c2;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(10, 102, 194, 0.15);
+    }
+
+    .lia-suggestion-icon {
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, #0a66c2, #004182);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+
+    .lia-suggestion-text {
+      font-size: 12px;
+      color: #495057;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+
+    .lia-suggestion-action {
+      font-size: 11px;
+      color: #0a66c2;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .lia-suggestions-nav {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid #dee2e6;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      backdrop-filter: blur(10px);
+      z-index: 10;
+    }
+
+    .lia-suggestions-nav:hover {
+      background: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      transform: translateY(-50%) scale(1.1);
+    }
+
+    .lia-suggestions-nav.prev {
+      left: -7px;
+    }
+
+    .lia-suggestions-nav.next {
+      right: -7px;
+    }
+
+    .lia-suggestions-nav:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: translateY(-50%) scale(1);
     }
     
     /* Responsive adjustments */
@@ -3018,6 +3182,40 @@
         </div>
 
         <div class="lia-input-container">
+          <!-- Quick suggestion area for reference mode in chat mode -->
+
+          <div class="lia-quick-suggestions hidden" id="lia-quick-suggestions">
+            <div class="lia-suggestions-header">
+              <div class="lia-suggestions-title">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                </svg>
+                Quick Suggestions
+              </div>
+              <button class="lia-suggestions-close" id="lia-suggestions-close">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"></line>
+                  <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+              </button>
+            </div>
+            <div class="lia-suggestions-slider">
+              <div class="lia-suggestions-track" id="lia-suggestions-track">
+                 Suggestions will be populated here 
+              </div>
+              <button class="lia-suggestions-nav prev" id="lia-suggestions-prev" disabled>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="15,18 9,12 15,6"></polyline>
+                </svg>
+              </button>
+              <button class="lia-suggestions-nav next" id="lia-suggestions-next">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9,18 15,12 9,6"></polyline>
+                </svg>
+              </button>
+            </div>
+          </div>
+          
           <!-- Enhanced input area with mode-specific features -->
           <div class="lia-input-wrapper">
             <div class="lia-input-actions" id="lia-input-actions" style="display: none;">
@@ -3055,7 +3253,8 @@
                 </svg>
               </button>
             </div>
-            <textarea 
+            <textarea
+              style="border: none; outline: none;" 
               class="lia-message-input"
               id="lia-message-input"
               placeholder="What do you want to post?"
@@ -3103,6 +3302,13 @@
     const summarizeBtn = document.getElementById("lia-summarize-note")
     const expandBtn = document.getElementById("lia-expand-note")
     const addTagsBtn = document.getElementById("lia-add-tags")
+
+    // Quick suggestions elements
+    const quickSuggestions = document.getElementById("lia-quick-suggestions")
+    const suggestionsClose = document.getElementById("lia-suggestions-close")
+    const suggestionsTrack = document.getElementById("lia-suggestions-track")
+    const suggestionsPrev = document.getElementById("lia-suggestions-prev")
+    const suggestionsNext = document.getElementById("lia-suggestions-next")
 
     // set default to collapsed
     sidebar.classList.add("collapsed")
@@ -3226,6 +3432,216 @@
       e.stopPropagation()
       enhanceNote("tags")
     })
+
+    // Quick suggestions event listeners
+    suggestionsClose?.addEventListener("click", (e) => {
+      e.stopPropagation()
+      hideQuickSuggestions()
+    })
+
+    suggestionsPrev?.addEventListener("click", (e) => {
+      e.stopPropagation()
+      scrollSuggestions('prev')
+    })
+
+    suggestionsNext?.addEventListener("click", (e) => {
+      e.stopPropagation()
+      scrollSuggestions('next')
+    })
+
+    // Initialize quick suggestions based on current state
+    updateQuickSuggestions()
+
+  }
+
+  // Quick Suggestions Functions
+  function updateQuickSuggestions() {
+    const quickSuggestions = document.getElementById("lia-quick-suggestions")
+    const suggestionsTrack = document.getElementById("lia-suggestions-track")
+    
+    if (!quickSuggestions || !suggestionsTrack) return
+
+    // Show suggestions only in chat mode when reference mode is active or when there's referenced content
+    if (!chatbotState.notesMode && (chatbotState.referenceMode || chatbotState.referencedContent)) {
+      const suggestions = generateContextualSuggestions()
+      renderQuickSuggestions(suggestions)
+      showQuickSuggestions()
+    } else {
+      hideQuickSuggestions()
+    }
+  }
+
+  function generateContextualSuggestions() {
+    const suggestions = []
+
+    // Base suggestions for reference mode
+    if (chatbotState.referenceMode) {
+      suggestions.push(
+        {
+          icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M9 11H1l8-8 8 8"/>
+            <path d="M9 11v10"/>
+          </svg>`,
+          text: "Summarize this content",
+          action: "Summarize the key points from the referenced content"
+        },
+        {
+          icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+          </svg>`,
+          text: "What's your take on this?",
+          action: "What's your professional opinion on this content?"
+        },
+        {
+          icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>`,
+          text: "Write a thoughtful comment",
+          action: "Help me write a thoughtful comment on this post"
+        }
+      )
+    }
+
+    // Add suggestions based on referenced content type
+    if (chatbotState.referencedContent) {
+      const contentType = chatbotState.referencedContent.type
+      
+      if (contentType === "post") {
+        suggestions.push(
+          {
+            icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>
+            </svg>`,
+            text: "Create a similar post",
+            action: "Help me create a similar post with my own perspective"
+          },
+          {
+            icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+            </svg>`,
+            text: "Extract key insights",
+            action: "What are the key business insights from this post?"
+          }
+        )
+      } else if (contentType === "article") {
+        suggestions.push(
+          {
+            icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14,2 14,8 20,8"/>
+            </svg>`,
+            text: "Article summary",
+            action: "Provide a concise summary of this article"
+          },
+          {
+            icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>`,
+            text: "Rate and review",
+            action: "What's your professional assessment of this article?"
+          }
+        )
+      }
+
+      // Add industry-specific suggestions
+      if (settings.industry === "technology") {
+        suggestions.push({
+          icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>`,
+          text: "Tech implications",
+          action: "What are the technology implications of this content?"
+        })
+      }
+    }
+
+    return suggestions.slice(0, 6) // Limit to 6 suggestions
+  }
+
+  function renderQuickSuggestions(suggestions) {
+    const suggestionsTrack = document.getElementById("lia-suggestions-track")
+    if (!suggestionsTrack) return
+
+    suggestionsTrack.innerHTML = suggestions.map(suggestion => `
+      <div class="lia-suggestion-card" data-action="${suggestion.action}" title='Click to use'>
+        <div class="lia-suggestion-icon">
+          ${suggestion.icon}
+        </div>
+        <div class="lia-suggestion-text">${suggestion.text}</div>
+        <!--<div class="lia-suggestion-action">Click to use</div>-->
+      </div>
+    `).join('')
+
+    // Add click listeners to suggestion cards
+    suggestionsTrack.querySelectorAll('.lia-suggestion-card').forEach(card => {
+      card.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const action = card.dataset.action
+        sendMessage(action) // Send the action directly
+        hideQuickSuggestions()
+      })
+    })
+
+    // Update navigation buttons
+    updateSuggestionsNavigation()
+  }
+
+  function showQuickSuggestions() {
+    const quickSuggestions = document.getElementById("lia-quick-suggestions")
+    if (quickSuggestions) {
+      quickSuggestions.classList.remove("hidden")
+    }
+  }
+
+  function hideQuickSuggestions() {
+    const quickSuggestions = document.getElementById("lia-quick-suggestions")
+    if (quickSuggestions) {
+      quickSuggestions.classList.add("hidden")
+    }
+  }
+
+  function scrollSuggestions(direction) {
+    const suggestionsTrack = document.getElementById("lia-suggestions-track")
+    if (!suggestionsTrack) return
+
+    const cardWidth = 212 // 200px + 12px gap
+    const currentTransform = suggestionsTrack.style.transform
+    const currentTranslate = currentTransform ? Number.parseInt(currentTransform.match(/-?\d+/)?.[0] || 0) : 0
+    
+    let newTranslate = currentTranslate
+    if (direction === 'next') {
+      newTranslate = currentTranslate - cardWidth
+    } else {
+      newTranslate = currentTranslate + cardWidth
+    }
+
+    // Constrain the translation
+    const maxTranslate = 0
+    const minTranslate = -(suggestionsTrack.children.length - 2) * cardWidth
+    newTranslate = Math.max(minTranslate, Math.min(maxTranslate, newTranslate))
+
+    suggestionsTrack.style.transform = `translateX(${newTranslate}px)`
+    updateSuggestionsNavigation()
+  }
+
+  function updateSuggestionsNavigation() {
+    const suggestionsTrack = document.getElementById("lia-suggestions-track")
+    const suggestionsPrev = document.getElementById("lia-suggestions-prev")
+    const suggestionsNext = document.getElementById("lia-suggestions-next")
+    
+    if (!suggestionsTrack || !suggestionsPrev || !suggestionsNext) return
+
+    const currentTransform = suggestionsTrack.style.transform
+    const currentTranslate = currentTransform ? Number.parseInt(currentTransform.match(/-?\d+/)?.[0] || 0) : 0
+    const cardWidth = 212
+    const maxTranslate = 0
+    const minTranslate = -(suggestionsTrack.children.length - 2) * cardWidth
+
+    suggestionsPrev.disabled = currentTranslate >= maxTranslate
+    suggestionsNext.disabled = currentTranslate <= minTranslate
   }
 
   // Notes Mode Functions
@@ -3343,6 +3759,8 @@
         }
       }
         
+      // Hide quick suggestions
+      hideQuickSuggestions()
 
       // Switch to Notes Mode
       notesToggle.classList.add("notes-active")
@@ -3402,8 +3820,6 @@
       messageInput.placeholder = "What do you want to post?"
       inputActions.style.display = "none"
       modeIndicator.style.display = "none"
-
-      if (chatbotState.referenceMode) addReferenceListeners();
 
       liaSendBtn.innerHTML = `
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -4281,9 +4697,13 @@
     }
   }
 
-  async function sendMessage() {
+  async function sendMessage(_message) {
     const messageInput = document.getElementById("lia-message-input")
-    const message = messageInput.value.trim()
+    let message = messageInput.value.trim()
+
+    if (!message) {
+      message = _message || ""
+    }
 
     if (!message) return
 
@@ -5269,11 +5689,28 @@
                 currentNote.lastModified = Date.now()
 
                 saveNoteToStorage(currentNote)
-                saveChatbotState()
                 
-                // save reference content to notes
-                //saveNoteContentToStorage(chatbotState.currentNoteId, noteContent)
+              } else {
+                const newNote = {
+                  id: generateNoteId(),
+                  title: "Referenced Content",
+                  content: [{
+                    contentId: generateContentId(),
+                    type: "reference",
+                    content: chatbotState.referencedContent,
+                  }],
+                  tags: [],
+                  context: chatbotState.noteContext,
+                  timestamp: Date.now(),
+                  lastModified: Date.now(),
+                };
+                await saveNoteToStorage(newNote);
+                chatbotState.currentNoteId = newNote.id;
+                await updateConversationList();
               }
+
+              saveChatbotState()
+
             }
           }
         })
@@ -5294,22 +5731,14 @@
   }
 
   async function capturePostReference(postElement) {
-    // check if there is an existing reference
-    // clear it
-    if (chatbotState.referencedContent) {
-      // clear all existing reference
-      const clearReferenceBtns = document.querySelectorAll(".lia-clear-reference")
-      if (clearReferenceBtns) {
-        clearReferenceBtns.forEach(clearReferenceBtn => {
-          clearReferencedContent(clearReferenceBtn)
-        })
-      }
-    }
-
     const content = extractPostContent(postElement)
     if (content) {
       chatbotState.referencedContent = content
       
+      // show quick suggestions
+      updateQuickSuggestions()
+
+      // show the referenced content in chat
       showReferencedContent()
 
       // Save the reference content to chatbot state
@@ -5332,8 +5761,9 @@
         }
       }
     }
+
   }
-  
+
   function extractPostContent(element) {
     try {
       const content = {
@@ -5411,8 +5841,12 @@
     const messagesContainer = document.getElementById("lia-messages-container")
     if (!messagesContainer || !chatbotState.referencedContent) return
     // Remove existing reference display
-    const existingRef = messagesContainer.querySelector(".lia-referenced-content")
-    if (existingRef) existingRef.remove()
+    const existingRefs = messagesContainer.querySelectorAll(".lia-referenced-content")
+    if (existingRefs.length > 0) {
+      const lastRef = existingRefs[existingRefs.length - 1]
+      lastRef.remove()
+    }
+
     const refDiv = document.createElement("div")
     refDiv.title = "Click to open"
     refDiv.className = "lia-referenced-content"
@@ -5448,6 +5882,12 @@
         chatInput.placeholder = "What do you want to post?"
       }
     }
+
+    // hide quick suggestions
+    setTimeout(() => {
+      hideQuickSuggestions()
+    }, 1000)
+
   }
 
   function showReferenceIndicator() {

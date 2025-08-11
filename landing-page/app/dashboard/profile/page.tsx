@@ -252,9 +252,9 @@ export default function ProfilePage() {
                   <div className="text-center space-y-1">
                     <h3 className="font-semibold text-lg">{user.name}</h3>
                     <p className="text-sm text-muted-foreground">{user.username ? '@'+user.username : ''}</p>
-                    {user.jobTitle && user.company && (
+                    {user.job_title && user.company && (
                       <p className="text-sm text-muted-foreground">
-                        {user.jobTitle} at {user.company}
+                        {user.job_title} at {user.company}
                       </p>
                     )}
                   </div>

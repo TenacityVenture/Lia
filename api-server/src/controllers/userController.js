@@ -10,7 +10,7 @@ exports.getCurrentUser = async (req, res) => {
 
   const { data, error } = await supabase
     .from('users')
-    .select('id, name, username, email, linkedin_handle, profile_picture_url, plan, plan_started_at, plan_expires_at')
+    .select('id, name, username, email, linkedin_handle, profile_picture_url, plan, plan_started_at, plan_expires_at, linkedin_name, linkedin_headline, linkedin_about, linkedin_profile_url')
     .eq('id', userId)
     .single();
 
@@ -24,6 +24,7 @@ exports.getCurrentUser = async (req, res) => {
 exports.updateProfile = async (req, res) => {
   const userId = req.user.sub;
   const { username, linkedin_handle, name } = req.body;
+  const { linkedin_name, linkedin_headline, linkedin_about, linkedin_profile_url } = req.body;
 
   const linkedinRegex = /^https:\/\/(www\.)?linkedin\.com\/in\/[a-zA-Z0-9-_]{3,}$/i;
 
@@ -53,7 +54,7 @@ exports.updateProfile = async (req, res) => {
 
   const { error } = await supabase
     .from('users')
-    .update({ username, linkedin_handle, name })
+    .update({ username, linkedin_handle, name, linkedin_name, linkedin_headline, linkedin_about, linkedin_profile_url })
     .eq('id', userId);
 
   if (error) return res.status(400).json({ error: 'Update failed', details: error.message });

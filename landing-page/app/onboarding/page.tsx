@@ -55,7 +55,7 @@ export default function OnboardingPage() {
   const onSubmit = async (values: LinkedinFormData) => {
     setIsSubmitting(true)
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/user/update-profile`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/user/update-profile/linkedin-info`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

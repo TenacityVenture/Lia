@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { FileText, MessageSquare, Pencil, User, TrendingUp } from "lucide-react"
 import DashboardHeader from "@/components/dashboard/dashboard-header"
 
@@ -211,10 +212,17 @@ export default function DashboardPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="space-y-4 mb-8"
+          className="space-y-4 mb-8 flex flex-col justify-start items-start md:flex-row md:justify-between md:items-center"
         >
+          <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">Track your LinkedIn AI Assistant usage</p>
+          </div>
+          <Button asChild size="lg" variant="default" title="Visit LinkedIn to use LIA">
+            <Link href="https://www.linkedin.com" target="_blank">
+              Open LinkedIn
+            </Link>
+          </Button>
         </motion.div>
 
         <motion.div
@@ -379,6 +387,47 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* CTA Section */}
+        {(usageStats.post_rewrites === 0 &&
+          usageStats.comment_suggestions === 0 &&
+          usageStats.post_suggestions === 0 &&
+          usageStats.ai_improve_posts === 0) && (
+          <section className="container py-20">
+            <div className="relative mx-auto max-w-3xl overflow-hidden rounded-lg shadow-lg">
+              {/* Gradient + Blur Background */}
+              <div
+                className="absolute inset-0 z-0"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(59,130,246,0.7) 0%, rgba(236,72,153,0.6) 100%)",
+                  filter: "blur(32px)",
+                  WebkitBackdropFilter: "blur(16px)",
+                  backdropFilter: "blur(16px)",
+                }}
+                aria-hidden="true"
+              />
+              {/* Glassmorphism Foreground */}
+              <div className="relative z-10 p-8 text-center bg-white/20 dark:bg-black/20 rounded-lg backdrop-blur-md border border-white/30 dark:border-black/30">
+                <p className="mb-8 text-lg text-white/80">
+                  Install the extension to start experiencing the full power of LinkedIn Intelligent Assistant
+                </p>
+                <div className="flex flex-col gap-4 items-center justify-center sm:flex-row sm:gap-6">
+                  <Button asChild size="lg" variant="secondary">
+                    <Link href="https://chromewebstore.google.com/detail/heoeljdamfonjeellpecmbdboabniimp" target="_blank">
+                      Download Extension
+                    </Link>
+                  </Button>
+                  <Button asChild size="lg" variant="default">
+                    <Link href="https://www.linkedin.com" target="_blank">
+                      Open LinkedIn
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
       </main>
 
       <motion.footer

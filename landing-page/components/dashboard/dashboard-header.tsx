@@ -27,7 +27,11 @@ export default function DashboardHeader() {
     linkedin_handle: "",
     profile_picture_url: "",
     plan: "",
-    plan_expires_at: ""
+    plan_expires_at: "",
+    linkedin_name: "",
+    linkedin_profile_url: "",
+    linkedin_headline: "",
+    linkedin_about: ""
   })
 
   // Get the current pathname to highlight the active link
@@ -61,6 +65,35 @@ export default function DashboardHeader() {
   useEffect(() => {
     getUser()
   }, [])
+
+  // check if the user has linkedin_name etc
+  // if it doesn't we know that they haven't completed the onboarding process
+  const isOnboardingComplete = user.linkedin_name && user.linkedin_profile_url && user.linkedin_headline && user.linkedin_about
+  if (!isOnboardingComplete) {
+    return (
+      // redirect to onboarding
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+        className="container flex h-screen items-center justify-center"
+      >
+        <div className="text-center">
+          <Image src="/logo.svg" alt="LIA Logo" width={48} height={48} className="mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-4">Onboarding Required</h1>
+          <p className="text-muted-foreground mb-6">
+            Please complete the onboarding process to access your dashboard.
+          </p>
+            <Button className="w-full" variant={"default"} onClick={() => {
+              // Redirect to onboarding page
+              window.location.href = "/onboarding"
+            }}>
+              Go to Onboarding
+            </Button>
+        </div>
+      </motion.div>
+    )
+  }
 
   return (
     <motion.header

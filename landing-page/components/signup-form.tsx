@@ -79,12 +79,12 @@ export function SignupForm() {
           localStorage.setItem("lia_access_token", data.access_token)
 
           // Redirect to dashboard or onboarding
-          router.push("/login?success=account_created")
+          router.push("/onboarding?success=account_created")
         }
 
         else {
           // Redirect to dashboard or onboarding
-          router.push("/login?success=account_created")
+          router.push("/onboarding?success=account_created")
         }
       })
       .catch((error) => {

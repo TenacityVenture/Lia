@@ -42,10 +42,6 @@ export function LoginForm() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true)
 
-    // This would be where you'd call your API to authenticate the user
-    console.log(values)
-
-
     //await new Promise((resolve) => setTimeout(resolve, 1500))
     const apiUrl:string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/sign-in`
     await fetch(apiUrl, {

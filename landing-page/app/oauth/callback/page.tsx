@@ -49,7 +49,7 @@ export default function OAuthCallback() {
       }
 
       // 4. Redirect to dashboard
-      router.push('/dashboard');
+      router.push('/onboarding?success=oauth_complete');
     });
 
     // send jwts to website (since contentscript will be listening there to then send to extension)

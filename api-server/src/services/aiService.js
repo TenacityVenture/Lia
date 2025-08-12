@@ -4,7 +4,8 @@ const { invokeAI } = require('./invokeAI'); // your abstraction layer
 const { 
   commentSystemMessage,
   postImprovementSystemMessage,
-  postRewriteSystemMessage
+  postRewriteSystemMessage,
+  postChangeSummarySystemMessage
 } = require('../utils/helpers/systemMessages');
 
 // 1. General text completion
@@ -84,6 +85,24 @@ exports.getCompletionPostRewrite = async (req, prompt) => {
       ],
       temperature: 0.7,
       maxTokens: 1000
+    });
+    return result;
+  } catch (err) {
+    return fallbackResponse(err);
+  }
+};
+
+// 6. Check Improvements made
+exports.getCompletionCheckImprovements = async (req, prompt) => {
+  try {
+    const result = await invokeAI({
+      req,
+      messages: [
+        postChangeSummarySystemMessage(),
+        { role: 'user', content: `Check the following improvements made to the post:\n\nOriginal Post: ${prompt.originalPost}\n\nImproved Post: ${prompt.improvedPost}` }
+      ],
+      temperature: 0.7,
+      maxTokens: 500
     });
     return result;
   } catch (err) {

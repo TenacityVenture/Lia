@@ -27,8 +27,18 @@ exports.rewritePost = async (req, res) => {
         token_used: usage.total_tokens || 0 // Fallback to 0 if not available
     })
 
+    // get the improvements that was made to the post
+    const response = await aiService.getCompletionCheckImprovements(req, { originalPost: originalText, improvedPost: rewritten });
+    let improvements = [];
+    if (response && response.Content) {
+      improvements = response.Content
+        .split(/\d+\.\s+/) // Split by numbered list (e.g., "1. ", "2. ")
+        .filter(s => s.trim()) // Remove empty entries
+        .map(s => s.trim());
+    }
+
     // return the AI rewritten post
-    res.json({ response: rewritten });
+    res.json({ response: rewritten, improvements: improvements || [] });
   } catch (error) {
     console.error('Rewrite failed:', error.message);
     res.status(500).json({ error: 'AI rewrite failed' });

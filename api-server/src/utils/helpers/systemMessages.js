@@ -223,6 +223,7 @@ exports.postRewriteSystemMessage = (userInfo) => {
               - Avoid emoji overuse (OK for light emotion, numbering, or punchlines)
               - Use hashtags **only when meaningful** — skip them if they don't add value
               - Use **line breaks** frequently — for readability, pacing, and clarity
+              - Add unicode bold and italic characters where appropriate to enhance emphasis or highlight key points or phrases
               - Structure content into **logical chunks or ideas** — don't fear white space
               - Don't write long lengthy paragraphs - they are hard to read on LinkedIn - split them up
               - End with a **non-generic CTA** — something playful or insightful based on the content

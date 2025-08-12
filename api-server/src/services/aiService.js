@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { invokeAI } = require('./invokeAI'); // your abstraction layer
+const { getUserInfo } = require('../utils/helpers/getUserInfo');
 
 const { 
   commentSystemMessage,
@@ -24,7 +25,8 @@ exports.getCompletion = async (req, prompt) => {
 };
 
 // 2. Suggest 3 smart comments
-exports.getCompletionSuggestComment = async (req, prompt, userInfo) => {
+exports.getCompletionSuggestComment = async (req, prompt) => {
+  const userInfo = await getUserInfo(req.user.sub);
   try {
     const result = await invokeAI({
       req,
@@ -57,7 +59,8 @@ exports.getCompletionSuggestPost = async (req, messages) => {
 };
 
 // 4. Post improvement
-exports.getCompletionPostImprovements = async (req, prompt, userInfo) => {
+exports.getCompletionPostImprovements = async (req, prompt) => {
+  const userInfo = await getUserInfo(req.user.sub);
   try {
     const result = await invokeAI({
       req,
@@ -76,11 +79,12 @@ exports.getCompletionPostImprovements = async (req, prompt, userInfo) => {
 
 // 5. Post rewrite
 exports.getCompletionPostRewrite = async (req, prompt) => {
+  const userInfo = await getUserInfo(req.user.sub);
   try {
     const result = await invokeAI({
       req,
       messages: [
-        postRewriteSystemMessage(),
+        postRewriteSystemMessage(userInfo),
         { role: 'user', content: prompt }
       ],
       temperature: 0.7,

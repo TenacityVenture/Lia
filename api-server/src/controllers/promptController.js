@@ -1,5 +1,6 @@
 const aiService = require('../services/aiService');
 const usageLogger = require('../services/usageLogger');
+const { getUserInfo } = require('../utils/helpers/getUserInfo');
 
 exports.rewritePost = async (req, res) => {
   const userId = req.user.sub; // Extract user ID from the request object
@@ -111,7 +112,7 @@ exports.aiImprovePost = async (req, res) => {
   
   // the prompt has already been structured in the extension
   const { prompt, type } = req.body; // Expecting a string prompt
-  let { userInfo } = req.user; 
+  let { userInfo } = await getUserInfo(req.user.sub);
 
   if (!prompt || typeof prompt !== 'string') {
     return res.status(400).json({ error: 'Invalid prompt format' });

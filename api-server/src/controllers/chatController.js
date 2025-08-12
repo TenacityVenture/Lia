@@ -3,6 +3,7 @@ const { openai } = require('../services/openaiService');
 const { getModelName } = require('../utils/helpers/modelSelector');
 const { chatSystemMessage } = require('../utils/helpers/systemMessages');
 const { invokeAI } = require('../services/invokeAI');
+const { getUserInfo } = require('../utils/helpers/getUserInfo');
 
 /** Create a new chat
 * @param {Object} req - Express request object
@@ -106,7 +107,7 @@ exports.message = async (req, res) => {
   const userId = req.user.sub;
   const chatId = req.params.chatId;
   const { message, reference } = req.body;
-  let { userInfo } = req.user;
+  const userInfo = await getUserInfo(userId);
 
   if (!message) {
     return res.status(400).json({ error: 'Message content is required' });
@@ -135,17 +136,6 @@ exports.message = async (req, res) => {
       await supabase.from('chat_messages').insert([{ chat_id: chatId, user_id: userId, role: 'reference', content: JSON.stringify(reference) }]);
     }
   }
-
-  if (!userInfo) {
-    userInfo = {
-      linkedin_name: "empty",
-      linkedin_headline: "empty",
-      linkedin_about: "empty",
-      linkedin_profile_url: "empty"
-    }
-  }
-
-  console.log('this is the user info', userInfo)
 
   try {
 

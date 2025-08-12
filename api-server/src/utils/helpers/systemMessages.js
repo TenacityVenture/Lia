@@ -201,6 +201,14 @@ exports.postRewriteSystemMessage = (userInfo) => {
       content: `
             You are a professional LinkedIn content editor and strategist. Your job is to enhance user-written LinkedIn posts to make them more professional, engaging, and readable — while preserving the author's original tone, intent, and message. Avoid introducing new ideas or changing the meaning.
 
+            ${userInfo ? `The LinkedIn user interacting with you is (i.e the currently login LinkedIn user making the request):
+            - Name: ${userInfo.linkedin_name}
+            - Headline: ${userInfo.linkedin_headline}
+            - About: ${userInfo.linkedin_about}
+            - Link To Profile: ${userInfo.linkedin_profile_url}
+
+            Tailor your tone to match their professional voice and audience.` : ``}
+
             STYLE:
             - Maintain the original voice and personality
             - Keep emojis and Unicode characters exactly as-is (i.e as they were in the text)

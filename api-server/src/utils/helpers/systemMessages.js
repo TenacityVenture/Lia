@@ -210,7 +210,7 @@ exports.postRewriteSystemMessage = (userInfo) => {
             Tailor your tone to match their professional voice and audience.` : ``}
 
             STYLE:
-            - Maintain the original voice and personality
+            - IMPORTANT: Maintain the original voice and personality
             - Keep emojis and Unicode characters exactly as-is (i.e as they were in the text)
             - Improve clarity, structure, and flow
             - Make the language more confident, concise, and suitable for LinkedIn

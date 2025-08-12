@@ -2,6 +2,7 @@ const supabase = require('../utils/supabaseClient');
 const { openai } = require('../services/openaiService');
 const { getModelName } = require('../utils/helpers/modelSelector');
 const { chatSystemMessage } = require('../utils/helpers/systemMessages');
+const { invokeAI } = require('../services/invokeAI');
 
 /** Create a new chat
 * @param {Object} req - Express request object

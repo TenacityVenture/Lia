@@ -231,6 +231,7 @@ exports.postRewriteSystemMessage = (userInfo) => {
               FORMATTING RULES:
               - Replace any text in **the text** with bold Unicode characters always (e.g. 𝗯𝗼𝗹𝗱)
               - Replace any text in *the text* with italic Unicode characters always (e.g. 𝘪𝘵𝘢𝘭𝘪𝘤)
+              - Never write text like this: **the text** or *the text* or __the text__ or _the text_ or \`the text\`. If you see them replace them with the Unicode characters equivalent.
               - Do not use markdown or HTML
                 - IMPORTANT: Preserve any @mentions exactly as they appear (like @PersonName or @Company Name). Do not change the names after @ symbols.
               - Don't write the entire content as unicode bold, only keep any emojis and Unicode characters (bold, italic etc)

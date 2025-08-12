@@ -197,7 +197,7 @@ exports.message = async (req, res) => {
       temperature: 0.7, // controlled creativity
     });*/
 
-    const response = await invokeAI({
+    const result = await invokeAI({
       req,
       messages: [
         chatSystemMessage(userInfo),
@@ -212,13 +212,12 @@ exports.message = async (req, res) => {
 
     /*const aiResponse = openaiRes.choices[0].message.content || 'No response from AI';
     const usage = openaiRes.usage.total_tokens || 0; // Fallback to 0 if not available*/
-    const aiResponse = response || 'No response from AI';
-    const usage = openaiRes.usage.total_tokens || 0; // Fallback to 0 if not available
+    const {Content: aiResponse, Usage: usage} = result;
 
     // 3. Save user + assistant messages
     await supabase.from('chat_messages').insert([
       { chat_id: chatId, user_id: userId, role: 'user', content: message },
-      { chat_id: chatId, user_id: userId, role: 'assistant', content: aiResponse, tokens: usage }
+      { chat_id: chatId, user_id: userId, role: 'assistant', content: aiResponse, tokens: usage.total_tokens || 0 } // Fallback to 0 if not available
     ]);
 
     // 4. Update last used

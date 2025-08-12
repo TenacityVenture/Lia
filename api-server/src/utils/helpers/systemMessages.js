@@ -212,7 +212,7 @@ exports.postRewriteSystemMessage = (userInfo) => {
               Follow these in addition to the formatting rules:
 
               #### ✅ Hooks:
-              - Use **1 line** (2 max)
+              - Use 1 line (2 max)
               - Avoid emojis or drama — just something clear, bold, or intriguing
               - Insert **two line breaks after the hook** (very important)
               - Vary styles (question, contrast, revelation, curiosity, bold opinion, etc.)

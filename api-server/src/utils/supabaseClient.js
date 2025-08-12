@@ -9,7 +9,7 @@ const supabase = createClient(
   supabaseUrl, supabaseKey,
   {
     persistSession: true, // Persist session across requests
-    autoRefreshToken: true, // Automatically refresh the token
+    autoRefreshToken: false, // Automatically refresh the token
     detectSessionInUrl: false, // Disable session detection in URL
   }
 );

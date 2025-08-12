@@ -217,6 +217,7 @@ exports.postRewriteSystemMessage = (userInfo) => {
               - Insert **two line breaks after the hook** (very important)
               - Vary styles (question, contrast, revelation, curiosity, bold opinion, etc.)
               - IMPORTANT: Hooks are not post titles, so avoid using all caps or overly dramatic language - hooks should both grab attention and be clickbaity, setting the stage for the post content that follows.
+              - IMPORTANT: Suitable for LinkedIn, not overly dramatic or exaggerated. Keep it real, smart, and relevant to the post -- unless the user request otherwise.
 
               #### ✅ General Post Guidelines:
               - Avoid emoji overuse (OK for light emotion, numbering, or punchlines)
@@ -238,7 +239,7 @@ exports.postRewriteSystemMessage = (userInfo) => {
 
             RULES:
               - IMPORTANT: Return ONLY the rewritten post — ready for LinkedIn. 
-              - Do NOT include explanations or commentary.
+              - Do NOT include explanations or commentary or suggestions, return ONLY the rewritten post.
           `
     }
   )

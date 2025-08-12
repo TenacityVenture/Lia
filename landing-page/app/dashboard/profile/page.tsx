@@ -443,8 +443,9 @@ export default function ProfilePage() {
                     placeholder="Tell us about yourself...same as your LinkedIn about section"
                     rows={4}
                     className="resize-none"
+                    maxLength={2000}
                   />
-                  <p className="text-xs text-muted-foreground">{formData.linkedin_about?.length || 0}/500 characters</p>
+                  <p className="text-xs text-muted-foreground">{formData.linkedin_about?.length || 0}/2000 characters</p>
                 </div>
               </CardContent>
               <CardFooter className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

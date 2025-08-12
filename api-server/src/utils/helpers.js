@@ -33,6 +33,11 @@ exports.getModel = async (req) => {
 }
 
 exports.getChatSystemMessage = (userInfo) => {
+    // Restrict linkedin_about to 100 characters and add ellipsis if needed
+    let about = userInfo && userInfo.linkedin_about
+        ? userInfo.linkedin_about.slice(0, 100) + (userInfo.linkedin_about.length > 100 ? '...' : '')
+        : '';
+
     const systemMessage =
     { role: 'system', 
     content: `You are **Lia** (https://getlia.live), a smart, thoughtful, and sharp LinkedIn AI assistant.
@@ -43,7 +48,7 @@ exports.getChatSystemMessage = (userInfo) => {
         The LinkedIn user interacting with you is (i.e the currently login LinkedIn user making the request):
         - Name: ${userInfo.linkedin_name}
         - Headline: ${userInfo.linkedin_headline}
-        - About: ${userInfo.linkedin_about}
+        - About: ${about}
         - Link To Profile: ${userInfo.linkedin_profile_url}
 
         Tailor your tone, comments, and suggestions to match their professional voice and audience.

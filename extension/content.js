@@ -1000,10 +1000,37 @@
         // we are replying to a comment
         try {
           suggestions = await generateReplyToCommentSuggestions(context)
+          if (suggestions && suggestions.error && suggestions.error.includes('missing plan')) {
+            suggestionsContainer.innerHTML = `
+            <div style="color: red; padding: 10px;">
+            Please upgrade your plan to use this feature. <a href="https://www.getlia.live/pricing" target="_blank" style="color: blue">Upgrade Now</a>
+            </div>
+            `
+            return
+          } else if (suggestions && suggestions.error && suggestions.error.includes('Plan expired')) {
+            suggestionsContainer.innerHTML = `
+            <div style="color: red; padding: 10px;">
+            Your plan has expired. Please renew your subscription to continue using this feature. <a href="https://www.getlia.live/pricing" target="_blank" style="color: blue">Renew Now</a>
+            </div>
+            `
+            return
+          } else if (suggestions && suggestions.error && suggestions.error.includes('Invalid or expired token')) {
+              // try refreshing the token
+              try {
+                await refreshToken()
+                suggestions = await generateReplyToCommentSuggestions(context)
+              } catch (error) {
+                console.error("Error refreshing token:", error)
+                suggestionsContainer.innerHTML = `
+                <div style="color: red; padding: 10px;">
+                Error: ${error.message || "Failed to generate suggestions"}, maybe your session has expired. Please try signing in again, <a href='https://getlia.live' target='_blank'>here</a>.
+                </div>
+                `
+              }
+          }
         } catch (error) {
-            // try to refresh token and generate suggestions again
-            await refreshToken() // refresh the token
-            suggestions = await generateReplyToCommentSuggestions(context)
+            console.error("Error generating reply suggestions:", error)
+            throw new Error("Failed to generate suggestions")
         }
       } else {
         // we are replying to a post
@@ -1012,10 +1039,37 @@
 
         try {
           suggestions = await generateCommentSuggestions(context)
+          if (suggestions && suggestions.error && suggestions.error.includes('missing plan')) {
+            suggestionsContainer.innerHTML = `
+            <div style="color: red; padding: 10px;">
+            Please upgrade your plan to use this feature. <a href="https://www.getlia.live/pricing" target="_blank" style="color: blue">Upgrade Now</a>
+            </div>
+            `
+            return
+          } else if (suggestions && suggestions.error && suggestions.error.includes('Plan expired')) {
+            suggestionsContainer.innerHTML = `
+            <div style="color: red; padding: 10px;">
+            Your plan has expired. Please renew your subscription to continue using this feature. <a href="https://www.getlia.live/pricing" target="_blank" style="color: blue">Renew Now</a>
+            </div>
+            `
+            return
+          } else if (suggestions && suggestions.error && suggestions.error.includes('Invalid or expired token')) {
+              // try refreshing the token
+              try {
+                await refreshToken()
+                suggestions = await generateCommentSuggestions(context)
+              } catch (error) {
+                console.error("Error refreshing token:", error)
+                suggestionsContainer.innerHTML = `
+                <div style="color: red; padding: 10px;">
+                Error: ${error.message || "Failed to generate suggestions"}, maybe your session has expired. Please try signing in again, <a href='https://getlia.live' target='_blank'>here</a>.
+                </div>
+                `
+              }
+          }
         } catch (error) {
-          // try to refresh token and generate suggestions again
-          await refreshToken() // refresh the token
-          suggestions = await generateCommentSuggestions(context)
+          console.error("Error generating comment suggestions:", error)
+          throw new Error("Failed to generate suggestions")
         }
       }
 
@@ -1025,19 +1079,11 @@
       // Display suggestions
       displayCommentSuggestions(suggestionsContainer, suggestions, commentInput)
     } catch (error) {
-      if (error.message === "Failed to generate suggestions") {
-        suggestionsContainer.innerHTML = `
-        <div style="color: red; padding: 10px;">
-        Error: ${error.message || "Failed to generate suggestions"}, maybe your session has expired. Please try signing in again, <a href='https://getlia.live' target='_blank'>here</a>.
-        </div>
-        `
-      } else {
       suggestionsContainer.innerHTML = `
         <div style="color: red; padding: 10px;">
         Error: ${error.message || "Failed to generate suggestions"}
         </div>
         `
-      }
       throw error
     }
   }
@@ -1678,7 +1724,8 @@
     }
 
     if (data.error) {
-      throw new Error(data.error?.message || "Failed to generate suggestions")
+      //throw new Error(data.error?.message || "Failed to generate suggestions")
+      return data
     }
 
     const suggestions = data.suggestions;
@@ -1762,7 +1809,8 @@
     }
 
     if (data.error) {
-      throw new Error(data.error?.message || "Failed to generate suggestions")
+      //throw new Error(data.error?.message || "Failed to generate suggestions")
+      return data
     }
 
     const suggestions = data.suggestions;
@@ -4723,24 +4771,33 @@
       let response;
       try {
         response = await generateChatResponse(message)
-      } catch (error) {
-        console.error("Error generating chat response:", error)
 
-        if (response && response.error.includes('missing plan')) {
+        if (response && response.error && response.error.includes('missing plan')) {
           // Remove typing indicator
           hideTypingIndicator()
           addMessageToChat('assistant', 'Please upgrade your plan to use this feature. <a href="https://www.getlia.live/pricing" target="_blank" style="color: blue">Upgrade Now</a>')
           return
+        } else if (response && response.error && response.error.includes('Plan expired')) {
+          // Remove typing indicator
+          hideTypingIndicator()
+          showTemporaryNotification("Your plan has expired. Please renew your subscription.", "error")
+          addMessageToChat('assistant', 'Your plan has expired. Please renew your subscription to continue using this feature. <a href="https://www.getlia.live/pricing" target="_blank" style="color: blue">Renew Now</a>')
+          return
+        } else if (response && response.error && response.error.includes('Invalid or expired token')) {
+            // try refreshing the token
+            try {
+              await refreshToken()
+              response = await generateChatResponse(message) // try again after refreshing token
+            } catch (refreshError) {
+              console.error("Error refreshing token:", refreshError)
+              response = "Sorry, I encountered an error while trying to generate a response. Please try again later. 😔"
+            }
+            throw new Error("Failed to generate response from AI")
         }
-        // try refreshing the token
-        try {
-          await refreshToken()
-          response = await generateChatResponse(message) // try again after refreshing token
-        } catch (refreshError) {
-          console.error("Error refreshing token:", refreshError)
-          response = "Sorry, I encountered an error while trying to generate a response. Please try again later. 😔"
-        }
-        throw new Error("Failed to generate response from AI")
+        // Handle other errors
+        throw new Error(response.error || "Failed to generate response from AI")
+      } catch (error) {
+        console.error("Error generating chat response:", error)
       }
 
       // Remove typing indicator
@@ -4902,7 +4959,8 @@
     const data = await response.json()
 
     if (!response.ok) {
-      throw new Error(data.error?.message || "Failed to generate response")
+      //throw new Error(data.error?.message || "Failed to generate response")
+      return data
     }
 
     return data.reply

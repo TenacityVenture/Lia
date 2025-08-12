@@ -64,10 +64,9 @@ exports.updateProfile = async (req, res) => {
 
 exports.updateProfileLinkedinInfo = async (req, res) => {
   const userId = req.user.sub;
-  const { linkedin_name, linkedin_headline, linkedin_about } = req.body;
+  const { linkedin_name, linkedin_headline, linkedin_about, linkedin_handle } = req.body;
   
-  let { linkedin_profile_url } = req.body;
-  linkedin_profile_url = `https://www.linkedin.com/in/${linkedin_profile_url.replace(/https?:\/\/(www\.)?linkedin\.com\/in\//, '')}`;
+  const linkedin_profile_url = `https://www.linkedin.com/in/${linkedin_handle}`;
   
 
   const { error } = await supabase

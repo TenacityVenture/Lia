@@ -22,26 +22,26 @@ router.post('/:chatId/message', authenticate, checkPlan('standard'), message);
 
 // list all chats for a user
 // GET /api/chat
-router.get('/history', authenticate, checkPlan('standard'), chats)
+router.get('/history', authenticate, chats)
 
 // list all chats history (messages) in a chats
 // GET /api/chat/:chatId/history
-router.get('/:chatId/messages', authenticate, checkPlan('standard'), getChatMessages) // chat messages in a chat);
+router.get('/:chatId/messages', authenticate, getChatMessages) // chat messages in a chat);
 
 // update a chat
 // PUT /api/chat/:chatId
-router.put('/:chatId', authenticate, checkPlan('standard'), updateChatTitle);
+router.put('/:chatId', authenticate, updateChatTitle);
 
 // get chat by ID
 // GET /api/chat/:chatId
-router.get('/:chatId', authenticate, checkPlan('standard'), getChatById);
+router.get('/:chatId', authenticate, getChatById);
 
 // update chat last updated time
 // PUT /api/chat/:chatId/update
-router.put('/:chatId/last-used', authenticate, checkPlan('standard'), updateChatLastUsed); 
+router.put('/:chatId/last-used', authenticate, updateChatLastUsed); 
 
 // delete a chat
 // DELETE /api/chat/:chatId
-router.delete('/:chatId', authenticate, checkPlan('standard'), deleteChat);
+router.delete('/:chatId', authenticate, deleteChat);
 
 module.exports = router;

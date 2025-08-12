@@ -20,6 +20,15 @@ exports.getUserInfo = async (userId) => {
     console.error('Error fetching user info:', error);
     return null;
   }
+
+  // limit the about section to 100 characters
+  // and add ellipsis if it exceeds that length
+  // for saving tokens in AI requests
+  let about = data && data.linkedin_about
+        ? data.linkedin_about.slice(0, 100) + (data.linkedin_about.length > 100 ? '...' : '')
+        : '';
+
+  data.linkedin_about = about;
   
   return data || {
     linkedin_name: "empty",

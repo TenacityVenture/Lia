@@ -1081,7 +1081,7 @@
     } catch (error) {
       suggestionsContainer.innerHTML = `
         <div style="color: red; padding: 10px;">
-        Error: ${error.message || "Failed to generate suggestions"}
+        ${error || "Failed to generate suggestions"}
         </div>
         `
       throw error
@@ -1132,12 +1132,17 @@
       // Generate improved version
 
       let improvedText = null;
+      let improvements = []; // array improvements that was made on the post
       try {
-        improvedText = await generateImprovedText(currentText)
+        const response = await generateImprovedText(currentText)
+        improvedText = window.cleanAIResponse(response.response) || null
+        improvements = response.improvements || []
       } catch (error) {
         try { // call generateImprovedText again after refresh
           await refreshToken() // refresh the token
-          improvedText = await generateImprovedText(currentText)
+          const response = await generateImprovedText(currentText)
+          improvedText = window.cleanAIResponse(response.response) || null
+          improvements = response.improvements || []
         } catch (retryError) {
           throw retryError // pass it to outer catch
         }
@@ -1148,8 +1153,10 @@
       if (improvedText) {
         // Perform the in-place rewrite with animation
         //await animateTextRewrite(editor, currentText, improvedText)
-        await window.animateTextRewriteWithMentions(editor, currentText, improvedText)
+        await window.animateTextRewriteWithMentions(editor, currentText, improvedText, improvements)
         settings.isRewriting = false; // reset the flag
+        // Show improvements made in a card like form
+        window.showImprovementsMade(editor, improvements, currentText)
       } else {
         settings.isRewriting = false; // reset the flag
         // Show a temporary message if no improved text was generated
@@ -1193,7 +1200,7 @@
 
     // Position relative to editor
     const editorRect = editor.getBoundingClientRect()
-    const editorParent = editor.parentElement
+    const editorParent = editor.closest('.share-box')
     editorParent.style.position = "relative"
     editorParent.appendChild(overlay)
 
@@ -1228,7 +1235,7 @@
     // get the json response
     const data = await response.json()
 
-    return data.response
+    return data
   }
 
   /**
@@ -4854,7 +4861,7 @@
             const formattedText = formatMarkdown(formatLinks(currentText));
             contentDiv.innerHTML = formattedText + (i < plainContent.length ? '<span class="lia-cursor">|</span>' : '');
             i++;
-            setTimeout(typeWriter, 10);
+            setTimeout(typeWriter, 8);
           } else {
             // Final formatting
             contentDiv.innerHTML = processedContent;

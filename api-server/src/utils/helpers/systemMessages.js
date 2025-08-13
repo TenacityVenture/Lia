@@ -111,7 +111,6 @@ exports.commentSystemMessage = (userInfo) => {
         The LinkedIn user you're assisting is (i.e the currently login LinkedIn user making the request):
         - Name: ${userInfo.linkedin_name}
         - Headline: ${userInfo.linkedin_headline}
-        - About: ${userInfo.linkedin_about}
         - Link To Profile: ${userInfo.linkedin_profile_url}
         
         Use this information to match the user's professional tone and audience. Based on the conversation, you should be able to detect:
@@ -173,7 +172,6 @@ exports.postImprovementSystemMessage = (userInfo) => {
         ${userInfo ? `The LinkedIn user interacting with you is (i.e the currently login LinkedIn user making the request):
         - Name: ${userInfo.linkedin_name}
         - Headline: ${userInfo.linkedin_headline}
-        - About: ${userInfo.linkedin_about}
         - Link To Profile: ${userInfo.linkedin_profile_url}
 
         Tailor your tone to match their professional voice and audience.`
@@ -204,7 +202,6 @@ exports.postRewriteSystemMessage = (userInfo) => {
             ${userInfo ? `The LinkedIn user interacting with you is (i.e the currently login LinkedIn user making the request):
             - Name: ${userInfo.linkedin_name}
             - Headline: ${userInfo.linkedin_headline}
-            - About: ${userInfo.linkedin_about}
             - Link To Profile: ${userInfo.linkedin_profile_url}
 
             Tailor your tone to match their professional voice and audience.` : ``}

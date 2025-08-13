@@ -145,7 +145,7 @@ exports.message = async (req, res) => {
       .select('*')
       .eq('chat_id', chatId)
       .order('created_at', { ascending: false })
-      .limit(20); // Adjust the limit as needed
+      .limit(10); // Adjust the limit as needed
 
     const messages = [...(history || [])]
       .reverse() // Reverse to maintain chronological order

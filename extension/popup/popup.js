@@ -39,6 +39,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Set the user's plan
   plan.textContent = userData.plan ? `${userData.plan}`.toUpperCase() : 'Free';
 
+  // check if the user plan has expired by checking the plan_expires_at field
+  if (userData.plan_expires_at && new Date(userData.plan_expires_at) < new Date()) {
+    plan.textContent = 'Plan Expired';
+    plan.style.color = 'red';
+  }
+
   // Show usage count
   const usage = await fetch('https://api.getlia.live/api/usage/stats', {
     headers: { Authorization: `Bearer ${access_token}` }

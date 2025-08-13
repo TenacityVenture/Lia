@@ -43,7 +43,7 @@
   "content_scripts": [
     {
       "matches": ["https://www.linkedin.com/*", "https://www.getlia.live/*"],
-      "js": ["content.js", "linkedin-mention-handler.js", "utils/helpers.js"],
+      "js": ["content.js", "linkedin-mention-handler.js", "utils/helpers.js", "utils/utility.js"],
       "css": ["content.css"],
       "run_at": "document_idle"
     }

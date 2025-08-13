@@ -85,6 +85,14 @@ const liaRefreshToken = async () => {
   }
 }
 
+const getAccessToken = async () => {
+  const { access_token } = await chrome.storage.local.get(['access_token']);
+  if (!access_token) {
+    throw new Error("Please Sign in to continue")
+  }
+  return access_token;
+}
+
 // utility
 function debounce(func, wait = 1000) {
   let timeout;
@@ -134,6 +142,26 @@ function typeWriter(plainContent, element) {
     }
   }
   write();
+}
+
+async function getImprovementsMade(currentText, improvedText) {
+  const response = await fetch('https://api.getlia.live/api/prompt/rewrite/improvements-made', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${await getAccessToken()}`
+    },
+    body: JSON.stringify({
+      currentText: currentText,
+      improvedText: improvedText
+    })
+  });
+
+  const data = await response.json();
+  if (data.improvements) {
+    return data.improvements;
+  }
+  return data;
 }
 
 window.getLiaUserInfo = getLiaUserInfo

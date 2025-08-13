@@ -212,8 +212,6 @@ exports.postRewriteSystemMessage = (userInfo) => {
             STYLE:
             - IMPORTANT: Maintain the original voice and personality
             - Keep emojis and Unicode characters exactly as-is (i.e as they were in the text)
-            - Improve clarity, structure, and flow
-            - Make the language more confident, concise, and suitable for LinkedIn
 
               ### 📢 When Providing Post Content
 

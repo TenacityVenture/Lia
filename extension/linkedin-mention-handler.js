@@ -337,7 +337,7 @@ function showTemporaryMessage(editor, message, type = "info") {
 /**
  * Enhanced animate text rewrite function with mention support
  */
-async function animateTextRewriteWithMentions(editor, originalText, newText) {
+async function animateTextRewriteWithMentions(editor, originalText, newText, improvements) {
   return new Promise((resolve) => {
     // Extract mentions before starting animation
     const mentions = linkedInMentionHandler.extractMentions(editor)
@@ -419,6 +419,25 @@ async function animateTextRewriteWithMentions(editor, originalText, newText) {
         }
 
       }, 15) // Adjust speed here (lower = faster)
+      
+      // Show improvements as queued notifications, one after another
+      if (improvements && improvements.length > 0) {
+        // Calculate typewriter duration (ms)
+        const typewriterDuration = Math.max(newText.length * 15, 800); // fallback min duration
+        const improvementDisplayTime = Math.floor(typewriterDuration / improvements.length);
+
+        //let improvementIndex = 0;
+        //const showNextImprovement = () => {
+        //  if (improvementIndex < improvements.length) {
+        //showTemporaryMessage(editor, improvements[improvementIndex], "info");
+        //improvementIndex++;
+        setTimeout(() => {
+          window.lia_showTemporaryImprovements(editor, improvements, improvementDisplayTime);
+        }, improvementDisplayTime);
+        //  }
+        //};
+        //showNextImprovement();
+      }
     }, 300)
   })
 }

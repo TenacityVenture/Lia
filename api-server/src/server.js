@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
+const { createEmailTemplates } = require('./utils/helpers/createEmailTemplate'); // Create email templates  
 const app = express();
 
 // tells express not to ignore the X-Forwarded-For header, which is important for rate limiting and security
@@ -109,8 +110,19 @@ app.get('/debug-token', (req, res) => {
 
 // Start server
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
+
+  console.log('Creating email templates if they do not exist...');
+  try {
+    console.log('Checking SES email templates...');
+    //if (process.env.NODE_ENV === 'production') {
+    await createEmailTemplates();
+    //}
+    console.log('✅ Email templates are ready.');
+  } catch (err) {
+    console.error('⚠️ Failed to verify/create SES templates:', err.message);
+  }
 });
 
 module.exports = app; // Export the app for testing purposes

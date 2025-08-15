@@ -9,7 +9,9 @@ const {
     syncOAuthUser,
     syncGoogleOAuthUser,
     logoutUser,
-    changePassword
+    changePassword,
+    handlePasswordResetRequest,
+    handlePasswordResetConfirm
 } = require('../controllers/authController');
 
 const { authenticate } = require('../middlewares/authMiddleware');
@@ -63,5 +65,13 @@ router.get('/oauth/linkedIn-sync', authenticate, syncOAuthUser);
 
 // sync auth.users table with our custom users table after user signup with linkedin
 router.get('/oauth/google-sync', authenticate, syncGoogleOAuthUser);
+
+// password reset routes
+// get email  --> generate uuid   ---> inset to db with expiration data  ---> send password reset email
+router.post('/password-reset/request', authenticate, handlePasswordResetRequest);
+
+// confirm password reset with token
+// update user password with token
+router.post('/password-reset/confirm', authenticate, handlePasswordResetConfirm);
 
 module.exports = router;

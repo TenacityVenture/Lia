@@ -30,7 +30,7 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
   // Check if the message is to store JWTs
   if (message.type === 'STORE_JWTs') {
     // Store securely in Chrome storage
-    await chrome.storage.local.set({ access_token: message.access_token }, () => {
+    await chrome.storage.local.set({ access_token: message.access_token, refresh_token: message.refresh_token }, () => {
       console.log('Access token and refresh token saved in storage.');
     });
     sendResponse({ status: 'ok' });

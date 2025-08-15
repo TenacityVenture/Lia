@@ -42,7 +42,8 @@
     if (event.data.type === 'SEND_JWTs') {
       chrome.runtime.sendMessage({
         type: 'STORE_JWTs',
-        access_token: event.data.access_token
+        access_token: event.data.access_token,
+        refresh_token: event.data.refresh_token
       });
       liaUser = await window.getLiaUserInfo()
       initializeChatbot()
@@ -1898,7 +1899,7 @@
   }
 
   // helper functions
-  const refreshToken = async () => {
+  /*const refreshToken = async () => {
     try {
       const response = await fetch('https://api.getlia.live/api/auth/refresh-token', {
         method: 'POST',
@@ -1919,7 +1920,41 @@
       console.error('Error refreshing token:', error);
       return null;
     }
+  }*/
+
+  let refreshInFlight = null;
+
+  async function refreshToken() {
+    if (refreshInFlight) return refreshInFlight; // wait for the same promise
+
+    refreshInFlight = (async () => {
+      const { refresh_token } = await window.lia_getTokens();
+      if (!refresh_token) throw new Error("No refresh_token");
+
+      const resp = await fetch('https://api.getlia.live/api/auth/refresh-token', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        // credentials NOT needed since we don't rely on cookies for refresh anymore
+        body: JSON.stringify({ refresh_token })
+      });
+
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({}));
+        throw new Error(err?.error || 'Refresh failed');
+      }
+
+      const data = await resp.json();
+      await window.lia_setTokens({ access_token: data.access_token, refresh_token: data.refresh_token });
+      return data.access_token;
+    })();
+
+    try {
+      return await refreshInFlight;
+    } finally {
+      refreshInFlight = null;
+    }
   }
+
 
   // helper function to fetch access token in chrome storage
   const accessToken = async () => {

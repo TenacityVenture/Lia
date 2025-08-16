@@ -142,17 +142,44 @@ const refreshAccessToken = async (req, res) => {
 
   // If there's no cookie, the client isn't allowed to refresh — simple as that
   if (!refreshToken) {
+    // try getting it from body possible will be sent in body by the extension
+    refreshToken = req.body?.refresh_token;
+  }
+
+  if (!refreshToken) {
     return res.status(401).json({ error: 'Refresh token missing', message: 'No refresh token provided in cookies' });
   }
 
   // Asking Supabase to refresh the session using the token from our cookie
-  const { data, error } = await supabase.auth.refreshSession({
+  let { data, error } = await supabase.auth.refreshSession({
     refresh_token: refreshToken
   });
 
   if (error || !data.session) {
-    // If Supabase fails, the token is probably expired, revoked or has bee used already
-    return res.status(error?.status || 403).json({ error: error?.message || 'Invalid or expired refresh token', message: 'Invalid or expired refresh token' });
+    // If Supabase fails, the token is probably expired, revoked or has been used already
+    // we tried refresh_token from req body possible sent from extension and maybe the one we used above was from cookie
+    const { refresh_token } = req.body;
+    // to avoid running refresh twice check if refreshToken equals one from body
+    if (refreshToken === refresh_token) {
+      return res.status(error?.status || 403).json({ error: error?.message || 'Invalid or expired refresh token', message: 'Invalid or expired refresh token' });
+    }
+    
+    if (!refresh_token) {
+      return res.status(error?.status || 403).json({ error: error?.message || 'Invalid or expired refresh token', message: 'Invalid or expired refresh token' });
+    }
+    
+    // and I'm repeating some code below intentionally because maybe the refreshSession above might have uses the one from cookie
+    const result = await supabase.auth.refreshSession({
+      refresh_token: refresh_token
+    }); 
+
+    error = result.error
+    data = result.data
+
+    if (error || !data.session) {
+      return res.status(error?.status || 403).json({ error: error?.message || 'Invalid or expired refresh token', message: 'Invalid or expired refresh token' });
+    }
+
   }
 
   const newAccessToken = data.session.access_token;

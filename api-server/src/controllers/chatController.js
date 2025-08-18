@@ -147,6 +147,8 @@ exports.message = async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(10); // Adjust the limit as needed
 
+    //console.log('Chat history:', history);
+
     const messages = [...(history || [])]
       .reverse() // Reverse to maintain chronological order
       .map(m => ({ role: m.role === 'reference' ? 'user' : m.role, content: m.content }))
@@ -160,13 +162,39 @@ exports.message = async (req, res) => {
     if (realMessages.length === 1) {
       const titlePrompt = `Generate a concise title for a LinkedIn chat based on this message: "${message}". Maximum 4 words. Return only the title without any quotes or additional text.`;
       
-      const { choices } = await openai.chat.completions.create({
+      /*const { choices } = await openai.chat.completions.create({
         model: await getModelName(req),
         messages: [{ role: 'system', content: titlePrompt }],
       });
 
       const title = choices[0].message.content || 'New Chat';
       
+      // Update chat title if it exists
+      await supabase
+        .from('chats')
+        .update({ title })
+        .eq('id', chatId)
+        .eq('user_id', userId);*/
+
+      console.log('Generating chat title with prompt:', titlePrompt);
+      // use bedrock invokeAI to generate the title
+      const result = await invokeAI({
+        req,
+        messages: [
+          {
+            role: 'user',
+            content: titlePrompt
+          }
+        ],
+        temperature: 0.7,
+        maxTokens: 10 // Limit to a short title
+      });
+      console.log('AI response for title:', result);
+
+      console.log(result)
+
+      const title = result.Content || 'New Chat';
+
       // Update chat title if it exists
       await supabase
         .from('chats')
@@ -188,12 +216,20 @@ exports.message = async (req, res) => {
       temperature: 0.7, // controlled creativity
     });*/
 
+    // for bedrock
+    const systemMsg = chatSystemMessage(userInfo).content;
+
+  // If there is history, prepend system to the FIRST user message
+    const formatted = [
+      { role: "user", content: `${systemMsg}\n` },
+      ...messages
+    ];
+
+    //console.log('Messages for AI:', messages, formatted);
+
     const result = await invokeAI({
       req,
-      messages: [
-        chatSystemMessage(userInfo),
-        ...messages,
-      ],
+      messages: formatted,
       temperature: 0.7, // controlled creativity
     });
 
@@ -208,6 +244,9 @@ exports.message = async (req, res) => {
     // 3. Save user + assistant messages
     await supabase.from('chat_messages').insert([
       { chat_id: chatId, user_id: userId, role: 'user', content: message },
+    ]);
+
+    await supabase.from('chat_messages').insert([
       { chat_id: chatId, user_id: userId, role: 'assistant', content: aiResponse, tokens: usage.total_tokens || 0 } // Fallback to 0 if not available
     ]);
 

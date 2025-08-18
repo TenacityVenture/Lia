@@ -37,6 +37,7 @@ exports.getCompletionSuggestComment = async (req, prompt) => {
       temperature: 0.8,
       maxTokens: 500
     });
+    console.log('AI Service - Suggest Comment Result:', result);
     return result;
   } catch (err) {
     return fallbackResponse(err);

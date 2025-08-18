@@ -76,10 +76,13 @@ const invokeAI = async ({
   }
 
   const result = await llm.invoke(messages);
-  console.log(result.usage_metadata)
+
+  const usage = await result.response_metadata?.usage || {};
+  usage.total_tokens = usage.input_tokens + usage.output_tokens;
+
   return {
     Content: result.content.trim(),
-    Usage: result?.usage_metadata || {},
+    Usage: usage,
     Model: modelName
   };
 };

@@ -147,12 +147,36 @@ exports.message = async (req, res) => {
       .order('created_at', { ascending: false })
       .limit(10); // Adjust the limit as needed
 
-    //console.log('Chat history:', history);
+    console.log('Chat history:', history);
 
+    /*const messages = [...(history || [])]
+      .reverse() // Reverse to maintain chronological order
+      .map(m => ({ role: m.role === 'reference' ? 'user' : m.role, content: m.content }))
+      .concat([{ role: 'user', content: `User message: ${message}` }]);*/
+
+    // for bedrock
     const messages = [...(history || [])]
       .reverse() // Reverse to maintain chronological order
       .map(m => ({ role: m.role === 'reference' ? 'user' : m.role, content: m.content }))
       .concat([{ role: 'user', content: `User message: ${message}` }]);
+    // check if last message is from user, if so, append the new message to it
+    // other wise, just append the new message
+    //if (messages.length > 0 && messages[messages.length - 1].role === 'user') {
+    //  messages[messages.length - 1].content += `\n${message}`;
+    //} else {
+    //  messages.push({ role: 'user', content: message });
+    //}
+
+    // loop again if there are two messages from user (i.e role === 'user')
+    // make them one message because we can't have
+    // {role === user, content === content} and {role === user, content === content} next to each other
+    // it should be user message then assistant then message then assistant etc
+    for (let i = messages.length - 1; i > 0; i--) {
+      if (messages[i].role === 'user' && messages[i - 1].role === 'user') {
+        messages[i - 1].content += `\n${messages[i].content}`;
+        messages.splice(i, 1); // Remove the current user message
+      }
+    }
 
     // if history is grater than or equal to 2
     // generate a title for the chat based on the first two messages
@@ -225,7 +249,7 @@ exports.message = async (req, res) => {
       ...messages
     ];
 
-    //console.log('Messages for AI:', messages, formatted);
+    console.log('Messages for AI:', messages, formatted);
 
     const result = await invokeAI({
       req,

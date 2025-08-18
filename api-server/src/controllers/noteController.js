@@ -1,4 +1,4 @@
-const openaiService = require('../services/openaiService');
+const aiService = require('../services/aiService');
 const usageLogger = require('../services/usageLogger');
 const supabase = require('../utils/supabaseClient');
 const { generateNoteTitle } = require('../utils/helpers');
@@ -21,7 +21,7 @@ exports.enhanceNote = async (req, res) => {
 
   try {
     // Call the AI service to enhance the note
-    const { Content: enhancedNote, Usage: usage } = await openaiService.getCompletionEnhanceNote(req, content, prompt, context);
+    const { Content: enhancedNote, Usage: usage } = await aiService.getCompletionEnhanceNote(req, content, prompt, context);
     if (!enhancedNote) {
       return res.status(400).json({ error: 'AI response is empty' });
     }

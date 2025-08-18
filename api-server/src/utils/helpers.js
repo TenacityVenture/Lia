@@ -144,12 +144,28 @@ exports.generateNoteTitle = async (req, content) => {
   Avoid introducing new ideas or being overly creative.
   Do not add any text before or after the title. Just return the title as bold unicode characters.`;
 
-  const { choices } = await openai.chat.completions.create({
+  /*const { choices } = await openai.chat.completions.create({
     model: await this.getModel(req),
     messages: [{ role: 'user', content: titlePrompt }],
   });
 
   const title = choices[0].message.content || 'New Note'; // Fallback to 'New Note' if no title is generated
+    */
+
+  // for bedrock
+  const result = await invokeAI({
+    req,
+    messages: [
+      {
+        role: 'user',
+        content: titlePrompt
+      }
+    ],
+    temperature: 0.7,
+    maxTokens: 10 // Limit to a short title
+  });
+
+  const title = result.Content || 'New Note'; // Fallback to 'New Note' if no title is generated
 
   // Ensure the title is a string and trim it
   if (typeof title !== 'string') {

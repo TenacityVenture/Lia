@@ -9,7 +9,7 @@ const modelMap = require('./modelMap');
  * @param {string} provider - AI provider ('openai', 'bedrock', etc.)
  * @returns {Promise<string>} - The model name
  */
-exports.getModelName = async (req, provider = 'openai') => {
+exports.getModelName = async (req, provider = 'bedrock') => {
   const userId = req.user?.sub;
   if (!userId) {
     console.warn('Missing user ID. Defaulting to openai:gpt-3.5-turbo');

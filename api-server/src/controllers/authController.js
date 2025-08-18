@@ -158,7 +158,7 @@ const refreshAccessToken = async (req, res) => {
   if (error || !data.session) {
     // If Supabase fails, the token is probably expired, revoked or has been used already
     // we tried refresh_token from req body possible sent from extension and maybe the one we used above was from cookie
-    const { refresh_token } = req.body;
+    const refresh_token = req.body?.refresh_token;
     // to avoid running refresh twice check if refreshToken equals one from body
     if (refreshToken === refresh_token) {
       return res.status(error?.status || 403).json({ error: error?.message || 'Invalid or expired refresh token', message: 'Invalid or expired refresh token' });

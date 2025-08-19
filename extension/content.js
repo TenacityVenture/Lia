@@ -51,9 +51,7 @@
 
     // clear tokens when logout on the website
     if (event.data.type === 'CLEAR_JWTs') {
-      chrome.storage.local.remove(['access_token'], () => {
-        console.log('Access token and refresh token cleared from storage.');
-      });
+      await window.lia_clearTokens();
 
       liaUser = null;
     }
@@ -482,8 +480,8 @@
     try {
       showToolbarLoading()
 
-      let rewrittenText = null;
-      try {
+      let rewrittenText = await generateRewrittenText(fullSentence, 'rewrite');
+      /*try {
         // generate ai rewritten text
         rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
       } catch (error) {
@@ -491,7 +489,7 @@
 
           // call generateRewrittenText again after refresh
           rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
-      }
+      }*/
       if (rewrittenText) {
         await replaceTextInSentence(selection, originalSentence, rewrittenText)
         hideToolbar()
@@ -521,15 +519,7 @@
     try {
       showToolbarLoading()
       let transformedText = ""
-      try {
-        transformedText = await generateRewrittenText(selectedText, type)
-      } catch (error) {
-        // refresh the token
-        await refreshToken() // refresh the token
-
-        // call generateRewrittenText again after refresh
-        transformedText = await generateRewrittenText(selectedText, type)
-      }
+      transformedText = await generateRewrittenText(selectedText, type)
       //replaceSelectedText(transformedText)
       if (!transformedText) {
         showToolbarError('Failed to fetch transformed text')
@@ -672,7 +662,7 @@
 
     prompt += ` Return only the improved text without quotes or explanations.`
 
-    const response = await fetch('https://api.getlia.live/api/prompt/improve', {
+    const response = await window.lia_fetchWithAuth('https://api.getlia.live/api/prompt/improve', {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -1015,20 +1005,7 @@
             </div>
             `
             return
-          } else if (suggestions && suggestions.error && suggestions.error.includes('Invalid or expired token')) {
-              // try refreshing the token
-              try {
-                await refreshToken()
-                suggestions = await generateReplyToCommentSuggestions(context)
-              } catch (error) {
-                console.error("Error refreshing token:", error)
-                suggestionsContainer.innerHTML = `
-                <div style="color: red; padding: 10px;">
-                Error: ${error.message || "Failed to generate suggestions"}, maybe your session has expired. Please try signing in again, <a href='https://getlia.live' target='_blank'>here</a>.
-                </div>
-                `
-              }
-          }
+          } 
         } catch (error) {
             console.error("Error generating reply suggestions:", error)
             throw new Error("Failed to generate suggestions")
@@ -1054,7 +1031,7 @@
             </div>
             `
             return
-          } else if (suggestions && suggestions.error && suggestions.error.includes('Invalid or expired token')) {
+          } /*else if (suggestions && suggestions.error && suggestions.error.includes('Invalid or expired token')) {
               // try refreshing the token
               try {
                 await refreshToken()
@@ -1067,7 +1044,7 @@
                 </div>
                 `
               }
-          }
+          }*/
         } catch (error) {
           console.error("Error generating comment suggestions:", error)
           throw new Error("Failed to generate suggestions")
@@ -1134,7 +1111,28 @@
 
       let improvedText = null;
       let improvements = []; // array improvements that was made on the post
-      try {
+      const response = await generateImprovedText(currentText)
+
+      if (response.error && response.error.includes('missing plan')) {
+        loadingOverlay.remove()
+        showTemporaryMessage(editor, "Please upgrade your plan to use this feature. <a href='https://www.getlia.live/pricing' target='_blank'>Upgrade Now</a>", "error")
+        settings.isRewriting = false; // reset the flag
+        return
+      } else if (response.error && response.error.includes('Plan expired')) {
+        loadingOverlay.remove()
+        showTemporaryMessage(editor, "Your plan has expired. Please renew your subscription to continue using this feature. <a href='https://www.getlia.live/pricing' target='_blank'>Renew Now</a>", "error")
+        settings.isRewriting = false; // reset the flag
+        return
+      } else if (response.error && response.error.includes('Invalid or expired token')) {
+        loadingOverlay.remove()
+        showTemporaryMessage(editor, "Your session has expired. Please sign in again to continue using this feature.", "error")
+        settings.isRewriting = false; // reset the flag
+        return
+      }
+
+      improvedText = window.cleanAIResponse(response.response) || null
+      improvements = response.improvements || []
+      /*try {
         const response = await generateImprovedText(currentText)
         improvedText = window.cleanAIResponse(response.response) || null
         improvements = response.improvements || []
@@ -1147,7 +1145,7 @@
         } catch (retryError) {
           throw retryError // pass it to outer catch
         }
-      }
+      }*/
 
       // Remove loading overlay
       loadingOverlay.remove()
@@ -1213,28 +1211,29 @@
     if (!settings.rewrite_enabled) return;
 
     // setup prompt
-    const prompt = `Improve and rewrite the following LinkedIn post to make it more engaging, professional, and impactful. Keep the core message but enhance clarity, flow, and engagement. Maintain unicode characters, maintain the same tone (${settings.tone}) and make it suitable for the ${settings.industry} industry:
+    const prompt = `Improve and rewrite the following LinkedIn post to make it more engaging, professional, and impactful. Keep the core message but enhance clarity, flow, and engagement. Maintain the same tone (${settings.tone}) and make it suitable for the ${settings.industry} industry:
 
     "${originalText}"
 
     Return only the improved text without any explanations or quotes. Include proper line breaks and formatting as needed - whitespaces.`
 
     // fetch the response from api-server
-    const response = await fetch("https://api.getlia.live/api/prompt/rewrite", {
+    const response = await window.lia_fetchWithAuth("https://api.getlia.live/api/prompt/rewrite", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${await accessToken()}`,
       },
+      credentials: 'include',
       body: JSON.stringify({prompt, originalText}),
     })
 
-    if (!response.ok) {
-      throw new Error(data.error?.message || "Failed to generate improved text")
-    }
-
     // get the json response
     const data = await response.json()
+
+    if (!response.ok) {
+      return data
+    }
 
     return data
   }
@@ -1704,7 +1703,7 @@
     - Feel free to be slightly opinionated, clever, or relatable`
 
     async function generate() {
-      const response = await fetch ("https://api.getlia.live/api/prompt/suggest-reply", {
+      const response = await window.lia_fetchWithAuth("https://api.getlia.live/api/prompt/suggest-reply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1720,7 +1719,7 @@
 
     let data = await generate()
 
-    if (data.error && data.message === 'Invalid Token') {
+    /*if (data.error && data.message === 'Invalid Token') {
       // refresh the token
       const { access_token } = await chrome.storage.local.get(['access_token']);
       await refreshToken(access_token);
@@ -1729,7 +1728,7 @@
       const new_data = await generate();
       data = new_data
 
-    }
+    }*/
 
     if (data.error) {
       //throw new Error(data.error?.message || "Failed to generate suggestions")
@@ -1789,7 +1788,7 @@
     
 
     async function generate() {
-      const response = await fetch ("https://api.getlia.live/api/prompt/suggest-reply", {
+      const response = await window.lia_fetchWithAuth("https://api.getlia.live/api/prompt/suggest-reply", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -1804,17 +1803,6 @@
     }
 
     let data = await generate()
-
-    if (data.error && data.message === 'Invalid Token') {
-      // refresh the token
-      const { access_token } = await chrome.storage.local.get(['access_token']);
-      await refreshToken(access_token);
-
-      // retry again
-      const new_data = await generate();
-      data = new_data
-
-    }
 
     if (data.error) {
       //throw new Error(data.error?.message || "Failed to generate suggestions")
@@ -1897,64 +1885,6 @@
       editor.textContent = text
     }
   }
-
-  // helper functions
-  /*const refreshToken = async () => {
-    try {
-      const response = await fetch('https://api.getlia.live/api/auth/refresh-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        // include credentials to allow cookies to be sent
-        credentials: 'include',
-        body: JSON.stringify({ refresh_token: 'no refresh token required - using cookie instead' }),
-      });
-
-      const data = await response.json();
-
-      await chrome.storage.local.set({ access_token: data.access_token });
-      return data.access_token;
-
-    } catch (error) {
-      console.error('Error refreshing token:', error);
-      return null;
-    }
-  }*/
-
-  let refreshInFlight = null;
-
-  async function refreshToken() {
-    if (refreshInFlight) return refreshInFlight; // wait for the same promise
-
-    refreshInFlight = (async () => {
-      const { refresh_token } = await window.lia_getTokens();
-      if (!refresh_token) throw new Error("No refresh_token");
-
-      const resp = await fetch('https://api.getlia.live/api/auth/refresh-token', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // credentials NOT needed since we don't rely on cookies for refresh anymore
-        body: JSON.stringify({ refresh_token })
-      });
-
-      if (!resp.ok) {
-        const err = await resp.json().catch(() => ({}));
-        throw new Error(err?.error || 'Refresh failed');
-      }
-
-      const data = await resp.json();
-      await window.lia_setTokens({ access_token: data.access_token, refresh_token: data.refresh_token });
-      return data.access_token;
-    })();
-
-    try {
-      return await refreshInFlight;
-    } finally {
-      refreshInFlight = null;
-    }
-  }
-
 
   // helper function to fetch access token in chrome storage
   const accessToken = async () => {
@@ -3757,7 +3687,7 @@
       const body = {notes: await getNotesFromStorage()}
       const syncNotes = async () => {
         // save notes to server inorder to sync
-        const response = await fetch('https://api.getlia.live/api/note/notes', {
+        const response = await window.lia_fetchWithAuth('https://api.getlia.live/api/note/notes', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -3784,18 +3714,7 @@
         return data.success;
       }
 
-      try {
-        await syncNotes()
-      } catch (error) {
-        // try refreshing token
-        await refreshToken()
-        try {
-          await syncNotes() // try syncing notes again
-        } catch (error) {
-          console.error('Error syncing notes:', error)
-          showTemporaryNotification('Error syncing notes', 'error')
-        }
-      }
+      await syncNotes()
     })
 
     messageInput.value = ""
@@ -3804,7 +3723,7 @@
       // fetch notes from server
       const fetchNotes = async () => {
         // fetch notes from server
-        const response = await fetch('https://api.getlia.live/api/note/notes', {
+        const response = await window.lia_fetchWithAuth('https://api.getlia.live/api/note/notes', {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -3835,7 +3754,8 @@
         }
       }
 
-      try {
+      await fetchNotes()
+      /*try {
         await fetchNotes()
       } catch (error) {
         // try refreshing token
@@ -3847,7 +3767,7 @@
           showTemporaryNotification('Error fetching notes', 'error')
           return
         }
-      }
+      }*/
         
       // Hide quick suggestions
       hideQuickSuggestions()
@@ -3859,7 +3779,7 @@
       //modeTitle.textContent = "LIA Notes"
 
       // typeWriter effect for modeTitle
-      await window.typeWriter("LIA Notes", modeTitle)
+      window.typeWriter("LIA Notes", modeTitle)
 
       sidebarHeader.textContent = "Recent Notes"
       newChatBtn.innerHTML = `
@@ -3903,11 +3823,12 @@
       //modeTitle.textContent = "LIA"
 
       // Typewriter effect for mode title
-      await window.typeWriter("LIA", modeTitle)
+      window.typeWriter("LIA", modeTitle)
 
       sidebarHeader.textContent = "Recent Chats"
       newChatBtn.innerHTML = `+ New Chat`
       messageInput.placeholder = "What do you want to post?"
+      messageInput.setAttribute("rows", "1")
       inputActions.style.display = "none"
       modeIndicator.style.display = "none"
 
@@ -4091,30 +4012,6 @@
       timestamp: chatbotState.currentNoteId ? (prevNote?.timestamp || Date.now()) : Date.now(),
       lastModified: Date.now(),
     }
-
-    /*
-      // example note structure
-      const note = {
-      id: noteId,
-      title: await generateNoteTitle(content),
-      content: [
-        // array of note contents - like chats messages
-        {
-          contentId: generateNoteId(),
-          type: "text",
-          text: content,
-        },
-        {
-          contentId: generateNoteId(),
-          type: "reference",
-          content: referenceMode ? chatbotState.referencedContent : "",
-        }
-      ]
-      tags: extractHashtags(content),
-      context: chatbotState.noteContext,
-      timestamp: chatbotState.currentNoteId ? (await getNoteFromStorage(noteId))?.timestamp || Date.now() : Date.now(),
-      lastModified: Date.now(),
-    }*/
 
     chatbotState.currentNoteId = noteId
 
@@ -4825,16 +4722,6 @@
           showTemporaryNotification("Your plan has expired. Please renew your subscription.", "error")
           addMessageToChat('assistant', 'Your plan has expired. Please renew your subscription to continue using this feature. <a href="https://www.getlia.live/pricing" target="_blank" style="color: blue">Renew Now</a>')
           return
-        } else if (response && response.error && response.error.includes('Invalid or expired token')) {
-            // try refreshing the token
-            try {
-              await refreshToken()
-              response = await generateChatResponse(message) // try again after refreshing token
-            } catch (refreshError) {
-              console.error("Error refreshing token:", refreshError)
-              response = "Sorry, I encountered an error while trying to generate a response. Please try again later. 😔"
-            }
-            throw new Error("Failed to generate response from AI")
         }
         // Handle other errors
         throw new Error(response.error || "Failed to generate response from AI")
@@ -4988,7 +4875,7 @@
       reference: chatbotState.referencedContent
     }
 
-    const response = await fetch(`https://api.getlia.live/api/chat/${chatbotState.currentConversationId}/message`, {
+    const response = await window.lia_fetchWithAuth(`https://api.getlia.live/api/chat/${chatbotState.currentConversationId}/message`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -5030,7 +4917,7 @@
 
     // now instead of creating a new conversation, we will create a new chat in api server
     async function createNewChat() {
-      const response = await fetch(`https://api.getlia.live/api/chat/start`, {
+      const response = await window.lia_fetchWithAuth(`https://api.getlia.live/api/chat/start`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -5049,24 +4936,7 @@
       return chat
     }
 
-    try {
-      await createNewChat()
-    } catch (error) {
-      console.error("Error creating new chat:", error)
-      // try refreshing the token
-
-      try {
-        await refreshToken()
-        createNewChat() // try again after refreshing token
-      } catch (error) {
-        console.error("Error refreshing token:", error)
-        // Couldn't refresh token, couldn't create new chat
-        // Give up and show error message to user
-        addMessageToChat("assistant", "Unable to create new chat. Please check your connection or try signing in again <a href='https://www.getlia.live/login' target='_blank'> here</a> ")
-        throw new Error("Unable to create new chat. Please check your connection or try signing in again.")
-        
-      }
-    }
+    await createNewChat()
 
     // Update conversation list
     await updateConversationList()
@@ -5084,23 +4954,8 @@
     let conversations = []
 
     // load conversations from API server
-    try {
-      const chats = await loadConversations()
-      conversations = chats
-    } catch (error) {
-      console.error("Error loading conversations:", error)
-      // try refreshing the token
-      try {
-      await refreshToken()
-        conversations = await loadConversations()
-      } catch {
-        console.error("Error refreshing token:", error)
-        // If refresh fails, fallback to localStorage
-        //conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
-        addMessageToChat("assistant", "Unable to load conversations. Please check your connection or try signing in again <a href='https://www.getlia.live/login' target='_blank' style='color:blue'> here </a>")
-        throw new Error("Unable to load conversations. Please check your connection or try signing in again.")
-      }
-    }
+    const chats = await loadConversations()
+    conversations = chats
 
     chatbotState.conversations = conversations
     if (chatbotState.conversations.length === 0) {
@@ -5163,19 +5018,7 @@
           // Original chat functionality
           let conversations = []
           // load conversations from API server
-          try {
-            conversations = await loadConversations()
-          } catch (error) {
-            console.error("Error loading conversations:", error)
-            // try refreshing the token
-            try {
-              await refreshToken()
-              conversations = await loadConversations()
-            } catch {
-              console.error("Error refreshing token:", error)
-            }
-          }
-
+          conversations = await loadConversations()
 
           conversationList.innerHTML = conversations
             .map(
@@ -5499,7 +5342,7 @@
 
     // load conversation form API server
     async function loadChats () {
-      const response = await fetch(`https://api.getlia.live/api/chat/${conversationId}/messages`, {
+      const response = await window.lia_fetchWithAuth(`https://api.getlia.live/api/chat/${conversationId}/messages`, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -5514,24 +5357,8 @@
       return chats
     }
 
-    try {
-      const chats = await loadChats()
-      conversation = chats
-    } catch (error) {
-      console.error("Error loading conversation:", error)
-      // try refreshing the token
-      try {
-        await refreshToken()
-        const chats = await loadChats()
-        conversation = chats
-      }
-      catch (refreshError) {
-        console.error("Error refreshing token:", refreshError)
-        // fails to refresh token, fails to load conversation
-        // Give up and show error message to user
-        throw new Error("Unable to load conversation. Please check your connection or try signing in again.")
-      }
-    }
+    const chats = await loadChats()
+    conversation = chats
 
     if (!conversation) return
 
@@ -5641,25 +5468,11 @@
     // const { access_token } = await chrome.storage.local.get(['access_token'])
     // if (!access_token) return false
     //
-    let response = await fetch('https://api.getlia.live/api/user/subscription', {
+    let response = await window.lia_fetchWithAuth('https://api.getlia.live/api/user/subscription', {
       headers: { Authorization: `Bearer ${await accessToken()}` },
       credentials: "include"
     })
     let data = await response.json()
-
-    // try to refresh the token
-    if (data.error) {
-      await refreshToken()
-
-      // fetching again
-      response = await fetch('https://api.getlia.live/api/user/subscription', {
-        headers: { Authorization: `Bearer ${await accessToken()}` },
-        credentials: "include"
-      })
-      data = await response.json()
-
-      return 'Request failed: Unauthorized'
-    }
 
     // return plan
     return data.isPro
@@ -6180,12 +5993,6 @@
       }, 2000)
     }, 5000)
 
-    /*notification.textContent = message
-    document.body.appendChild(notification)
-    setTimeout(() => {
-      notification.style.animation = "slideOutRight 0.3s ease"
-      setTimeout(() => notification.remove(), 300)
-    }, 3000)*/
   }
   
   // Make function globally available
@@ -6227,7 +6034,7 @@
   // chatbot helper functions
   async function loadConversations() {
     const access_token = await accessToken()
-    const response = await fetch(`https://api.getlia.live/api/chat/history`, {
+    const response = await window.lia_fetchWithAuth(`https://api.getlia.live/api/chat/history`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

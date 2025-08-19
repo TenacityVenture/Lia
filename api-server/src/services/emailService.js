@@ -49,7 +49,7 @@ async function sendWelcomeEmail(user) {
 
   const params = {
     Destination: { ToAddresses: [user.email] },
-    Source: process.env.SES_FROM_EMAIL, // "LIA <hello@getlia.live>" - verified domain
+    Source: "hello@getlia.live", // "LIA <hello@getlia.live>" - verified domain
     Template: 'LIA_WELCOME_TEMPLATE', // must match template name in SES
     TemplateData: JSON.stringify(templateData),
     ConfigurationSetName: process.env.SES_CONFIGSET || undefined // configuration sets for sending metrics
@@ -90,12 +90,12 @@ async function sendPasswordResetEmail(user, token) {
   const templateData = {
     name: user.name || user.username || 'Friend',
     reset_url: `${process.env.BASE_URL || 'https://getlia.live'}/reset-password?token=${token}`,
-    unsubscribe_url: `${process.env.BASE_URL || 'https://getlia.live'}/unsubscribe?uid=${user.id}`
+    //unsubscribe_url: `${process.env.BASE_URL || 'https://getlia.live'}/unsubscribe?uid=${user.id}`
   };
 
   const params = {
     Destination: { ToAddresses: [user.email] },
-    Source: process.env.SES_FROM_EMAIL,
+    Source: 'no-reply@getlia.live',
     Template: 'LIA_PASSWORD_RESET', // created programmatically in SES
     TemplateData: JSON.stringify(templateData),
     ConfigurationSetName: process.env.SES_CONFIGSET || undefined // if you use configuration sets for sending metrics
@@ -104,7 +104,6 @@ async function sendPasswordResetEmail(user, token) {
   try {
     const cmd = new SendTemplatedEmailCommand(params);
     const res = await ses.send(cmd);
-    console.log(res, 'this is the response from SES');
     await supabase.from('email_logs').insert({
       user_id: user.id,
       email_to: user.email,

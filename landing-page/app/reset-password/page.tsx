@@ -63,32 +63,29 @@ export default function ResetPasswordPage() {
       //await new Promise((resolve) => setTimeout(resolve, 1500))
 
       // call an api to reset the password
-      //const apiUrl: string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/change-password`
-
-      /*const response = await fetch(apiUrl, {
+      await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/auth/reset-password/confirm`, {
         method: "PUT",
         headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`,
         },
-        credentials: "include", // Include cookies if needed
         body: JSON.stringify({ token, password }),
       })
-        
-      if (!response.ok) {
-        const errorData = await response.json()
-        setStatus("error")
-        throw new Error(errorData.error || "Failed to reset password")
-      }*/
+        .then((res) => res.json())
+        .then((data) => {
+          console.log(data)
+          if (data.error) {
+            throw new Error(data.error || "Failed to reset password")
+          }
+        })
 
-      supabase.auth.updateUser({
+      /*supabase.auth.updateUser({
         password: password,
       }).then(({ data, error }) => {
         if (error) {
           throw new Error(error.message)
         }
         console.log("Password updated successfully", data)
-      })
+      })*/
 
       setStatus("success")
     } catch (err) {

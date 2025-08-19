@@ -28,14 +28,29 @@ export default function ForgotPasswordPage() {
     try {
       // Simulate API call
       //await new Promise((resolve) => setTimeout(resolve, 1500))
-      supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      })
+      //supabase.auth.resetPasswordForEmail(email, {
+      //  redirectTo: `${window.location.origin}/reset-password`,
+      //})
 
       // Check if email is valid format
       if (!email.includes("@") || !email.includes(".")) {
         throw new Error("Please enter a valid email address")
       }
+
+      await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/auth/password-reset/request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          console.log(data)
+          if (data.error) {
+            throw new Error(data.error)
+          }
+        })
 
       setStatus("success")
     } catch (err) {

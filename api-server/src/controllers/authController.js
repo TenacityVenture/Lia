@@ -252,7 +252,7 @@ const syncOAuthUser = async (req, res) => {
       const { data: userData } = await supabase
         .from('users')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', supabaseUser.sub)
         .single();
 
       await sendWelcomeEmail(userData);
@@ -327,7 +327,7 @@ const syncGoogleOAuthUser = async (req, res) => {
       const { data: userData } = await supabase
         .from('users')
         .select('*')
-        .eq('id', user.id)
+        .eq('id', supabaseUser.sub)
         .single();
 
       await sendWelcomeEmail(userData);

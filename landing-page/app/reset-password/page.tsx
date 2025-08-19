@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
-import { supabase } from "@/lib/supabaseClient"
+//import { supabase } from "@/lib/supabaseClient"
 
 export default function ResetPasswordPage() {
   const router = useRouter()

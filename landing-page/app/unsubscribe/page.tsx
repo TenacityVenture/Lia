@@ -34,6 +34,7 @@ export default function UnsubscribePage() {
           setStatus("error");
         }
       } catch (err) {
+        console.log("Error unsubscribing user:", err);
         setStatus("error");
       }
     };

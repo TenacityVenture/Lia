@@ -89,8 +89,8 @@ async function sendWelcomeEmail(user) {
 async function sendPasswordResetEmail(user, token) {
   const templateData = {
     name: user.name || user.username || 'Friend',
-    reset_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://getlia.live'}/reset-password?token=${token}`,
-    unsubscribe_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://getlia.live'}/unsubscribe?uid=${user.id}`
+    reset_url: `${process.env.BASE_URL || 'https://getlia.live'}/reset-password?token=${token}`,
+    unsubscribe_url: `${process.env.BASE_URL || 'https://getlia.live'}/unsubscribe?uid=${user.id}`
   };
 
   const params = {

@@ -407,7 +407,6 @@ const changePassword = async (req, res) => {
 };
 
 const handlePasswordResetRequest = async (req, res) => {
-  const userId = req.user.sub; // this comes from the JWT decoded by our authenticate middleware
   const { email } = req.body;
 
   console.log(req.body)
@@ -415,13 +414,17 @@ const handlePasswordResetRequest = async (req, res) => {
   const { data: user } = await supabase
     .from('users')
     .select('*')
-    .eq('id', userId)
+    .eq('email', email)
     .single();
 
   console.log('user', user)
 
   if (!email) {
     return res.status(400).json({ error: 'Email is required' });
+  }
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found', message: 'No user found with this email' });
   }
 
   if (user.email !== email) {

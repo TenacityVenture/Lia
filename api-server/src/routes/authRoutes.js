@@ -11,7 +11,8 @@ const {
     logoutUser,
     changePassword,
     handlePasswordResetRequest,
-    handlePasswordResetConfirm
+    handlePasswordResetConfirm,
+    marketingUnsubscribe
 } = require('../controllers/authController');
 
 const { authenticate } = require('../middlewares/authMiddleware');
@@ -73,5 +74,9 @@ router.post('/password-reset/request', handlePasswordResetRequest);
 // confirm password reset with token
 // update user password with token
 router.post('/password-reset/confirm', handlePasswordResetConfirm);
+
+// Marketing unsubscribe route
+// This allows users to opt out of marketing emails
+router.post('/unsubscribe', marketingUnsubscribe);
 
 module.exports = router;

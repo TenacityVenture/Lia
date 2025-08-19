@@ -68,7 +68,7 @@ const welcomeToLiaHtml = `<!doctype html>
 const welcomeToLiaText = `Welcome to LIA, {{name}} 👋
 
 Thanks for joining LIA — your LinkedIn Intelligent Assistant.
-We’re excited to help you enhance your LinkedIn experience with AI 🚀.
+We're excited to help you enhance your LinkedIn experience with AI 🚀.
 
 👉 Get started here: {{dashboard_url}}
 

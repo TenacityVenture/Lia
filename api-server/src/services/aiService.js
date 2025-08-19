@@ -69,8 +69,7 @@ exports.getCompletionPostImprovements = async (req, prompt) => {
         postImprovementSystemMessage(userInfo),
         { role: 'user', content: prompt }
       ],
-      temperature: 0.7,
-      maxTokens: 1000
+      temperature: 0.7
     });
     return result;
   } catch (err) {
@@ -88,8 +87,7 @@ exports.getCompletionPostRewrite = async (req, prompt) => {
         postRewriteSystemMessage(userInfo),
         { role: 'user', content: prompt }
       ],
-      temperature: 0.7,
-      maxTokens: 1000
+      temperature: 0.7
     });
     return result;
   } catch (err) {

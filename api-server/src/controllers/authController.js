@@ -1,4 +1,6 @@
 const supabase = require('../utils/supabaseClient');
+const { sendWelcomeEmail, sendPasswordResetEmail } = require('../services/emailService');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * Handles logging in a user with their email and password.
@@ -119,6 +121,20 @@ const registerUser = async (req, res) => {
     maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
   });
 
+  try {
+    const { data: userData } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    await sendWelcomeEmail(userData);
+    console.log('Welcome email sent successfully');
+  } catch (err) {
+    console.error('Could not send welcome email', err);
+    // still return success but log for retry
+  }
+
   // We return the access token so the frontend can start authenticated requests
   res.status(201).json({ access_token: accessToken, refresh_token: refreshToken, user });
 };
@@ -231,6 +247,20 @@ const syncOAuthUser = async (req, res) => {
       social_provider: 'linkedin',
       plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
     });
+
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      await sendWelcomeEmail(userData);
+      console.log('Welcome email sent successfully');
+    } catch (err) {
+      console.error('Could not send welcome email', err);
+      // still return success but log for retry
+    }
   }
 
   // send refresh token in a secure cookie
@@ -275,7 +305,7 @@ const syncGoogleOAuthUser = async (req, res) => {
   // optional: check if already exists
   const { data: existingUser } = await supabase
     .from('users')
-    .select('id')
+    .select('*')
     .eq('id', supabaseUser.sub)
     .single();
 
@@ -292,6 +322,20 @@ const syncGoogleOAuthUser = async (req, res) => {
       social_provider: 'google',
       plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
     });
+
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      await sendWelcomeEmail(userData);
+      console.log('Welcome email sent successfully');
+    } catch (err) {
+      console.error('Could not send welcome email', err);
+      // still return success but log for retry
+    }
   }
 
   // send refresh token in a secure cookie
@@ -389,6 +433,76 @@ const changePassword = async (req, res) => {
   return res.status(200).json({ message: 'Password updated. Please log in again.' });
 };
 
+const handlePasswordResetRequest = async (req, res) => {
+  const { email } = req.body;
+
+  console.log(req.body)
+
+  const { data: user } = await supabase
+    .from('users')
+    .select('*')
+    .eq('email', email)
+    .single();
+
+  console.log('user', user)
+
+  if (!email) {
+    return res.status(400).json({ error: 'Email is required' });
+  }
+
+  if (!user) {
+    return res.status(404).json({ error: 'User not found', message: 'No user found with this email' });
+  }
+
+  if (user.email !== email) {
+    return res.status(400).json({ error: 'Email does not match user' });
+  }
+
+  // Generate a password reset token
+  const token = uuidv4();
+  const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+
+  await supabase.from('password_resets').insert({
+    user_id: user.id,
+    token,
+    expires_at: expiresAt.toISOString(),
+  });
+  
+  try {
+    await sendPasswordResetEmail(user, token);
+    res.json({ ok: true, message: 'Password reset email sent successfully' });
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to send password reset email', message: err.message });
+  }
+};
+
+const handlePasswordResetConfirm = async (req, res) => {
+  try {
+    const { token, new_password } = req.body;
+    const { data: pr, error } = await supabase
+      .from('password_resets')
+      .select('*')
+      .eq('token', token)
+      .eq('used', false)
+      .single();
+    if (error || !pr) return res.status(400).json({ ok: false, error: 'Invalid token' });
+    if (new Date(pr.expires_at) < new Date()) return res.status(400).json({ ok: false, error: 'Expired token' });
+
+    // TODO: update password in your auth system here
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: new_password
+    });
+
+    if (updateError) {
+      return res.status(500).json({ ok: false, error: 'Failed to update password', message: updateError.message });
+    }
+
+    await supabase.from('password_resets').update({ used: true }).eq('id', pr.id);
+    return res.json({ ok: true, message: 'Password reset successfully' });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e.message, message: 'Failed to reset password' });
+  }
+};
 
 module.exports = {
     loginUser,
@@ -397,6 +511,8 @@ module.exports = {
     syncOAuthUser,
     syncGoogleOAuthUser,
     logoutUser,
-    changePassword
+    changePassword,
+    handlePasswordResetRequest,
+    handlePasswordResetConfirm
 };
 

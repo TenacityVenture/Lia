@@ -504,30 +504,6 @@ const handlePasswordResetConfirm = async (req, res) => {
   }
 };
 
-const marketingUnsubscribe = async (req, res) => {
-  const uid = req.body?.uid || req.query?.uid;
-  if (!uid) {
-    return res.status(400).json({ error: 'User ID is required' });
-  }
-
-  try {
-    // Update user preferences in the database
-    const { data, error } = await supabase
-      .from('users')
-      .update({ marketing_emails: false })
-      .eq('id', uid);
-
-    if (error) {
-      throw error;
-    }
-
-    return res.status(200).json({ message: 'Successfully unsubscribed' });
-  } catch (err) {
-    console.error('Unsubscribe error:', err);
-    return res.status(500).json({ error: 'Failed to unsubscribe' });
-  }
-}
-
 module.exports = {
     loginUser,
     registerUser,
@@ -537,7 +513,6 @@ module.exports = {
     logoutUser,
     changePassword,
     handlePasswordResetRequest,
-    handlePasswordResetConfirm,
-    marketingUnsubscribe
+    handlePasswordResetConfirm
 };
 

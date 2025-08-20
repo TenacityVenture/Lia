@@ -2,7 +2,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react"
 import { motion } from "framer-motion"
 import { Button } from '@/components/ui/button'
@@ -10,11 +9,20 @@ import Image from "next/image"
 import Link from 'next/link'
 
 export default function UnsubscribePage() {
-  const searchParams = useSearchParams();
-  const uid = searchParams.get("uid");
+  const [uid, setUid] = useState<string | null>(null);
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
 
   useEffect(() => {
+    // ✅ read uid from query string manually
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get("uid");
+    setUid(token);
+
+    if (!token) {
+      setStatus("error");
+      return;
+    }
+
     if (!uid) {
       setStatus("error");
       return;

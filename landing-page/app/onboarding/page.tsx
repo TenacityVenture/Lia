@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 //import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 //import { useSearchParams } from "next/navigation"
@@ -41,6 +41,46 @@ export default function OnboardingPage() {
       linkedin_about: "",
     },
   })
+
+  useEffect(() => {
+    // check if user has completed onboarding
+    const hasCompleteOnboarding = async () => {
+      await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/user/me`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("lia_access_token")}`,
+        },
+        credentials: "include",
+      }).then((res) => {
+        if (!res.ok) {
+          // try to refresh the token
+          window.location.href = "/refresh-token"
+        }
+        return res.json()
+      })
+      .then((data) => {
+        console.log("Fetched user data:", data)
+        if (data.error) {
+          console.error("Invalid token, redirecting to refresh token page")
+          // Redirect to refresh token page if the token is invalid
+          window.location.href = "/refresh-token"
+        } else {
+          console.log("User data:", data)
+          if (data.linkedin_name || data.linkedin_headline || data.linkedin_about) {
+            router.push("/dashboard?success=account_created")
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching user data:", err)
+        // If the token is expired, try to refresh it by redirecting to the refresh token page
+        window.location.href = "/refresh-token"
+      })
+    }
+
+    hasCompleteOnboarding()
+  }, [])
 
   /*useEffect(() => {
     const fromSignup = searchParams.get("from") === "signup"

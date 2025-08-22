@@ -184,6 +184,7 @@ exports.postImprovementSystemMessage = (userInfo) => {
           - Replace any text in **the text** with bold Unicode characters (𝘦.𝘨. 𝗯𝗼𝗹𝗱)
           - Replace any text in *the text* with italic Unicode characters (𝘦.𝘨. 𝘪𝘵𝘢𝘭𝘪𝘤)
           - Do not use markdown or HTML or ** or * or _ or __ formatting
+          - Don't write the entire content as unicode bold, only keep any emojis and Unicode characters (bold, italic etc)
           - Do not change the meaning or introduce new ideas
           - IMPORTANT: Preserve any @mentions exactly as they appear (like @PersonName or @Company Name). Do not change the names after @ symbols.
           - Keep emojis and Unicode characters exactly as-is

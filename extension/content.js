@@ -26,11 +26,12 @@
   })
 
   // Listen for settings updates
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === "settingsUpdated") {
-      chrome.storage.sync.get(["tone", "industry", "chatbot_enabled", "reply_enabled", "rewrite_enabled", "linkedinTheme"], (data) => {
+      await chrome.storage.sync.get(["tone", "industry", "chatbot_enabled", "reply_enabled", "rewrite_enabled", "linkedinTheme"], (data) => {
         settings = { ...settings, ...data }
       })
+      initializeExtension()
     }
   })
 
@@ -81,12 +82,14 @@
   }
 
   async function initializeExtension() {
+    // detect theme first
+    const theme = await window.detectLinkedInTheme();
+    settings.linkedinTheme = theme || 'light'
+
     // Initialize the extension functionality
     setupCommentReplyAssistant()
     setuprewrite_enabledment()
     setupTextSelectionToolbar()
-
-    await window.detectLinkedInTheme();
 
     // lia user
     liaUser = await window.getLiaUserInfo()
@@ -103,11 +106,13 @@
         mutationTimeout = setTimeout(async () => {
           if (mutation.addedNodes.length) {
             try {
+              // detect theme first
+              const theme = await window.detectLinkedInTheme()
+              settings.linkedinTheme = theme || 'light'
+
               setupCommentReplyAssistant()
               setuprewrite_enabledment()
               setupTextSelectionToolbar()
-
-              await window.detectLinkedInTheme()
 
               if (liaUser === null) {
                 liaUser = await window.getLiaUserInfo()

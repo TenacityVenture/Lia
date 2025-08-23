@@ -217,7 +217,14 @@ exports.message = async (req, res) => {
 
       console.log(result)
 
-      const title = result.Content || 'New Chat';
+      let title = result.Content || 'New Chat';
+      // remove quotes if they exist
+      if (title.startsWith('"') && title.endsWith('"')) {
+        console.log('Title has quotes, removing them');
+        title = title.slice(1, -1).trim(); // Remove quotes and trim whitespace
+      }
+
+      title = title.trim(); // Just trim whitespace if no quotes
 
       // Update chat title if it exists
       await supabase

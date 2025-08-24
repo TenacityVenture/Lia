@@ -433,3 +433,21 @@ exports.updateChatLastUsed = async (req, res) => {
     res.status(500).json({ error: 'Failed to update chat last used' });
   }
 }
+
+/**
+ * List templates
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+exports.listTemplates = async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('chat_templates').select('*');
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+    res.json(data);
+  } catch (err) {
+    console.error('Error listing templates:', err);
+    res.status(400).json({ error: 'Failed to list templates' });
+  }
+}

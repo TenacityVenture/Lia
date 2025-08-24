@@ -445,7 +445,7 @@ exports.listTemplates = async (req, res) => {
     if (error) {
       return res.status(500).json({ error: error.message });
     }
-    res.json(data);
+    res.json({templates: data});
   } catch (err) {
     console.error('Error listing templates:', err);
     res.status(400).json({ error: 'Failed to list templates' });

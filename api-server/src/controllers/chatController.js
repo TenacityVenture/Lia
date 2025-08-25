@@ -62,7 +62,7 @@ const startChat = async (title, userId, res, type, template_id) => {
       const {data: template, error: templateError} = await supabase.from('chat_templates').select().eq('id', template_id).single();
 
       if (templateError) throw templateError;
-      
+
       // push one message in chat ie the ai message
       await supabase.from('chat_messages').insert([
         { 
@@ -72,7 +72,10 @@ const startChat = async (title, userId, res, type, template_id) => {
           content: `Hi! I'm LIA, your LinkedIn Intelligence Assistant. <br/><br/>
           You're using ${template.name} <br/><br/> - posts will be written like the example below:<br/><br/>
           ${template.example?.author || ''} <br/>
-          ${template.example?.content || ''}
+          ${template.example?.content || ''}<br/><br/>
+          This style works great for:
+            - ${template.description}
+            - Building engagement through ${template.name} content
           `
         }
       ]);
@@ -178,7 +181,7 @@ exports.message = async (req, res) => {
   const chatId = req.params.chatId;
   const { message, reference } = req.body;
   const template_id = req.body?.template_id;
-  const chat_template = {}
+  let chat_template = {}
   const userInfo = await getUserInfo(userId);
 
   if (!message) {
@@ -211,7 +214,7 @@ exports.message = async (req, res) => {
 
   if (template_id) {
     // fetch the template
-    chat_template = await supabase.from('chat_templates').select('*').single()
+    chat_template = await supabase.from('chat_templates').select('*').eq('id', template_id).single();
   }
 
   try {
@@ -325,7 +328,8 @@ exports.message = async (req, res) => {
     });*/
 
     // for bedrock
-    const systemMsg = chatSystemMessage(userInfo, chat_template).content;
+    const chatMeta = {template: chat_template, type: 'template'}
+    const systemMsg = chatSystemMessage(userInfo, chatMeta).content;
 
   // If there is history, prepend system to the FIRST user message
     const formatted = [

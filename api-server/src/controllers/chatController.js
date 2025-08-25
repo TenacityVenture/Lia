@@ -4,6 +4,7 @@ const { getModelName } = require('../utils/helpers/modelSelector');
 const { chatSystemMessage } = require('../utils/helpers/systemMessages');
 const { invokeAI } = require('../services/invokeAI');
 const { getUserInfo } = require('../utils/helpers/getUserInfo');
+const { Threads } = require('openai/resources/beta/threads/threads');
 
 /** Create a new chat
 * @param {Object} req - Express request object
@@ -58,8 +59,9 @@ const startChat = async (title, userId, res, type, template_id) => {
         return res.status(500).json({ error: error.message });
       }
 
-      const template = await supabase.from('chat_templates').select('*').eq('id', template_id).single();
+      const {data: template, error: templateError} = await supabase.from('chat_templates').select().eq('id', template_id).single();
 
+      if (templateError) throw 
       // push one message in chat ie the ai message
       await supabase.from('chat_messages').insert([
         { 
@@ -68,8 +70,8 @@ const startChat = async (title, userId, res, type, template_id) => {
           role: 'assistant', 
           content: `Hi! I'm LIA, your LinkedIn Intelligence Assistant. <br/><br/>
           You're using ${template.name} <br/><br/> - posts will be written like the example below:<br/><br/>
-          ${template.example.author} <br/>
-          ${template.example.content}
+          ${template.example?.author || ''} <br/>
+          ${template.example?.content || ''}
           `
         }
       ]);

@@ -49,26 +49,17 @@ exports.rewritePost = async (req, res) => {
 
 exports.suggestReply = async (req, res) => {
   const { comment_text } = req.body;
+  const persona = req.body?.persona
   const userId = req.user.sub;
-  let { userInfo } = req.user;
 
   if (!comment_text) {
     return res.status(400).json({ error: 'Missing comment_text' });
   }
 
-  if (!userInfo) {
-    userInfo = {
-      linkedin_name: "empty",
-      linkedin_headline: "empty",
-      linkedin_about: "empty",
-      linkedin_profile_url: "empty"
-    }
-  }
-
   try {
     //const prompt = `Suggest a professional, thoughtful reply to this LinkedIn comment:\n\n"${comment_text}"`;
     const prompt = comment_text; // the comment text itself is the prompt -- structured in the extension
-    const {Content: suggestion, Usage: usage} = (await aiService.getCompletionSuggestComment(req, prompt, userInfo));
+    const {Content: suggestion, Usage: usage} = (await aiService.getCompletionSuggestComment(req, prompt, persona));
 
     // Log usage
     await usageLogger.log({

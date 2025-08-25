@@ -58,6 +58,8 @@ const startChat = async (title, userId, res, type, template_id) => {
         return res.status(500).json({ error: error.message });
       }
 
+      const template = await supabase.from('chat_templates').select('*').eq('id', template_id).single();
+
       // push one message in chat ie the ai message
       await supabase.from('chat_messages').insert([
         { 
@@ -65,9 +67,9 @@ const startChat = async (title, userId, res, type, template_id) => {
           user_id: userId, 
           role: 'assistant', 
           content: `Hi! I'm LIA, your LinkedIn Intelligence Assistant. <br/><br/>
-          You're using ${data.name} <br/><br/> - posts will be written like the example below:<br/><br/>
-          ${data.example.author} <br/>
-          ${data.example.content}
+          You're using ${template.name} <br/><br/> - posts will be written like the example below:<br/><br/>
+          ${template.example.author} <br/>
+          ${template.example.content}
           `
         }
       ]);
@@ -88,7 +90,6 @@ exports.createChat = async (req, res) => {
   if (chat_type === 'template') {
     template_id = req.body?.template_id;
   }
-
   
   return await startChat(title, userId, res, chat_type, template_id)
 };
@@ -153,7 +154,6 @@ exports.getChatMessages = async (req, res) => {
         .eq('id', data.template_id)
         .single();
 
-      messages[0].content = template.prompt;
       return res.json({messages, template});
     }
 

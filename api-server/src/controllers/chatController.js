@@ -107,6 +107,8 @@ exports.message = async (req, res) => {
   const userId = req.user.sub;
   const chatId = req.params.chatId;
   const { message, reference } = req.body;
+  const template_id = req.body?.template_id;
+  const chat_template = {}
   const userInfo = await getUserInfo(userId);
 
   if (!message) {
@@ -135,6 +137,11 @@ exports.message = async (req, res) => {
     if (!referenceData) {
       await supabase.from('chat_messages').insert([{ chat_id: chatId, user_id: userId, role: 'reference', content: JSON.stringify(reference) }]);
     }
+  }
+
+  if (template_id) {
+    // fetch the template
+    chat_template = await supabase.from('chat_templates').select('*').single()
   }
 
   try {
@@ -248,7 +255,7 @@ exports.message = async (req, res) => {
     });*/
 
     // for bedrock
-    const systemMsg = chatSystemMessage(userInfo).content;
+    const systemMsg = chatSystemMessage(userInfo, chat_template).content;
 
   // If there is history, prepend system to the FIRST user message
     const formatted = [

@@ -25,13 +25,13 @@ exports.getCompletion = async (req, prompt) => {
 };
 
 // 2. Suggest 3 smart comments
-exports.getCompletionSuggestComment = async (req, prompt) => {
+exports.getCompletionSuggestComment = async (req, prompt, persona) => {
   const userInfo = await getUserInfo(req.user.sub);
   try {
     const result = await invokeAI({
       req,
       messages: [
-        commentSystemMessage(userInfo),
+        commentSystemMessage(userInfo, persona),
         { role: 'user', content: prompt }
       ],
       temperature: 0.8,

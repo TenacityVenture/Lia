@@ -149,7 +149,7 @@ exports.getChatMessages = async (req, res) => {
     // check if chat id is a template
     const {data} = await supabase // get the chat
       .from('chats')
-      .select('type')
+      .select('*')
       .eq('id', chatId)
       .single();
 

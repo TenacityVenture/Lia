@@ -61,7 +61,8 @@ const startChat = async (title, userId, res, type, template_id) => {
 
       const {data: template, error: templateError} = await supabase.from('chat_templates').select().eq('id', template_id).single();
 
-      if (templateError) throw 
+      if (templateError) throw templateError;
+      
       // push one message in chat ie the ai message
       await supabase.from('chat_messages').insert([
         { 

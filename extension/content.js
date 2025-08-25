@@ -7,7 +7,11 @@
     reply_enabled: true,
     rewrite_enabled: true,
     isRewriting: false,
-    linkedinTheme: "light"
+    linkedinTheme: "light",
+
+    // personas
+    selectedPersona: "professional",
+    selectedTemplate: null
   }
 
   let liaUser = null;
@@ -869,7 +873,7 @@
 
     commentInputs.forEach((input) => {
       // Check if we've already added our button
-      if (input.querySelector(".linkedin-ai-button")) return
+      /*if (input.querySelector(".linkedin-ai-button")) return
 
       // Find the comment actions area
       const actionsArea = input.querySelector(".comments-comment-box-comment__text-editor")
@@ -900,8 +904,136 @@
 
         // Add button to actions area
         actionsArea.prepend(aiButton)
-      }
+      }*/
+
+      addReplyAssistant(input)
     })
+  }
+
+  /*function setupCommentReplyAssistant() {
+    if (!settings.reply_enabled) return
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            // Look for comment input areas
+            const commentInputs = node.querySelectorAll('.comments-comment-texteditor, .ql-editor[data-placeholder*="comment"]')
+            commentInputs.forEach(addReplyAssistant)
+            
+            // Also check the node itself
+            if (node.matches && node.matches('.comments-comment-texteditor, .ql-editor[data-placeholder*="comment"]')) {
+              addReplyAssistant(node)
+            }
+          }
+        })
+      })
+    })
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    })
+
+    // Add to existing comment inputs
+    document.querySelectorAll('.comments-comment-texteditor, .ql-editor[data-placeholder*="comment"]').forEach(addReplyAssistant)
+  }*/
+
+  function addReplyAssistant(commentInput) {
+    if (commentInput.querySelector('.lia-reply-assistant')) return
+
+    // Find the comment actions area
+      const actionsArea = commentInput.querySelector(".comments-comment-box-comment__text-editor")
+
+    if (!actionsArea) return
+
+    const assistantContainer = document.createElement('div')
+    assistantContainer.className = `lia-reply-assistant ${settings.linkedinTheme === 'dark' ? 'dark' : ''}`
+    assistantContainer.innerHTML = `
+      <button class="linkedin-ai-button ${settings.linkedinTheme === 'dark' ? 'dark' : ''}" title="Generate AI Reply" style="font-size: 12px; padding: 4px 8px;" >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+          <rect x="2" y="9" width="4" height="12"/>
+          <circle cx="4" cy="4" r="2"/>
+          <circle cx="16" cy="4" r="2" fill="currentColor"/>
+        </svg>
+        AI Reply
+      </button>
+      <div class="lia-persona-selector">
+        <button class="lia-persona-btn" id="lia-persona-${Date.now()}" style="font-size: 12px; padding: 4px 8px;">
+          <span class="lia-persona-icon">${PERSONAS[settings.selectedPersona].icon}</span>
+          <!--<span class="lia-persona-name">${PERSONAS[settings.selectedPersona].name}</span>-->
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6,9 12,15 18,9"/>
+          </svg>
+        </button>
+        <div class="lia-persona-dropdown" style="display: none;">
+          ${Object.entries(PERSONAS).map(([key, persona]) => `
+            <div class="lia-persona-option ${key === settings.selectedPersona ? 'active' : ''}" data-persona="${key}">
+              <span class="lia-persona-icon">${persona.icon}</span>
+              <div class="lia-persona-info">
+                <div class="lia-persona-name">${persona.name}</div>
+                <div class="lia-persona-desc">${persona.description}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `
+
+    // Add button to actions area
+    actionsArea.prepend(assistantContainer)
+
+    // Add event listeners
+    const personaBtn = assistantContainer.querySelector('.lia-persona-btn')
+    const personaDropdown = assistantContainer.querySelector('.lia-persona-dropdown')
+    const replyBtn = assistantContainer.querySelector('.linkedin-ai-button')
+
+    personaBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      personaDropdown.style.display = personaDropdown.style.display === 'none' ? 'block' : 'none'
+    })
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', () => {
+      personaDropdown.style.display = 'none'
+    })
+
+    // Handle persona selection
+    assistantContainer.querySelectorAll('.lia-persona-option').forEach(option => {
+      option.addEventListener('click', (e) => {
+        e.stopPropagation()
+        const personaKey = option.dataset.persona
+        selectPersona(personaKey, assistantContainer)
+        personaDropdown.style.display = 'none'
+      })
+    })
+
+    replyBtn.addEventListener('click', (e) => {
+      e.preventDefault()
+      handlereply_enabledant(commentInput)
+    })
+  }
+
+  function selectPersona(personaKey, container) {
+    settings.selectedPersona = personaKey
+    chrome.storage.sync.set({ selectedPersona: personaKey })
+    
+    const persona = PERSONAS[personaKey]
+    const personaBtn = container.querySelector('.lia-persona-btn')
+    personaBtn.innerHTML = `
+      <span class="lia-persona-icon">${persona.icon}</span>
+      <!--<span class="lia-persona-name">${persona.name}</span>-->
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="6,9 12,15 18,9"/>
+      </svg>
+    `
+    
+    // Update active state in dropdown
+    container.querySelectorAll('.lia-persona-option').forEach(option => {
+      option.classList.remove('active')
+    })
+    container.querySelector(`[data-persona="${personaKey}"]`).classList.add('active')
   }
 
   function setuprewrite_enabledment() {
@@ -930,8 +1062,11 @@
         
         aiButton.style.padding = "4px 8px"
         aiButton.innerHTML = `
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10Zm0 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+            <rect x="2" y="9" width="4" height="12"/>
+            <circle cx="4" cy="4" r="2"/>
+            <circle cx="16" cy="4" r="2" fill="currentColor"/>
           </svg>
           AI Rewrite
         `
@@ -1682,6 +1817,18 @@
 
     // Prepare the prompt
     let prompt = `Generate 3 LinkedIn comment replies that are playful, smart, and thoughtful, they should feel natural - like something a sharp professional would say in public:`
+    
+    let persona = {
+      //name
+      //description
+      //icon
+      //prompt
+    }
+      
+    // Add persona context for replies
+    if (settings.selectedPersona && PERSONAS[settings.selectedPersona]) {
+      persona = PERSONAS[settings.selectedPersona]
+    }
 
     if (context.postContent) {
       prompt += ` The post says: "${context.postContent}"`
@@ -1705,7 +1852,13 @@
     - Use emojis cautiously so it doesn't sound too robotic
     - Without sounding like an AI or bot
     - Avoid generic responses
-    - Feel free to be slightly opinionated, clever, or relatable`
+    - Feel free to be slightly opinionated, clever, or relatable
+    
+    IMPORTANT: In addition to the instruction above the user has also selected a persona for you to follow while generating the replies. Please make sure to follow the persona instructions closely.
+    PERSONA:
+      Name: ${persona.name || 'N/A'}
+      Description: ${persona.description || 'N/A'}
+      Prompt: ${persona.prompt || 'N/A'}`
 
     async function generate() {
       const response = await window.lia_fetchWithAuth("https://api.getlia.live/api/prompt/suggest-reply", {
@@ -1715,7 +1868,8 @@
           Authorization: `Bearer ${await accessToken()}`,
         },
         body: JSON.stringify({
-          comment_text: prompt
+          comment_text: prompt,
+          ...(persona && { persona: persona })
         })
       })
 
@@ -1758,6 +1912,18 @@
     // Prepare the prompt
     let prompt = `You are replying to a **comment** on a LinkedIn post. Generate 3 thoughtful and human-sounding LinkedIn replies`;
 
+    let persona = {
+      //name
+      //description
+      //icon
+      //prompt
+    }
+      
+    // Add persona context for replies
+    if (settings.selectedPersona && PERSONAS[settings.selectedPersona]) {
+      persona = PERSONAS[settings.selectedPersona]
+    }
+    
     if (context.commentReply) {
       prompt += ` to this comment${context.isSubReplyingTo ? " (a nested reply - a reply to another reply)" : ""}: "${context.commentReply}"`;
     }
@@ -1789,7 +1955,13 @@
     
     prompt += `
     
-    Only return the 3 replies. No explanation or extra formatting.`;
+    Only return the 3 replies. No explanation, no intro-text or extra formatting.
+    
+    IMPORTANT: In addition to the instruction above the user has also selected a persona for you to follow while generating the replies. Please make sure to follow the persona instructions closely.
+    PERSONA:
+      Name: ${persona.name || 'N/A'}
+      Description: ${persona.description || 'N/A'}
+      Prompt: ${persona.prompt || 'N/A'}`;
     
 
     async function generate() {
@@ -1800,7 +1972,8 @@
           Authorization: `Bearer ${await accessToken()}`,
         },
         body: JSON.stringify({
-          comment_text: prompt
+          comment_text: prompt,
+          persona: persona
         })
       })  
 
@@ -1900,6 +2073,120 @@
     return access_token;
   }
 
+  const PERSONAS = {
+    professional: {
+      name: "Professional",
+      description: "Formal, industry-focused responses",
+      icon: "💼",
+      prompt: "Respond in a professional, formal tone suitable for business networking"
+    },
+    conversational: {
+      name: "Conversational", 
+      description: "Friendly, approachable tone",
+      icon: "💬",
+      prompt: "Respond in a friendly, conversational tone that builds rapport"
+    },
+    thoughtLeader: {
+      name: "Thought Leader",
+      description: "Insightful, question-provoking responses",
+      icon: "🧠",
+      prompt: "Respond as a thought leader with insightful, authoritative, strategic perspectives"
+    },
+    supportive: {
+      name: "Supportive",
+      description: "Encouraging, positive reinforcement",
+      icon: "🤝",
+      prompt: "Respond with encouragement and positive reinforcement"
+    },
+    analytical: {
+      name: "Analytical",
+      description: "Data-driven, logical responses",
+      icon: "📊",
+      prompt: "Respond with analytical, data-driven insights and logical reasoning"
+    },
+    networking: {
+      name: "Networking",
+      description: "Connection-building, relationship-focused",
+      icon: "🌐",
+      prompt: "Respond with a focus on building connections and relationships"
+    },
+    conciseExpert: {
+      name: "Concise Expert",
+      description: "Short, direct, minimal words but maximum insight",
+      icon: "🎯",
+      prompt: "Respond as a concise expert: use minimal words, be direct, and deliver maximum insight in each reply"
+    },
+  }
+
+  let TEMPLATES = {
+    microContent: {
+      name: "Micro-Content",
+      description: "Very short sentences. Each on new line. Maximum impact.",
+      icon: "⚡",
+      example: {
+        author: "Sarah Chen",
+        content: "Just shipped our biggest feature yet.\n\n6 months of work.\n\n3 failed attempts.\n\n1 breakthrough moment.\n\nSometimes persistence is everything.\n\nWhat's your biggest win this quarter?",
+        engagement: { likes: "847", comments: "23" }
+      },
+      prompt: "Write in micro-content style with very short sentences, each on a new line for maximum impact"
+    },
+    storyArc: {
+      name: "Story Arc", 
+      description: "Hook → Context → Challenge → Resolution → Lesson",
+      icon: "📖",
+      example: {
+        author: "Marcus Rodriguez",
+        content: "I almost quit my job last month.\n\nAfter 3 years at the company, I felt stuck. No growth, same tasks, same meetings. The Sunday scaries were real.\n\nThen my manager pulled me aside: \"We're launching a new division. Want to lead it?\"\n\nSometimes the breakthrough comes right when you're about to give up.\n\nLesson: Have the difficult conversations before making big decisions.",
+        engagement: { likes: "1.2K", comments: "67" }
+      },
+      prompt: "Structure your post as a story with a clear hook, context, challenge, resolution, and lesson learned"
+    },
+    listFormat: {
+      name: "List Format",
+      description: "Numbered insights, bullet points, structured takeaways",
+      icon: "📝",
+      example: {
+        author: "Jennifer Park",
+        content: "5 things I learned building a remote team:\n\n1. Overcommunicate everything\n2. Document decisions in writing\n3. Create virtual water cooler moments\n4. Respect time zones religiously\n5. Invest in good tools\n\nRemote work isn't just office work from home.\n\nIt's a completely different operating system.\n\nWhat would you add to this list?",
+        engagement: { likes: "923", comments: "45" }
+      },
+      prompt: "Structure your content as a numbered list or bullet points with clear takeaways"
+    },
+    questionDriven: {
+      name: "Question-Driven",
+      description: "Starts with provocative question, builds to answer",
+      icon: "❓",
+      example: {
+        author: "David Kim",
+        content: "What if I told you the best networking happens when you're not trying to network?\n\nLast week at a coffee shop, I helped someone with their laptop. No business cards exchanged. No LinkedIn requests.\n\nJust one human helping another.\n\n3 days later, they introduced me to their CEO.\n\nAuthentic relationships > transactional connections.\n\nWhen did you last help someone without expecting anything back?",
+        engagement: { likes: "1.5K", comments: "89" }
+      },
+      prompt: "Start with a provocative question and build your narrative around answering it"
+    },
+    vulnerableLeader: {
+      name: "Vulnerable Leader",
+      description: "Shares failures/struggles, shows humanity",
+      icon: "💝",
+      example: {
+        author: "Rachel Thompson",
+        content: "I made a $50K mistake last quarter.\n\nApproved a campaign without proper testing. It flopped spectacularly.\n\nMy first instinct? Hide it. Blame external factors. Make excuses.\n\nInstead, I called an all-hands meeting and owned it completely.\n\nThe team's response surprised me. They shared their own mistakes. We problem-solved together.\n\nVulnerability isn't weakness in leadership.\n\nIt's the foundation of trust.",
+        engagement: { likes: "2.1K", comments: "134" }
+      },
+      prompt: "Share a personal failure or struggle that led to growth, showing vulnerability and humanity"
+    },
+    contrarian: {
+      name: "Contrarian Take",
+      description: "Challenges common beliefs, 'unpopular opinion' posts",
+      icon: "🔥",
+      example: {
+        author: "Alex Morgan",
+        content: "Unpopular opinion: Most networking events are a waste of time.\n\nHere's why:\n\n→ Surface-level conversations\n→ Everyone's in 'pitch mode'\n→ No real connection happens\n→ Follow-ups feel forced\n\nBetter alternatives:\n\n→ Industry workshops\n→ Volunteer opportunities  \n→ Online communities\n→ One-on-one coffee chats\n\nStop collecting business cards.\n\nStart building real relationships.\n\nAgree or disagree?",
+        engagement: { likes: "856", comments: "92" }
+      },
+      prompt: "Present a contrarian viewpoint that challenges conventional wisdom in your industry"
+    }
+  }
+
   // ===== CHATBOT SYSTEM =====
   const chatbotState = {
     isOpen: false,
@@ -1916,6 +2203,9 @@
     notes: [],
     currentNoteId: null,
     noteContext: null, // LinkedIn profile context
+    
+    templateMode: false,
+    selectedTemplate: null,
   }
 
   // save to extension storage
@@ -1965,14 +2255,19 @@
       if (chatbotState.notesMode) {
         // toggle notes mode for notes ui to show
         chatbotState.notesMode = false
-        toggleNotesMode()
+        await toggleNotesMode()
+      } else if (chatbotState.templateMode) {
+        // toggle template mode for template ui to show
+        chatbotState.templateMode = false
+        await toggleTemplateMode()
       } else {
-
         // Load chat history if not in notes mode
-        loadChatHistory()
+        await loadChatHistory()
       }
 
       hideQuickSuggestions()
+      // fetch templates from api-server
+      await fetchTemplates()
 
       //makeChatbotDraggable() remove dragging feature for now
     }
@@ -2244,6 +2539,244 @@
       100% { transform: rotate(360deg); }
     }
 
+    /* Added persona selector styles */
+    .lia-reply-assistant {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .lia-persona-selector {
+      position: relative;
+    }
+
+    .lia-persona-btn {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--accent);
+      border-radius: 16px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: white;
+    }
+
+    .lia-persona-btn:hover, .linkedin-ai-button:hover {
+      background: var(--accent-invert);
+      color: var(--accent-foreground);
+    }
+
+    .lia-persona-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      min-width: 280px;
+      background: var(--popover);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      z-index: 1001;
+      margin-top: 4px;
+      overflow: hidden;
+    }
+
+    .lia-persona-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .lia-persona-option:last-child {
+      border-bottom: none;
+    }
+
+    .lia-persona-option:hover {
+      background: var(--accent);
+      color: var(--accent-foreground);
+    }
+
+    .lia-persona-option.active {
+      background: var(--primary);
+      color: var(--primary-foreground);
+    }
+
+    .lia-persona-info {
+      flex: 1;
+      color: var(--persona-option-color);
+    }
+
+    .lia-persona-name {
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .lia-persona-desc {
+      font-size: 11px;
+      opacity: 0.8;
+      margin-top: 2px;
+    }
+
+    .lia-persona-icon {
+      font-size: 12px;
+    }
+
+    .lia-reply-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 12px;
+      background: var(--primary);
+      color: var(--primary-foreground);
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lia-reply-btn:hover {
+      background: var(--secondary);
+      color: var(--secondary-foreground);
+    }
+
+    /* Added template styles */
+    .lia-template-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      margin-bottom: 6px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid transparent;
+      color: #495057;
+    }
+
+    .lia-template-item:hover {
+      background: var(--accent);
+      color: var(--accent-foreground);
+      transform: translateX(4px);
+      border-color: var(--primary);
+    }
+
+    .lia-template-item.active {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      transform: translateX(4px);
+      box-shadow: 0 4px 12px rgba(22, 78, 99, 0.3);
+    }
+
+    .lia-template-icon {
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+
+    .lia-template-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .lia-template-name {
+      font-weight: 600;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+
+    .lia-template-description {
+      font-size: 10px;
+      opacity: 0.8;
+      line-height: 1.3;
+    }
+
+    .lia-template-example {
+      margin: 16px 0;
+    }
+
+    .lia-linkedin-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      max-width: 500px;
+    }
+
+    .lia-card-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .lia-card-avatar {
+      width: 48px;
+      height: 48px;
+      background: var(--primary);
+      color: var(--primary-foreground);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 18px;
+    }
+
+    .lia-card-info {
+      flex: 1;
+    }
+
+    .lia-card-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--card-foreground);
+    }
+
+    .lia-card-title {
+      font-size: 12px;
+      color: var(--muted-foreground);
+      margin: 2px 0;
+    }
+
+    .lia-card-time {
+      font-size: 11px;
+      color: var(--muted-foreground);
+    }
+
+    .lia-card-content {
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--card-foreground);
+      margin-bottom: 12px;
+      white-space: pre-line;
+    }
+
+    .lia-card-engagement {
+      display: flex;
+      gap: 16px;
+      font-size: 12px;
+      color: var(--muted-foreground);
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    /*.lia-mode-badge {
+      background: var(--accent);
+      color: var(--accent-foreground);
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 600;
+    }*/
+
     /* Quick suggestions slider styles */
     .lia-quick-suggestions {
       position: relative;
@@ -2450,6 +2983,16 @@
       50% { transform: scale(1.2); }
     }
 
+    @keyframes messageSlideIn {
+      0% { opacity: 0; transform: translateY(20px); }
+      100% { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes avatarPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+    }
+
     .lia-chatbot-interface {
       position: fixed;
       bottom: 100px;
@@ -2485,7 +3028,7 @@
     .lia-chatbot-interface.minimized {
       height: 60px;
       overflow: hidden;
-      width: ${chatbotState.notesMode ? '280' : '260'}px;
+      width: ${chatbotState.notesMode ? '305' : (chatbotState.templateMode ? '320' : '290')}px;
     }
 
     .lia-chatbot-header {
@@ -3027,7 +3570,8 @@
     }
 
     .lia-control-btn.reference-active,
-    .lia-control-btn.notes-active {
+    .lia-control-btn.notes-active,
+    .lia-control-btn.template-active {
       background: rgba(16, 185, 129, 0.2);
       color: #10b981;
     }
@@ -3144,9 +3688,20 @@
           <path d="M12 8a4 4 0 0 1 4-4" stroke="currentColor"/>
         </svg>
         <span id="lia-mode-title">LIA</span>
+        <div id="lia-mode-indicator" style="display: none; margin-left: 8px;">
+          <div class="lia-mode-badge" id="lia-template-badge" style="display: none;">Template</div>
+          <div class="lia-mode-badge" id="lia-notes-badge" style="display: none;">Notes</div>
+        </div>
       </div>
       <div class="lia-chatbot-controls">
-        <button class="lia-control-btn ${chatbotState.notesMode ? 'notes-active' : ''}" id="lia-notes-toggle" title="Notes Mode">
+        <button class="lia-control-btn ${chatbotState.templateMode ? 'template-active' : ''}" id="lia-template-toggle" title="Template Mode: OFF">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="9" y1="9" x2="15" y2="9"/>
+            <line x1="9" y1="15" x2="15" y2="15"/>
+          </svg>
+        </button>
+        <button class="lia-control-btn ${chatbotState.notesMode ? 'notes-active' : ''}" id="lia-notes-toggle" title="Notes Mode: OFF">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14,2 14,8 20,8"/>
@@ -3155,7 +3710,7 @@
             <polyline points="10,9 9,9 8,9"/>
           </svg>
         </button>
-        <button class="lia-control-btn ${chatbotState.referenceMode ? 'reference-active' : ''}" id="lia-reference-toggle" title="Reference Mode (Pro)">
+        <button class="lia-control-btn ${chatbotState.referenceMode ? 'reference-active' : ''}" id="lia-reference-toggle" title="Reference Mode (Pro): OFF">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66L9.64 16.2a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
           </svg>
@@ -3185,7 +3740,13 @@
         <div class="lia-conversation-list" id="lia-conversation-list">
           <!-- Conversations/Notes will be populated here -->
         </div>
-        <button class="lia-new-chat-btn" id="lia-new-chat-btn">+ New Chat</button>
+        <button class="lia-new-chat-btn" id="lia-new-chat-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          New Chat
+        </button>
       </div>
 
       <div class="lia-chat-main">
@@ -3321,6 +3882,7 @@
     const liaChatbotTitle = document.querySelector(".lia-chatbot-title")
     const referenceToggle = document.getElementById("lia-reference-toggle")
     const notesToggle = document.getElementById("lia-notes-toggle")
+    const templateToggle = document.getElementById("lia-template-toggle")
 
     // Notes action buttons
     const structureBtn = document.getElementById("lia-structure-note")
@@ -3405,13 +3967,13 @@
 
 
     // New chat/note button
-    newChatBtn.addEventListener("click", (e) => {
+    newChatBtn.addEventListener("click", async (e) => {
       e.stopPropagation()
       if (chatbotState.notesMode) {
         // if notes mode enabled, start a new note
         startNewNote()
       } else {
-        startNewConversation()
+        await startNewConversation()
       }
     })
 
@@ -3435,6 +3997,12 @@
     notesToggle.addEventListener("click", (e) => {
       e.stopPropagation()
       toggleNotesMode()
+    })
+
+    // Template mode toggle
+    templateToggle.addEventListener("click", (e) => {
+      e.stopPropagation()
+      toggleTemplateMode()
     })
 
     // Notes action buttons
@@ -3477,6 +4045,195 @@
     // Initialize quick suggestions based on current state
     updateQuickSuggestions()
 
+  }
+
+  async function toggleTemplateMode() {
+    chatbotState.templateMode = !chatbotState.templateMode
+    const templateToggle = document.getElementById("lia-template-toggle")
+    const modeTitle = document.getElementById("lia-mode-title")
+    const sidebarHeader = document.getElementById("lia-sidebar-header")
+    const newChatBtn = document.getElementById("lia-new-chat-btn")
+    const messageInput = document.getElementById("lia-message-input")
+    const modeIndicator = document.getElementById("lia-mode-indicator")
+    //const templateBadge = document.getElementById("lia-template-badge")
+    
+    modeIndicator.style.display = "flex"
+
+    if (chatbotState.templateMode) {
+      // Turn off other modes
+      if (chatbotState.notesMode) {
+        /*chatbotState.notesMode = false
+        document.getElementById("lia-notes-toggle").classList.remove("notes-active")
+        document.getElementById("lia-notes-badge").style.display = "none"*/
+        toggleNotesMode()
+      }
+
+      // Switch to Template Mode
+      templateToggle.classList.add("template-active")
+      templateToggle.title = "Template Mode: ON"
+      //templateBadge.style.display = "block"
+
+      window.typeWriter("LIA Templates", modeTitle)
+      sidebarHeader.textContent = "Writing Styles"
+      newChatBtn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New Post
+      `
+      messageInput.placeholder = "What would you like to write about?"
+      
+      // Load templates in sidebar
+      await loadTemplates()
+      hideQuickSuggestions()
+      
+    } else {
+      // Switch back to normal mode
+      templateToggle.classList.remove("template-active")
+      templateToggle.title = "Template Mode: OFF"
+      //templateBadge.style.display = "none"
+      
+      if (!chatbotState.notesMode) {
+        modeIndicator.style.display = "none"
+      }
+
+      window.typeWriter("LIA", modeTitle)
+      sidebarHeader.textContent = "Conversations"
+      newChatBtn.innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New Chat
+      `
+      messageInput.placeholder = "What do you want to post?"
+      
+      // Load regular conversations
+      loadChatHistory()
+    }
+
+    await saveChatbotState()
+  }
+
+  async function loadTemplates() {
+    const conversationList = document.getElementById("lia-conversation-list")
+    if (!conversationList) return
+
+    // fetch templates from api-server
+    await fetchTemplates()
+
+    conversationList.innerHTML = Object.entries(TEMPLATES).map(([key, template]) => `
+      <div class="lia-template-item ${chatbotState.selectedTemplate === key ? 'active' : ''}" data-template="${key}">
+        <div class="lia-template-icon">${template.icon}</div>
+        <div class="lia-template-info">
+          <div class="lia-template-name">${template.name}</div>
+          <div class="lia-template-description">${template.description}</div>
+        </div>
+      </div>
+    `).join('')
+
+    // Add click listeners to template items
+    conversationList.querySelectorAll('.lia-template-item').forEach(item => {
+      item.addEventListener('click', () => {
+        const templateKey = item.dataset.template
+        selectTemplate(templateKey)
+      })
+    })
+
+    if (chatbotState.selectedTemplate) {
+      chatbotState.currentConversationId = null; // Clear current conversation
+      selectTemplate(chatbotState.selectedTemplate)
+    }
+  }
+
+  function selectTemplate(templateKey) {
+    chatbotState.selectedTemplate = templateKey;
+    chatbotState.currentConversationId = null; // Clear current conversation
+    chatbotState.conversations = []; // Clear conversations list
+    const template = TEMPLATES[templateKey];
+
+    // Update active state in sidebar
+    document.querySelectorAll('.lia-template-item').forEach(item => {
+      item.classList.remove('active')
+    })
+    document.querySelector(`[data-template="${templateKey}"]`).classList.add('active')
+    
+    // Clear messages and show template info
+    const messagesContainer = document.getElementById("lia-messages-container")
+    messagesContainer.innerHTML = `
+      <div class="lia-welcome-message">
+        <div class="lia-message assistant">
+          <div class="lia-message-avatar">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+              <rect x="2" y="9" width="4" height="12"/>
+              <circle cx="4" cy="4" r="2"/>
+              <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
+              <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
+            </svg>
+          </div>
+          <div class="lia-message-content">
+            Hi! I'm Lia, your LinkedIn Intelligent Assistant.<br/><br/>
+            You're using <strong>${template.name}</strong> - posts will be written like the example below:<br/><br/>
+            <div class="lia-template-example">
+              <div class="lia-linkedin-card">
+                <div class="lia-card-header">
+                  <div class="lia-card-avatar">${template.example.author.charAt(0)}</div>
+                  <div class="lia-card-info">
+                    <div class="lia-card-name">${template.example.author}</div>
+                    <div class="lia-card-title">Product Manager • 2nd</div>
+                    <div class="lia-card-time">2h • 🌍</div>
+                  </div>
+                </div>
+                <div class="lia-card-content">${template.example.content.replace(/\n/g, '<br>')}</div>
+                <div class="lia-card-engagement">
+                  <span>👍 ${template.example.engagement.likes}</span>
+                  <span>💬 ${template.example.engagement.comments}</span>
+                  <span>🔄 12</span>
+                </div>
+              </div>
+            </div>
+            <br/>This style works great for:<br/>
+            • ${template.description}<br/>
+            • Building engagement through ${template.name.toLowerCase()} content<br/><br/>
+            What would you like to write about today?
+          </div>
+        </div>
+      </div>
+    `
+
+    // make backend api requests to create chat
+    
+    
+    saveChatbotState()
+  }
+
+  const fetchTemplates = async () => {
+    try {
+      const response = await window.lia_fetchWithAuth('https://api.getlia.live/api/chat/templates', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await accessToken()}`,
+        },
+        credentials: 'include',
+      })
+      const data = await response.json()
+      console.log('Fetched templates:', data)
+      if (response.ok) {
+        // Update templates in state
+        // filter out normal templates
+        TEMPLATES = data.templates.filter(template => template.key !== "normal").reduce((acc, template) => {
+          acc[template.key] = template
+          return acc
+        }, {})
+      } else {
+        console.error('Failed to fetch templates:', data.error)
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error)
+    }
   }
 
   // Quick Suggestions Functions
@@ -3724,6 +4481,12 @@
 
     messageInput.value = ""
 
+    if (chatbotState.templateMode) {
+      //turn templatemode off
+      chatbotState.templateMode = false
+      document.getElementById("lia-template-toggle").classList.remove("template-active")
+    }
+
     if (chatbotState.notesMode) {
       // fetch notes from server
       const fetchNotes = async () => {
@@ -3823,7 +4586,7 @@
     } else {
       // Switch back to Chat Mode
       notesToggle.classList.remove("notes-active")
-      notesToggle.title = "Notes Mode"
+      notesToggle.title = "Notes Mode: OFF"
       
       //modeTitle.textContent = "LIA"
 
@@ -3831,7 +4594,10 @@
       window.typeWriter("LIA", modeTitle)
 
       sidebarHeader.textContent = "Recent Chats"
-      newChatBtn.innerHTML = `+ New Chat`
+      newChatBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg> New Chat`
       messageInput.placeholder = "What do you want to post?"
       messageInput.setAttribute("rows", "1")
       inputActions.style.display = "none"
@@ -4870,7 +5636,7 @@
     }
   }
 
-  async function generateChatResponse(message) {
+  /*async function generateChatResponse(message) {
     // check if post suggestion enabled
     if (!settings.chatbot_enabled) return
 
@@ -4898,29 +5664,97 @@
     }
 
     return data.reply
+  }*/
+
+  async function generateChatResponse(message) {
+    let template_id = null
+    // Add template context if in templateMode
+    if (chatbotState.templateMode && chatbotState.selectedTemplate && TEMPLATES[chatbotState.selectedTemplate]) {
+      template_id = TEMPLATES[chatbotState.selectedTemplate].id
+    }
+    console.log("Using template_id:", template_id)
+    console.log('templates...', TEMPLATES)
+
+    // check if this is the first message the user sending in chat
+    if (!chatbotState.currentConversationId) {
+      await startNewConversation(template=true);
+    }
+
+    const body = {
+      message: message,
+      tone: settings.tone,
+      industry: settings.industry,
+      reference: chatbotState.referencedContent || null
+    }
+
+    if (template_id) {
+      body.template_id = template_id
+    }
+
+    const response = await window.lia_fetchWithAuth(`https://api.getlia.live/api/chat/${chatbotState.currentConversationId}/message`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${await accessToken()}`,
+      },
+      credentials: 'include',
+      body: JSON.stringify(body)
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      //throw new Error(data.error?.message || "Failed to generate response")
+      return data
+    }
+
+    if(chatbotState.templatesMode) {
+      // exit template mode after first message
+      // and becomes a normal chat but still has the template context
+      chatbotState.templateMode = false
+      chatbotState.selectedTemplate = null
+      await saveChatbotState()
+      // update UI
+      document.getElementById("lia-template-badge").style.display = "none"
+      document.getElementById("lia-template-toggle").classList.remove("active")
+      document.getElementById("lia-sidebar-header").textContent = "CONVERSATIONS"
+      document.getElementById("lia-new-chat-btn").innerHTML = `
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        New Chat
+      `
+    }
+
+    return data.reply
   }
 
-  async function startNewConversation() {
+  async function startNewConversation(template=false) {
     // Clear current chat
     const messagesContainer = document.getElementById("lia-messages-container")
-    messagesContainer.innerHTML = `
-    <div class="lia-message assistant">
-      <div class="lia-message-avatar">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-          <rect x="2" y="9" width="4" height="12"/>
-          <circle cx="4" cy="4" r="2"/>
-          <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
-          <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
-        </svg>
-      </div>
-      <div class="lia-message-content">
-      Hi! I'm Lia, your LinkedIn Intelligent Assistant. <br/><br/> I'm here to help you write posts, polish comments, and improve your content. <br/><br/>What can I assist you with today?
-      </div>
-    </div>
-  `
 
-    // now instead of creating a new conversation, we will create a new chat in api server
+    if (!template) { // for normal chats
+      // Show welcome message from Lia
+      messagesContainer.innerHTML = `
+      <div class="lia-message assistant">
+        <div class="lia-message-avatar">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+            <rect x="2" y="9" width="4" height="12"/>
+            <circle cx="4" cy="4" r="2"/>
+            <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
+            <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
+          </svg>
+        </div>
+        <div class="lia-message-content">
+        Hi! I'm Lia, your LinkedIn Intelligent Assistant. <br/><br/> I'm here to help you write posts, polish comments, and improve your content. <br/><br/>What can I assist you with today?
+        </div>
+      </div>
+    `;
+    }
+
+    // now instead of creating a new conversation in localStorage, we will create a new chat in api server
     async function createNewChat() {
       const response = await window.lia_fetchWithAuth(`https://api.getlia.live/api/chat/start`, {
         method: "POST",
@@ -4930,12 +5764,14 @@
         },
         body: JSON.stringify({
           title: "New Chat",
+          chat_type: template ? "template" : "normal",
+          ...(template && { template_id: TEMPLATES[chatbotState.selectedTemplate].id || null }),
         }),
         credentials: "include",
       })
       const chat = await response.json()
       if (!response.ok) {
-        throw new Error(chat.error?.message || "Failed to create new chat")
+        throw new Error(chat.error || chat.message || "Failed to create new chat")
       }
       chatbotState.currentConversationId = chat.id
       return chat
@@ -4965,7 +5801,7 @@
     chatbotState.conversations = conversations
     if (chatbotState.conversations.length === 0) {
       //addMessageToChat("assistant", "No conversations found. Start a new chat to begin!")
-      startNewConversation()
+      await startNewConversation()
       return
     }
 
@@ -5342,7 +6178,7 @@
   }
   
 
-  async function loadConversation(conversationId) {
+   async function loadConversation(conversationId) { // load chat conversations
     let conversation = null
 
     // load conversation form API server
@@ -5362,7 +6198,15 @@
       return chats
     }
 
-    const chats = await loadChats()
+    const result = await loadChats()
+    let chats;
+    let template;
+    try{
+      chats = result.messages;
+      template = result.template;
+    } catch {
+      // pass --> return no errors
+    }
     conversation = chats
 
     if (!conversation) return
@@ -5370,9 +6214,55 @@
     chatbotState.currentConversationId = conversationId
 
     const messagesContainer = document.getElementById("lia-messages-container")
-    messagesContainer.innerHTML = conversation.messages
+    messagesContainer.innerHTML = conversation
       .map(
         (msg) => {
+          // if template and if this is the first message
+          // insert assistant message as template
+          if (template && msg.role === "assistant" && conversation.indexOf(msg) === 0) {
+            return `
+              <div class="lia-welcome-message">
+                <div class="lia-message assistant">
+                  <div class="lia-message-avatar">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+                      <rect x="2" y="9" width="4" height="12"/>
+                      <circle cx="4" cy="4" r="2"/>
+                      <circle cx="16" cy="4" r="2" fill="#0a66c2"/>
+                      <path d="M12 8a4 4 0 0 1 4-4" stroke="#0a66c2"/>
+                    </svg>
+                  </div>
+                  <div class="lia-message-content">
+                    Hi! I'm Lia, your LinkedIn Intelligent Assistant.<br/><br/>
+                    You're using <strong>${template.name}</strong> - posts will be written like the example below:<br/><br/>
+                    <div class="lia-template-example">
+                      <div class="lia-linkedin-card">
+                        <div class="lia-card-header">
+                          <div class="lia-card-avatar">${template.example.author.charAt(0)}</div>
+                          <div class="lia-card-info">
+                            <div class="lia-card-name">${template.example.author}</div>
+                            <div class="lia-card-title">Product Manager • 2nd</div>
+                            <div class="lia-card-time">2h • 🌍</div>
+                          </div>
+                        </div>
+                        <div class="lia-card-content">${template.example.content.replace(/\n/g, '<br>')}</div>
+                        <div class="lia-card-engagement">
+                          <span>👍 ${template.example.engagement.likes}</span>
+                          <span>💬 ${template.example.engagement.comments}</span>
+                          <span>🔄 12</span>
+                        </div>
+                      </div>
+                    </div>
+                    <br/>This style works great for:<br/>
+                    • ${template.description}<br/>
+                    • Building engagement through ${template.name.toLowerCase()} content<br/><br/>
+                    What would you like to write about today?
+                  </div>
+                </div>
+              </div>
+              `
+          }
+
           if (msg.role === "reference") {
             const refContent = JSON.parse(msg.content)
             return `
@@ -5418,9 +6308,6 @@
     updateConversationList()
   }
 
-  // Make functions globally available for onclick handlers
-  window.loadConversation = loadConversation
-
   // ===== RERERENCE MODE SYSTEM =====
   async function toggleReferenceMode() {
     // Check if user has pro access
@@ -5446,7 +6333,7 @@
 
       // show different title when notes mode is enabled
       if (chatbotState.notesMode) {
-        toggleBtn.title = "Reference Mode: ON (Click posts to save to current note)"
+        toggleBtn.title = "Reference Mode (pro): ON (Click any post to save to current note)"
       }
       initializeReferenceMode()
       showTemporaryNotification("📎 Reference Mode ON - Click any post to reference it", "success")
@@ -5457,7 +6344,7 @@
       }
     } else {
       toggleBtn.classList.remove("reference-active")
-      toggleBtn.title = "Reference Mode (Pro)"
+      toggleBtn.title = "Reference Mode (Pro): OFF"
       disableReferenceMode()
       showTemporaryNotification("Reference Mode OFF", "info")
     }
@@ -6037,7 +6924,7 @@
   }
 
   // chatbot helper functions
-  async function loadConversations() {
+  async function loadConversations() { // load chats
     const access_token = await accessToken()
     const response = await window.lia_fetchWithAuth(`https://api.getlia.live/api/chat/history`, {
       method: "GET",

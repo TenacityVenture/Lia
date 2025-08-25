@@ -156,6 +156,7 @@ async function lia_setTokens({ access_token, refresh_token }) {
 
 async function lia_clearTokens() {
   await chrome.storage.local.remove(['access_token', 'refresh_token']);
+  console.log('Access token and refresh token cleared from storage.');
 }
 
 let refreshInFlight = null;
@@ -170,7 +171,7 @@ async function refreshTokenForFetchWithAuth() {
     const resp = await fetch('https://api.getlia.live/api/auth/refresh-token', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // credentials NOT needed since we don't rely on cookies for refresh anymore
+      credentials: 'include', // we don't rely on cookies anymore, but keeping it for compatibility
       body: JSON.stringify({ refresh_token })
     });
 

@@ -10,36 +10,87 @@ const { getUserInfo } = require('../utils/helpers/getUserInfo');
 * @param {Object} res - Express response object
 * @param {string} req.body.title - Title of the chat
 */
+const startChat = async (title, userId, res, type, template_id) => {
+
+  if (!type || type === 'normal') { // normal chats mode
+    const {data: template} = await supabase.from('chat_templates').select().eq('name', 'normal').single();
+    try {
+      const { data, error } = await supabase
+        .from('chats')
+        .insert(
+          { user_id: userId,
+            title: title || 'New Chat',
+            type: 'normal',
+            template_id: template.id
+          }
+        )
+        .select()
+        .single();
+  
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+  
+      // push one message in chat ie the ai message
+      await supabase.from('chat_messages').insert([
+        { 
+          chat_id: data.id, 
+          user_id: userId, 
+          role: 'assistant', 
+          content: "Hi! I'm Lia, your LinkedIn Intelligence Assistant. <br/><br/> I'm here to help you write posts, polish comments, and improve your content. <br/><br/>What can I assist you with today?" 
+        }
+      ]);
+  
+      res.status(201).json(data);
+    } catch (err) {
+      console.error('Error creating chat:', err);
+      res.status(500).json({ error: 'Failed to create chat' });
+    }
+  } else if (type === 'template') {
+    try {
+      const { data, error } = await supabase
+        .from('chats')
+        .insert({ user_id: userId, title: title || 'New Chat', type: 'template', template_id: template_id })
+        .select()
+        .single();
+  
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
+      // push one message in chat ie the ai message
+      await supabase.from('chat_messages').insert([
+        { 
+          chat_id: data.id, 
+          user_id: userId, 
+          role: 'assistant', 
+          content: `Hi! I'm LIA, your LinkedIn Intelligence Assistant. <br/><br/>
+          You're using ${data.name} <br/><br/> - posts will be written like the example below:<br/><br/>
+          ${data.example.author} <br/>
+          ${data.example.content}
+          `
+        }
+      ]);
+  
+      res.status(201).json(data);
+    } catch (err) {
+      console.error('Error creating chat:', err);
+      res.status(500).json({ error: 'Failed to create chat' });
+    }
+  }
+}
 exports.createChat = async (req, res) => {
   const userId = req.user.sub;
   const { title } = req.body;
+  const { chat_type } = req.body;
 
-  try {
-    const { data, error } = await supabase
-      .from('chats')
-      .insert({ user_id: userId, title: title || 'New Chat' })
-      .select()
-      .single();
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
-
-    // push one message in chat ie the ai message
-    await supabase.from('chat_messages').insert([
-      { 
-        chat_id: data.id, 
-        user_id: userId, 
-        role: 'assistant', 
-        content: "Hi! I'm Lia, your LinkedIn Intelligence Assistant. <br/><br/> I'm here to help you write posts, polish comments, and improve your content. <br/><br/>What can I assist you with today?" 
-      }
-    ]);
-
-    res.status(201).json(data);
-  } catch (err) {
-    console.error('Error creating chat:', err);
-    res.status(500).json({ error: 'Failed to create chat' });
+  let template_id = null;
+  if (chat_type === 'template') {
+    template_id = req.body?.template_id;
   }
+
+  
+  return await startChat(title, userId, res, chat_type, template_id)
 };
 
 /** Get chat history for a user
@@ -77,18 +128,34 @@ exports.getChatMessages = async (req, res) => {
   const chatId = req.params.chatId;
 
   try {
-    const { data, error } = await supabase
+    const { data: messages, error } = await supabase
       .from('chat_messages')
       .select('*')
       .eq('chat_id', chatId)
+      .eq('user_id', userId) // Filter messages to ensure they belong to the user
       .order('created_at', { ascending: true });
 
     if (error) {
       return res.status(500).json({ error: error.message });
     }
 
-    // Filter messages to ensure they belong to the user
-    const messages = data.filter(message => message.user_id === userId);
+    // check if chat id is a template
+    const {data} = await supabase // get the chat
+      .from('chats')
+      .select('type')
+      .eq('id', chatId)
+      .single();
+
+    if (data.type === 'template') {
+      const {data: template} = await supabase // get particular template
+        .from('chat_templates')
+        .select('*')
+        .eq('id', data.template_id)
+        .single();
+
+      messages[0].content = template.prompt;
+      return res.json({messages, template});
+    }
 
     res.json({messages});
   } catch (err) {
@@ -438,5 +505,23 @@ exports.updateChatLastUsed = async (req, res) => {
   } catch (err) {
     console.error('Error updating chat last used:', err);
     res.status(500).json({ error: 'Failed to update chat last used' });
+  }
+}
+
+/**
+ * List templates
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+exports.listTemplates = async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('chat_templates').select('*');
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+    res.json({templates: data});
+  } catch (err) {
+    console.error('Error listing templates:', err);
+    res.status(400).json({ error: 'Failed to list templates' });
   }
 }

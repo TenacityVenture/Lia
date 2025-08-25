@@ -8,7 +8,8 @@ const {
     message, // add a message to a chat
     deleteChat, 
     updateChatTitle,
-    updateChatLastUsed
+    updateChatLastUsed,
+    listeTemplates
 } = require('../controllers/chatController');
 const { authenticate, checkPlan } = require('../middlewares/authMiddleware');
 
@@ -43,5 +44,12 @@ router.put('/:chatId/last-used', authenticate, updateChatLastUsed);
 // delete a chat
 // DELETE /api/chat/:chatId
 router.delete('/:chatId', authenticate, deleteChat);
+
+// chat templating
+const { listTemplates } = require('../controllers/chatController')
+
+// list all chat templates
+// GET /api/chat/templates
+router.get('/templates', authenticate, listTemplates)
 
 module.exports = router;

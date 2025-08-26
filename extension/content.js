@@ -16,6 +16,11 @@
 
   let liaUser = null;
 
+  // number of conversations to load for pagination
+  let numberOfConversationsToLoad = 10;
+  // number of notes to load
+  let numberofNotesToLoad = 10;
+
   const getUserAvatar = () => {
     if (liaUser && liaUser.profile_picture_url) {
       return `<img class="lia-chat-user-avatar" src="${liaUser.profile_picture_url}" alt="User Avatar" />`;
@@ -3740,6 +3745,7 @@
         <div class="lia-sidebar-header" id="lia-sidebar-header">Recent Chats</div>
         <div class="lia-conversation-list" id="lia-conversation-list">
           <!-- Conversations/Notes will be populated here -->
+          <button class="lia-load-more-btn" id="lia-load-more-btn">Load more...</button>
         </div>
         <button class="lia-new-chat-btn" id="lia-new-chat-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -3879,6 +3885,7 @@
     const closeBtn = document.getElementById("lia-close-btn")
     const sidebarToggle = document.getElementById("lia-sidebar-toggle")
     const sidebar = document.getElementById("lia-chat-sidebar")
+    const loadMoreBtn = document.getElementById("lia-load-more-btn")
     const newChatBtn = document.getElementById("lia-new-chat-btn")
     const liaChatbotTitle = document.querySelector(".lia-chatbot-title")
     const referenceToggle = document.getElementById("lia-reference-toggle")
@@ -3964,6 +3971,12 @@
       e.stopPropagation()
       // toggle sidebar
       showSidebar()
+    })
+
+    // loadmore for pagination
+    loadMoreBtn.addEventListener("click", (e) => {
+      e.stopPropagation()
+      loadMore()
     })
 
 
@@ -4490,9 +4503,11 @@
 
     if (chatbotState.notesMode) {
       // fetch notes from server
-      const fetchNotes = async () => {
+      const fetchNotes = async (limit) => {
+        const start = limit < 10 ? 0 : limit - 10;
+
         // fetch notes from server
-        const response = await window.lia_fetchWithAuth('https://api.getlia.live/api/note/notes', {
+        const response = await window.lia_fetchWithAuth(`https://api.getlia.live/api/note/notes?limit=${limit}&start=${start}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -4523,20 +4538,8 @@
         }
       }
 
-      await fetchNotes()
-      /*try {
-        await fetchNotes()
-      } catch (error) {
-        // try refreshing token
-        await refreshToken()
-        try {
-          await fetchNotes() // try fetching notes again
-        } catch (error) {
-          console.error('Error fetching notes:', error)
-          showTemporaryNotification('Error fetching notes', 'error')
-          return
-        }
-      }*/
+      await fetchNotes(numberofNotesToLoad)
+      numberofNotesToLoad += 10 // increment
         
       // Hide quick suggestions
       hideQuickSuggestions()
@@ -5393,6 +5396,8 @@
     chatbotInterface.classList.remove("minimized")
     chatbotState.isOpen = false
     chatbotState.isMinimized = false
+    numberOfConversationsToLoad = 10
+    numberofNotesToLoad = 10
 
     // set the radius again
     chatbotInterface.classList.remove('right-radius-bottom-and-width')
@@ -5438,6 +5443,23 @@
   function showSidebar() {
     const sidebar = document.getElementById("lia-chat-sidebar")
     sidebar.classList.remove("collapsed")
+  }
+
+  async function loadMore() {
+    if (chatbotState.notesMode) {
+      // If in Notes Mode, load more notes
+      //await loadMoreNotes()
+    } else {
+      //increment first for the > than conditional in updateConversationList
+      numberOfConversationsToLoad += 10;
+    
+      await updateConversationList()
+
+    }
+  }
+
+  async function loadMoreNotes() {
+    //await fetch('https://')
   }
 
   function toggleSidebar() {
@@ -5796,7 +5818,9 @@
     let conversations = []
 
     // load conversations from API server
-    const chats = await loadConversations()
+    const chats = await loadConversations(numberOfConversationsToLoad)
+    numberOfConversationsToLoad += 10;
+
     conversations = chats
 
     chatbotState.conversations = conversations
@@ -5822,37 +5846,74 @@
       if (chatbotState.notesMode) {
         // Load and display notes instead of conversations
         const notes = await getNotesFromStorage()
-        conversationList.innerHTML = notes
-        .map((note) => {
-          const truncatedTitle = note.title.slice(0, 15) + (note.title.length > 15 ? "..." : "")
-          const contextIcon = getContextIcon(note.context?.type)
 
-          return `
-            <div class="lia-conversation-item-wrapper" style="position: relative;">
-              <div class="lia-conversation-item ${note.id === chatbotState.currentNoteId ? "active" : ""}"
-                  data-id="${note.id}" title="${note.title}" style="cursor: pointer; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
-                <div style="flex: 1; overflow: hidden;">
-                  <div class="truncatedTitle" style="font-size: 12px; font-weight: 500;">${contextIcon} ${truncatedTitle}</div>
-                  <div style="font-size: 10px; color: #a9d2f3ff; margin-top: 2px;">${formatTimestamp(note.lastModified)}</div>
+        if (numberofNotesToLoad > notes.length || numberofNotesToLoad > 10) {
+          // we're pagination append to conversationList
+          conversationList.innerHTML += notes
+          .map((note) => {
+            const truncatedTitle = note.title.slice(0, 15) + (note.title.length > 15 ? "..." : "")
+            const contextIcon = getContextIcon(note.context?.type)
+
+            return `
+              <div class="lia-conversation-item-wrapper" style="position: relative;">
+                <div class="lia-conversation-item ${note.id === chatbotState.currentNoteId ? "active" : ""}"
+                    data-id="${note.id}" title="${note.title}" style="cursor: pointer; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+                  <div style="flex: 1; overflow: hidden;">
+                    <div class="truncatedTitle" style="font-size: 12px; font-weight: 500;">${contextIcon} ${truncatedTitle}</div>
+                    <div style="font-size: 10px; color: #a9d2f3ff; margin-top: 2px;">${formatTimestamp(note.lastModified)}</div>
+                  </div>
+                  <span class="lia-menu-trigger" style="cursor: pointer; padding: 4px; border-radius: 4px; opacity: 0.7; transition: opacity 0.2s;">⋯</span>
                 </div>
-                <span class="lia-menu-trigger" style="cursor: pointer; padding: 4px; border-radius: 4px; opacity: 0.7; transition: opacity 0.2s;">⋯</span>
+                <div class="lia-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 120px; overflow: hidden;">
+                  <button class="lia-edit-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                    <span style="margin-right: 8px;">✏️</span>Edit
+                  </button>
+                  <button class="lia-duplicate-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                    <span style="margin-right: 8px;">📋</span>Duplicate
+                  </button>
+                  <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+                  <button class="lia-delete-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #dc3545; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                    <span style="margin-right: 8px;">🗑️</span>Delete
+                  </button>
+                </div>
               </div>
-              <div class="lia-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 120px; overflow: hidden;">
-                <button class="lia-edit-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
-                  <span style="margin-right: 8px;">✏️</span>Edit
-                </button>
-                <button class="lia-duplicate-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
-                  <span style="margin-right: 8px;">📋</span>Duplicate
-                </button>
-                <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
-                <button class="lia-delete-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #dc3545; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
-                  <span style="margin-right: 8px;">🗑️</span>Delete
-                </button>
+            `
+          })
+          .join("")
+        } else {
+          // not pagination initial fetch
+          conversationList.innerHTML = notes
+          .map((note) => {
+            const truncatedTitle = note.title.slice(0, 15) + (note.title.length > 15 ? "..." : "")
+            const contextIcon = getContextIcon(note.context?.type)
+
+            return `
+              <div class="lia-conversation-item-wrapper" style="position: relative;">
+                <div class="lia-conversation-item ${note.id === chatbotState.currentNoteId ? "active" : ""}"
+                    data-id="${note.id}" title="${note.title}" style="cursor: pointer; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+                  <div style="flex: 1; overflow: hidden;">
+                    <div class="truncatedTitle" style="font-size: 12px; font-weight: 500;">${contextIcon} ${truncatedTitle}</div>
+                    <div style="font-size: 10px; color: #a9d2f3ff; margin-top: 2px;">${formatTimestamp(note.lastModified)}</div>
+                  </div>
+                  <span class="lia-menu-trigger" style="cursor: pointer; padding: 4px; border-radius: 4px; opacity: 0.7; transition: opacity 0.2s;">⋯</span>
+                </div>
+                <div class="lia-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 120px; overflow: hidden;">
+                  <button class="lia-edit-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                    <span style="margin-right: 8px;">✏️</span>Edit
+                  </button>
+                  <button class="lia-duplicate-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                    <span style="margin-right: 8px;">📋</span>Duplicate
+                  </button>
+                  <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+                  <button class="lia-delete-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #dc3545; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                    <span style="margin-right: 8px;">🗑️</span>Delete
+                  </button>
+                </div>
               </div>
-            </div>
-          `
-        })
-        .join("")
+            `
+          })
+          .join("")
+        }
 
         // Add note-specific event listeners
         setupNoteEventListeners()
@@ -5860,10 +5921,13 @@
           // Original chat functionality
           let conversations = []
           // load conversations from API server
-          conversations = await loadConversations()
+          conversations = await loadConversations(numberOfConversationsToLoad)
 
-          conversationList.innerHTML = conversations
-            .map(
+
+          if (numberOfConversationsToLoad > conversationList.lengt || numberOfConversationsToLoad > 10) {
+            // then we are paginating so just append to lia-conversation-list
+            conversationList.innerHTML += conversations
+              .map(
               (conv) => {
                 const truncatedTitle = conv.title.slice(0, 10) + (conv.title.length > 15 ? "..." : "");
                 return `
@@ -5889,10 +5953,43 @@
                       </button>
                     </div>
                   </div>
-                `;
+                `
               }
-            )
-            .join("");
+              )
+              .join("")
+          } else {
+            conversationList.innerHTML = conversations
+              .map(
+                (conv) => {
+                  const truncatedTitle = conv.title.slice(0, 10) + (conv.title.length > 15 ? "..." : "");
+                  return `
+                    <div class="lia-conversation-item-wrapper" style="position: relative;">
+                      <div class="lia-conversation-item ${conv.id === chatbotState.currentConversationId ? "active" : ""}" 
+                          data-id="${conv.id}" title="${conv.title}" style="cursor: pointer; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+                        <span style="flex: 1; overflow: hidden;" class='truncatedTitle'>${truncatedTitle}</span>
+                        <span class="lia-menu-trigger" style="cursor: pointer; padding: 4px; border-radius: 4px; opacity: 0.7; transition: opacity 0.2s;">⋯</span>
+                      </div>
+                      <div class="lia-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 120px; overflow: hidden;">
+                        <button class="lia-rename-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                          <span style="margin-right: 8px;">✏️</span>Rename
+                        </button>
+                        ${/*<button class="lia-duplicate-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                          <span style="margin-right: 8px;">📋</span>Duplicate
+                        </button>
+                        <button class="lia-export-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                          <span style="margin-right: 8px;">💾</span>Export
+                        </button>*/ ""}
+                        <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+                        <button class="lia-delete-chat-btn" data-id="${conv.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #dc3545; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                          <span style="margin-right: 8px;">🗑️</span>Delete Chat
+                        </button>
+                      </div>
+                    </div>
+                  `;
+                }
+              )
+              .join("");
+          }
 
           // Add hover effects for menu items
           const style = document.createElement('style');
@@ -6925,22 +7022,31 @@
   }
 
   // chatbot helper functions
-  async function loadConversations() { // load chats
-    const access_token = await accessToken()
-    const response = await window.lia_fetchWithAuth(`https://api.getlia.live/api/chat/history`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${access_token}`,
-      },
-      credentials: "include",
-    })
-    const chats = await response.json()
+  async function loadConversations(limit) {
+    const access_token = await accessToken();
+    const start = limit < 10 ? 0 : limit - 10;
+  
+    const response = await window.lia_fetchWithAuth(
+      `https://api.getlia.live/api/chat/history?limit=${limit}&start=${start}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${access_token}`,
+        },
+        credentials: "include",
+      }
+    );
+  
+    const chats = await response.json();
+  
     if (!response.ok) {
-      throw new Error(chats.error?.message || "Failed to load conversations")
+      throw new Error(chats.error?.message || "Failed to load conversations");
     }
-    return chats
+  
+    return chats;
   }
+  
 
   // helper function for farmating chat conversations
   function formatMessage(message) {

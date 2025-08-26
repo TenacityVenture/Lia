@@ -186,12 +186,17 @@ exports.saveNotes = async (req, res) => {
 
 exports.getNotes = async (req, res) => {
   const userId = req.user.sub;
+  const start = parseInt(req.query.start) || (limit < 10 ? 0 : limit - 10);
+  const end = limit - 1; // inclusive range for Supabase
+
 
   // Fetch notes and their messages
   const { data: notes, error: notesError } = await supabase
     .from('notes')
     .select('*')
     .eq('user_id', userId)
+    .order('updated_at', { ascending: false })
+    .range(start, end);
 
   if (notesError) return res.status(500).json({ error: notesError.message })
 

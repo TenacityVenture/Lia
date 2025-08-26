@@ -107,12 +107,18 @@ exports.createChat = async (req, res) => {
 exports.chats = async (req, res) => {
   const userId = req.user.sub;
 
+  // Read limit and start from query params
+  const limit = parseInt(req.query.limit) || 10;
+  const start = parseInt(req.query.start) || (limit < 10 ? 0 : limit - 10);
+  const end = limit - 1; // inclusive range for Supabase
+
   try {
     const { data, error } = await supabase
     .from('chats')
     .select('*')
     .eq('user_id', userId)
-    .order('updated_at', { ascending: false });
+    .order('updated_at', { ascending: false })
+    .range(start, end);
 
     if (error) {
         return res.status(500).json({ error: error.message });

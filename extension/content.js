@@ -24,7 +24,7 @@
   }
 
   // Load settings when content script initializes
-  chrome.storage.sync.get(["tone", "industry", "chatbot_enabled", "reply_enabled", "rewrite_enabled", "linkedinTheme"], (data) => {
+  chrome.storage.sync.get(["tone", "industry", "chatbot_enabled", "reply_enabled", "rewrite_enabled", "linkedinTheme", "selectedPersona"], (data) => {
     settings = { ...settings, ...data }
     initializeExtension()
   })
@@ -32,7 +32,7 @@
   // Listen for settings updates
   chrome.runtime.onMessage.addListener(async (request, sender, sendResponse) => {
     if (request.action === "settingsUpdated") {
-      await chrome.storage.sync.get(["tone", "industry", "chatbot_enabled", "reply_enabled", "rewrite_enabled", "linkedinTheme"], (data) => {
+      await chrome.storage.sync.get(["tone", "industry", "chatbot_enabled", "reply_enabled", "rewrite_enabled", "linkedinTheme", "selectedPersona"], (data) => {
         settings = { ...settings, ...data }
       })
       initializeExtension()
@@ -1015,9 +1015,10 @@
     })
   }
 
-  function selectPersona(personaKey, container) {
+  async function selectPersona(personaKey, container) {
     settings.selectedPersona = personaKey
-    chrome.storage.sync.set({ selectedPersona: personaKey })
+    await chrome.storage.sync.set({ selectedPersona: personaKey })
+    console.log('awesome')
     
     const persona = PERSONAS[personaKey]
     const personaBtn = container.querySelector('.lia-persona-btn')

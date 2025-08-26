@@ -186,7 +186,7 @@ exports.saveNotes = async (req, res) => {
 
 exports.getNotes = async (req, res) => {
   const userId = req.user.sub;
-  const limit = parseInt(req.query?.limit);
+  const limit = parseInt(req.query?.limit) || 10;
   const start = parseInt(req.query?.start) || (limit < 10 ? 0 : limit - 10);
   const end = limit - 1; // inclusive range for Supabase
 

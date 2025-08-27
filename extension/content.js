@@ -19,7 +19,7 @@
   // number of conversations to load for pagination
   let numberOfConversationsToLoad = 10;
   // number of notes to load
-  let numberofNotesToLoad = 10;
+  let numberOfNotesToLoad = 10;
 
   const getUserAvatar = () => {
     if (liaUser && liaUser.profile_picture_url) {
@@ -231,7 +231,7 @@
     });
   }
 
-  function setupTextSelectionToolbar() {
+  /*function setupTextSelectionToolbar() {
 
     // Create the enhanced toolbar
     const toolbar = document.createElement('div')
@@ -393,9 +393,9 @@
         toolbar.style.display = 'none'
       }
     })
-  }
+  }*/
 
-  function handleTextSelection() {
+  /*function handleTextSelection() {
     const toolbar = document.getElementById('linkedin-ai-text-toolbar')
     if (!toolbar) return
 
@@ -428,12 +428,438 @@
     } else {
       toolbar.style.display = 'none'
     }
+  }*/
+
+  /*function setupTextSelectionToolbar() {
+    // Create the enhanced toolbar
+    const toolbar = document.createElement("div")
+    toolbar.id = "linkedin-ai-text-toolbar"
+    toolbar.className = "linkedin-ai-text-toolbar"
+    toolbar.style.cssText = `
+        position: absolute;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        padding: 8px;
+        display: none;
+        z-index: 10000;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        gap: 4px;
+        align-items: center;
+        backdrop-filter: blur(10px);
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        pointer-events: none;
+        overflow: hidden;
+      `
+
+    const style = document.createElement("style")
+    style.textContent = `
+        @keyframes logoSlideIn {
+          0% {
+            opacity: 0;
+            transform: translateX(-20px) scale(0.8);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+          }
+        }
+        
+        @keyframes flowingWave {
+          0% {
+            clip-path: polygon(0% 0%, 0% 0%, 0% 100%, 0% 100%);
+            opacity: 0;
+          }
+          25% {
+            clip-path: polygon(0% 0%, 30% 0%, 25% 100%, 0% 100%);
+            opacity: 0.7;
+          }
+          50% {
+            clip-path: polygon(0% 0%, 60% 0%, 55% 100%, 0% 100%);
+            opacity: 0.9;
+          }
+          75% {
+            clip-path: polygon(0% 0%, 90% 0%, 85% 100%, 0% 100%);
+            opacity: 1;
+          }
+          100% {
+            clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes buttonStagger {
+          0% {
+            opacity: 0;
+            transform: translateY(5px) scale(0.9);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        @keyframes toolbarSlideIn {
+          0% {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.95);
+          }
+          100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+        
+        @keyframes toolbarSlideOut {
+          0% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+          100% {
+            opacity: 0;
+            transform: translateY(-10px) scale(0.95);
+          }
+        }
+        
+        .lia-logo-container {
+          opacity: 0;
+          animation: logoSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        .lia-buttons-container {
+          opacity: 0;
+          animation: flowingWave 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s forwards;
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .lia-buttons-container::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(90deg, transparent, rgba(10, 102, 194, 0.1), transparent);
+          animation: flowingShimmer 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.4s forwards;
+          z-index: 0;
+        }
+        
+        @keyframes flowingShimmer {
+          0% {
+            left: -100%;
+          }
+          100% {
+            left: 100%;
+          }
+        }
+
+        .linkedin-ai-toolbar-btn {
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .linkedin-ai-toolbar-btn::before {
+          content: '';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+          background: rgba(10, 102, 194, 0.1);
+          border-radius: 50%;
+          transform: translate(-50%, -50%);
+          transition: width 0.3s ease, height 0.3s ease;
+        }
+        
+        .linkedin-ai-toolbar-btn:hover::before {
+          width: 100%;
+          height: 100%;
+        }
+        
+        .linkedin-ai-toolbar-btn:active {
+          transform: scale(0.95);
+          transition: transform 0.1s ease;
+        }
+      `
+    document.head.appendChild(style)
+
+    const logoContainer = document.createElement("div")
+    logoContainer.className = "lia-logo-container"
+    logoContainer.style.cssText = `
+      display: flex;
+      align-items: center;
+      padding: 4px 6px;
+      background: #0a66c2;
+      border-radius: 6px;
+      margin-right: 8px;
+    `
+
+    logoContainer.innerHTML = `
+      <svg class="lia-logo" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+        <rect x="2" y="9" width="4" height="12"/>
+        <circle cx="4" cy="4" r="2"/>
+        <circle cx="16" cy="4" r="2" fill="#ffffff"/>
+        <path d="M12 8a4 4 0 0 1 4-4" stroke="#ffffff"/>
+      </svg>
+    `
+
+    toolbar.appendChild(logoContainer)
+
+    const buttonsContainer = document.createElement("div")
+    buttonsContainer.className = "lia-buttons-container"
+    buttonsContainer.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    `
+
+    toolbar.appendChild(buttonsContainer)
+
+    // Create toolbar buttons
+    const buttons = [
+      {
+        id: "bold",
+        icon: "B",
+        title: "Make Bold",
+        style: "font-weight: 700; font-size: 14px;",
+        action: () => handleTextFormatting("bold"),
+      },
+      {
+        id: "italic",
+        icon: "I",
+        title: "Make Italic",
+        style: "font-style: italic; font-size: 14px;",
+        action: () => handleTextFormatting("italic"),
+      },
+      {
+        id: "divider1",
+        type: "divider",
+      },
+      {
+        id: "ai-rewrite",
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
+            <path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10Zm0 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/>
+          </svg>`,
+        title: "AI Rewrite Paragraph",
+        action: () => handleAIRewrite(),
+      },
+      {
+        id: "shorten",
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
+            <path d="M8 18L12 6l4 12"/>
+            <path d="M9.5 12h5"/>
+          </svg>`,
+        title: "Make Shorter",
+        action: () => handleTextTransform("shorten"),
+      },
+      {
+        id: "expand",
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+          </svg>`,
+        title: "Expand Text",
+        action: () => handleTextTransform("expand"),
+      },
+      {
+        id: "divider2",
+        type: "divider",
+      },
+      {
+        id: "professional",
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+          </svg>`,
+        title: "Make Professional",
+        action: () => handleTextTransform("professional"),
+      },
+      {
+        id: "emoji",
+        icon: "😊",
+        title: "Add Emojis",
+        style: "font-size: 14px;",
+        action: () => handleTextTransform("emoji"),
+      },
+      {
+        id: "grammar",
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" stroke-width="2">
+            <path d="M9 12l2 2 4-4"/>
+            <circle cx="12" cy="12" r="10"/>
+          </svg>`,
+        title: "Fix Grammar",
+        action: () => handleTextTransform("grammar"),
+      },
+    ]
+
+    buttons.forEach((button, index) => {
+      if (button.type === "divider") {
+        const divider = document.createElement("div")
+        divider.style.cssText = `
+            width: 1px;
+            height: 20px;
+            background: #e0e0e0;
+            margin: 0 4px;
+            opacity: 0.6;
+          `
+        buttonsContainer.appendChild(divider)
+      } else {
+        const btn = document.createElement("button")
+        btn.className = "linkedin-ai-toolbar-btn"
+        btn.title = button.title
+        btn.style.cssText = `
+            background: none;
+            border: none;
+            padding: 6px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #0a66c2;
+            position: relative;
+            z-index: 1;
+            opacity: 0;
+            transform: translateY(5px) scale(0.9);
+            animation: buttonStagger 0.3s cubic-bezier(0.4, 0, 0.2, 1) ${0.5 + index * 0.05}s forwards;
+            ${button.style || ""}
+          `
+
+        if (button.icon.startsWith("<svg")) {
+          btn.innerHTML = button.icon
+        } else {
+          btn.textContent = button.icon
+        }
+
+        btn.addEventListener("mouseenter", () => {
+          btn.style.backgroundColor = "#e7f3ff"
+          btn.style.transform = "translateY(-1px)"
+        })
+
+        btn.addEventListener("mouseleave", () => {
+          btn.style.backgroundColor = "transparent"
+          btn.style.transform = "translateY(0)"
+        })
+
+        btn.addEventListener("click", (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+
+          btn.style.transform = "scale(0.95)"
+          setTimeout(() => {
+            btn.style.transform = "translateY(0)"
+          }, 100)
+
+          button.action()
+        })
+
+        buttonsContainer.appendChild(btn)
+      }
+    })
+
+    document.body.appendChild(toolbar)
+
+    function showToolbar() {
+      toolbar.style.display = "flex"
+      toolbar.style.pointerEvents = "auto"
+
+      // Force reflow
+      toolbar.offsetHeight
+
+      const logoContainer = toolbar.querySelector(".lia-logo-container")
+      const buttonsContainer = toolbar.querySelector(".lia-buttons-container")
+
+      logoContainer.style.animation = "none"
+      buttonsContainer.style.animation = "none"
+
+      // Force reflow
+      logoContainer.offsetHeight
+      buttonsContainer.offsetHeight
+
+      // Start animations
+      logoContainer.style.animation = "logoSlideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards"
+      buttonsContainer.style.animation = "flowingWave 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.3s forwards"
+
+      toolbar.style.animation = "toolbarSlideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards"
+      toolbar.style.opacity = "1"
+      toolbar.style.transform = "translateY(0) scale(1)"
+
+      const buttons = buttonsContainer.querySelectorAll(".linkedin-ai-toolbar-btn")
+      buttons.forEach((btn, index) => {
+        btn.style.animation = "none"
+        btn.offsetHeight // Force reflow
+        btn.style.animation = `buttonStagger 0.3s cubic-bezier(0.4, 0, 0.2, 1) ${0.5 + index * 0.05}s forwards`
+      })
+    }
+
+    function hideToolbar() {
+      toolbar.style.animation = "toolbarSlideOut 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards"
+      toolbar.style.pointerEvents = "none"
+
+      setTimeout(() => {
+        toolbar.style.display = "none"
+        toolbar.style.opacity = "0"
+        toolbar.style.transform = "translateY(-10px) scale(0.95)"
+      }, 200)
+    }
+
+    // Add selection event listeners
+    document.addEventListener("mouseup", handleTextSelection)
+    document.addEventListener("keyup", handleTextSelection)
+
+    // Hide toolbar when clicking outside
+    document.addEventListener("mousedown", (e) => {
+      if (!toolbar.contains(e.target)) {
+        hideToolbar()
+      }
+    })
+
+    function handleTextSelection() {
+      const toolbar = document.getElementById("linkedin-ai-text-toolbar")
+      if (!toolbar) return
+
+      const selection = window.getSelection()
+      const selectedText = selection.toString().trim()
+
+      if (selectedText && selectedText.length > 0) {
+        // Check if we're in a LinkedIn editor
+        const activeElement = document.activeElement
+        const isInEditor =
+          activeElement &&
+          (activeElement.classList.contains("ql-editor") ||
+            activeElement.closest(".ql-editor") ||
+            activeElement.closest(".share-box") ||
+            activeElement.closest(".comments-comment-texteditor"))
+
+        if (isInEditor) {
+          const range = selection.getRangeAt(0)
+          const rect = range.getBoundingClientRect()
+
+          toolbar.style.left = `${rect.left + window.scrollX + (rect.width / 2) - toolbar.offsetWidth / 2}px`
+          toolbar.style.top = `${rect.top + window.scrollY - 50}px`
+
+          showToolbar()
+
+          // Store selection for later use
+          toolbar.dataset.selectedText = selectedText
+          toolbar.dataset.selectionStart = range.startOffset
+          toolbar.dataset.selectionEnd = range.endOffset
+        }
+      } else {
+        hideToolbar()
+      }
+    }
   }
 
   function handleTextFormatting(type) {
     const selection = window.getSelection()
     const selectedText = selection.toString()
-    
+   
     if (!selectedText) return
 
     let formattedText = selectedText
@@ -463,57 +889,269 @@
 
     replaceSelectedText(formattedText)
     hideToolbar()
-  }
+  }*/
 
-  async function handleAIRewrite() {
-    const selection = window.getSelection()
-    const selectedText = selection.toString().trim()
-    
-    if (!selectedText) return
-
-    // Get the entire sentence containing the selection
-    // but first check if . ? or ! is in the selectedText
-    // if it is, then it's already a full sentence
-    let fullSentence = selectedText
-    if (selectedText.endsWith('.') || selectedText.endsWith('?') || selectedText.endsWith('!')) {
-      fullSentence = selectedText
-    } else {
-      fullSentence = getFullSentence(selection)
-    }
-
-    // check if the last character in fullSentence is a fullstop is a full stop
-    if (fullSentence.length === 0) return;
-
-    // fullSentence without added full stop 
-    const originalSentence = fullSentence
-    if (fullSentence[fullSentence.length - 1] !== '.') {
-      // If not, add a full stop at the end
-      fullSentence += '.'
-    }
-    
-    try {
-      showToolbarLoading()
-
-      let rewrittenText = await generateRewrittenText(fullSentence, 'rewrite');
-      /*try {
-        // generate ai rewritten text
-        rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
-      } catch (error) {
-        await refreshToken() // refresh the token
-
-          // call generateRewrittenText again after refresh
-          rewrittenText = await generateRewrittenText(fullSentence, 'rewrite')
-      }*/
-      if (rewrittenText) {
-        await replaceTextInSentence(selection, originalSentence, rewrittenText)
-        hideToolbar()
+  function setupTextSelectionToolbar() {
+    // Create the enhanced toolbar with logo container
+    const toolbar = document.createElement("div")
+    toolbar.id = "linkedin-ai-text-toolbar"
+    toolbar.className = "linkedin-ai-text-toolbar"
+    toolbar.style.cssText = `
+      position: absolute;
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      padding: 0;
+      display: none;
+      z-index: 10000;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      align-items: center;
+      backdrop-filter: blur(10px);
+      overflow: hidden;
+    `
+  
+    const logoContainer = document.createElement("div")
+    logoContainer.className = "toolbar-logo"
+    logoContainer.style.cssText = `
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0a66c2, #004182);
+      border-radius: 8px 0 0 8px;
+      opacity: 0;
+      transform: scale(0.8) translateX(-10px);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    `
+  
+    logoContainer.innerHTML = `
+    <svg class="lia-logo" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+      <rect x="2" y="9" width="4" height="12"/>
+      <circle cx="4" cy="4" r="2"/>
+      <circle cx="16" cy="4" r="2" fill="#ffffff"/>
+      <path d="M12 8a4 4 0 0 1 4-4" stroke="#ffffff"/>
+    </svg>
+    `
+  
+    const buttonsContainer = document.createElement("div")
+    buttonsContainer.className = "toolbar-buttons"
+    buttonsContainer.style.cssText = `
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px;
+      opacity: 0;
+      transform: translateX(-20px);
+      transition: all 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      position: relative;
+      overflow: hidden;
+    `
+  
+    const flowOverlay = document.createElement("div")
+    flowOverlay.className = "flow-overlay"
+    flowOverlay.style.cssText = `
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(10, 102, 194, 0.1) 25%, 
+        rgba(10, 102, 194, 0.2) 50%, 
+        rgba(10, 102, 194, 0.1) 75%, 
+        transparent 100%);
+      transition: left 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+      pointer-events: none;
+    `
+    buttonsContainer.appendChild(flowOverlay)
+  
+    toolbar.appendChild(logoContainer)
+    toolbar.appendChild(buttonsContainer)
+  
+    // Create toolbar buttons
+    const buttons = [
+      {
+        id: "bold",
+        icon: "B",
+        title: "Make Bold",
+        style: "font-weight: 700; font-size: 14px;",
+        action: () => handleTextFormatting("bold"),
+      },
+      {
+        id: "italic",
+        icon: "I",
+        title: "Make Italic",
+        style: "font-style: italic; font-size: 14px;",
+        action: () => handleTextFormatting("italic"),
+      },
+      {
+        id: "divider1",
+        type: "divider",
+      },
+      {
+        id: "ai-rewrite",
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" strokeWidth="2">
+          <path d="M12 2a10 10 0 1 0 10 10 10 10 0 0 0-10-10Zm0 12.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z"/>
+        </svg>`,
+        title: "AI Rewrite Paragraph",
+        action: () => handleAIRewrite(),
+      },
+      {
+        id: "shorten",
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" strokeWidth="2">
+          <path d="M8 18L12 6l4 12"/>
+          <path d="M9.5 12h5"/>
+        </svg>`,
+        title: "Make Shorter",
+        action: () => handleTextTransform("shorten"),
+      },
+      {
+        id: "expand",
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" strokeWidth="2">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>`,
+        title: "Expand Text",
+        action: () => handleTextTransform("expand"),
+      },
+      {
+        id: "divider2",
+        type: "divider",
+      },
+      {
+        id: "professional",
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" strokeWidth="2">
+          <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+          <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+        </svg>`,
+        title: "Make Professional",
+        action: () => handleTextTransform("professional"),
+      },
+      {
+        id: "emoji",
+        icon: "😊",
+        title: "Add Emojis",
+        style: "font-size: 14px;",
+        action: () => handleTextTransform("emoji"),
+      },
+      {
+        id: "grammar",
+        icon: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a66c2" strokeWidth="2">
+          <path d="M9 12l2 2 4-4"/>
+          <circle cx="12" cy="12" r="10"/>
+        </svg>`,
+        title: "Fix Grammar",
+        action: () => handleTextTransform("grammar"),
+      },
+    ]
+  
+    // Build toolbar buttons HTML
+    buttons.forEach((button) => {
+      if (button.type === "divider") {
+        const divider = document.createElement("div")
+        divider.style.cssText = `
+          width: 1px;
+          height: 20px;
+          background: #e0e0e0;
+          margin: 0 4px;
+        `
+        buttonsContainer.appendChild(divider)
       } else {
-        showToolbarError('failed to fetch')
+        const btn = document.createElement("button")
+        btn.className = "linkedin-ai-toolbar-btn"
+        btn.title = button.title
+        btn.style.cssText = `
+          background: none;
+          border: none;
+          padding: 6px 8px;
+          border-radius: 4px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: background-color 0.2s;
+          color: #0a66c2;
+          ${button.style || ""}
+        `
+  
+        if (button.icon.startsWith("<svg")) {
+          btn.innerHTML = button.icon
+        } else {
+          btn.textContent = button.icon
+        }
+  
+        btn.addEventListener("mouseenter", () => {
+          btn.style.backgroundColor = "#e7f3ff"
+        })
+  
+        btn.addEventListener("mouseleave", () => {
+          btn.style.backgroundColor = "transparent"
+        })
+  
+        btn.addEventListener("click", (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          button.action()
+        })
+  
+        buttonsContainer.appendChild(btn)
       }
-      //hideToolbar()
-    } catch (error) {
-      showToolbarError(error.message)
+    })
+  
+    document.body.appendChild(toolbar)
+  
+    function handleTextSelection() {
+      const selection = window.getSelection()
+      if (!selection.rangeCount || selection.isCollapsed) {
+        toolbar.style.display = "none"
+        return
+      }
+  
+      const range = selection.getRangeAt(0)
+      const rect = range.getBoundingClientRect()
+  
+      // Position toolbar
+      toolbar.style.left = `${rect.left + window.scrollX}px`
+      toolbar.style.top = `${rect.top + window.scrollY - 50}px`
+      toolbar.style.display = "flex"
+  
+      // Reset animations
+      logoContainer.style.opacity = "0"
+      logoContainer.style.transform = "scale(0.8) translateX(-10px)"
+      buttonsContainer.style.opacity = "0"
+      buttonsContainer.style.transform = "translateX(-20px)"
+      flowOverlay.style.left = "-100%"
+  
+      setTimeout(() => {
+        // Logo appears with bounce
+        logoContainer.style.opacity = "1"
+        logoContainer.style.transform = "scale(1) translateX(0)"
+      }, 50)
+  
+      setTimeout(() => {
+        // Buttons container slides in
+        buttonsContainer.style.opacity = "1"
+        buttonsContainer.style.transform = "translateX(0)"
+  
+        // Flow overlay creates the wind/water effect
+        setTimeout(() => {
+          flowOverlay.style.left = "100%"
+        }, 200)
+      }, 300)
     }
+  
+    // Add selection event listeners
+    document.addEventListener("mouseup", handleTextSelection)
+    document.addEventListener("keyup", handleTextSelection)
+  
+    // Hide toolbar when clicking outside
+    document.addEventListener("mousedown", (e) => {
+      if (!toolbar.contains(e.target)) {
+        toolbar.style.display = "none"
+      }
+    })
   }
 
   async function handleTextTransform(type) {
@@ -2275,6 +2913,9 @@
       // fetch templates from api-server
       await fetchTemplates()
 
+      // profile url
+      getUserAvatar(true)
+
       //makeChatbotDraggable() remove dragging feature for now
     }
   }
@@ -3134,6 +3775,7 @@
       flex-direction: column;
       transition: all 0.3s ease;
       position: relative;
+      border-bottom-left-radius: 20px;
     }
 
     .lia-chat-sidebar.collapsed {
@@ -3192,6 +3834,14 @@
       padding: 8px;
       scrollbar-width: thin;
       scrollbar-color: #dee2e6 transparent;
+    }
+
+    .lia-load-more-btn {
+      padding: 8px 12px;
+      border-radius: 8px;
+      color: #0a66c2;
+      font-weight: 600;
+      cursor: pointer;
     }
 
     .lia-conversation-list::-webkit-scrollbar {
@@ -3745,8 +4395,8 @@
         <div class="lia-sidebar-header" id="lia-sidebar-header">Recent Chats</div>
         <div class="lia-conversation-list" id="lia-conversation-list">
           <!-- Conversations/Notes will be populated here -->
-          <button class="lia-load-more-btn" id="lia-load-more-btn">Load more...</button>
         </div>
+        <button class="lia-load-more-btn" id="lia-load-more-btn">Load more</button>
         <button class="lia-new-chat-btn" id="lia-new-chat-btn">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"/>
@@ -3754,6 +4404,60 @@
           </svg>
           New Chat
         </button>
+        <!-- Profile Card Component -->
+        <div id="lia-profile-card" class="lia-profile-card">
+          <!-- Dropdown Menu -->
+          <div id="profile-menu" class="profile-menu hidden">
+            <div class="menu-item" data-action="upgrade">
+              <span class="menu-icon">⬆️</span>
+              <span><a href="https://www.getlia.live/pricing" target="_blank" class='menu-link'>Upgrade plan</a></span>
+            </div>
+            <div class="menu-item" data-action="customize">
+              <span class="menu-icon">🎨</span>
+              <span>Customize LIA</span>
+            </div>
+            <div class="menu-item" data-action="settings">
+              <span class="menu-icon">⚙️</span>
+              <span>Settings</span>
+            </div>
+            <div class="menu-item submenu-parent" data-action="help">
+              <span class="menu-icon">❓</span>
+              <span>Help</span>
+              <span class="submenu-arrow">›</span>
+              
+              <!-- Help Submenu -->
+              <div class="submenu">
+                <div class="menu-item" data-action="help-center">
+                  <span class="menu-icon">❓</span>
+                  <span><a href="https://www.getlia.live/support?from=extension" target="_blank" class='menu-link'>Help center</a></span>
+                </div>
+                <div class="menu-item" data-action="release-notes">
+                  <span class="menu-icon">📝</span>
+                  <span><a href="https://www.getlia.live/release-notes" target="_blank" class='menu-link'>Release notes</a></span>
+                </div>
+                <div class="menu-item" data-action="terms">
+                  <span class="menu-icon">📋</span>
+                  <span><a href="https://www.getlia.live/terms" target="_blank"  class='menu-link'>Terms & policies</a></span>
+                </div>
+                <div class="menu-item" data-action="report-bug">
+                  <span class="menu-icon">🐛</span>
+                  <span><a href="https://www.getlia.live/feedback?from=extension" target="_blank" class='menu-link'>Report Bug</a></span>
+                </div>
+              </div>
+            </div>
+            <div class="menu-item" data-action="logout">
+              <span class="menu-icon">🚪</span>
+              <span><a href="https://www.getlia.live/logout" target="_blank" class='menu-link'>Log out</a></span>
+            </div>
+          </div>
+          <div class="profile-info" title='click to open menu'>
+            <img src="${liaUser?.profile_picture_url}" alt="Profile" class="profile-avatar" id="profile-avatar">
+            <div class="profile-details">
+              <span class="profile-name" id="profile-name">User</span>
+              <span class="profile-status">Free</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="lia-chat-main">
@@ -3860,7 +4564,7 @@
               </svg>
             </button>
           </div>
-          <div class="lia-mode-indicator" id="lia-mode-indicator">
+          <div class="lia-notes-mode-indicator" id="lia-notes-mode-indicator">
             <!-- <span class="lia-mode-text">Notes Mode Active</span> -->
             <div class="lia-context-info" id="lia-context-info"></div>
             <div class="lia-notes-info" id="lia-notes-info" title="Notes are stored locally, you must sync to save them.">
@@ -3870,6 +4574,73 @@
         </div>
       </div>
     </div>
+
+    <!-- Customization Modal -->
+    <div id="customization-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Customize LIA</h2>
+          <button class="close-btn" id="close-modal">×</button>
+        </div>
+        
+        <div class="modal-body">
+          <p class="modal-subtitle">Introduce yourself to get better, more personalized responses</p>
+          
+          <div class="form-group">
+            <label>What should LIA call you?</label>
+            <input type="text" id="nickname" placeholder="Nickname" class="form-input">
+          </div>
+          
+          <div class="form-group">
+            <label>What do you do?</label>
+            <input type="text" id="occupation" placeholder="Professional cat herder" class="form-input">
+          </div>
+          
+          <div class="form-group">
+            <label>What personality should LIA have?</label>
+            <select id="personality" class="form-select">
+              <option value="default">Default</option>
+              <option value="friendly">Friendly</option>
+              <option value="professional">Professional</option>
+              <option value="casual">Casual</option>
+            </select>
+          </div>
+          
+          <div class="form-group">
+            <label>What traits should LIA have?</label>
+            <div class="traits-container">
+              <div class="trait-tag" data-trait="chatty" id="trait-chatty">+ Chatty</div>
+              <div class="trait-tag" data-trait="witty" id="trait-witty">+ Witty</div>
+              <div class="trait-tag" data-trait="straight-shooting" id="trait-straight-shooting">+ Straight shooting</div>
+              <div class="trait-tag" data-trait="encouraging" id="trait-encouraging">+ Encouraging</div>
+              <div class="trait-tag" data-trait="gen-z" id="trait-gen-z">+ Gen Z</div>
+              <div class="trait-tag" data-trait="traditional" id="trait-traditional">+ Traditional</div>
+              <div class="trait-tag" data-trait="forward-thinking" id="trait-forward-thinking">+ Forward thinking</div>
+            </div>
+            <textarea id="custom-traits" placeholder="Describe or select traits" class="form-textarea"></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label>Anything else LIA should know about you?</label>
+            <textarea id="additional-info" placeholder="Interests, values, or preferences to keep in mind" class="form-textarea"></textarea>
+          </div>
+          
+          <!--<div class="form-group">
+            <label class="toggle-label">
+              <input type="checkbox" id="enable-new-chats" checked>
+              <span class="toggle-slider"></span>
+              Enable for new chats
+            </label>
+          </div>-->
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn-secondary" id="cancel-btn">Cancel</button>
+          <button class="btn-primary" id="save-btn">Save</button>
+        </div>
+      </div>
+    </div>
+
   `
 
     document.body.appendChild(chatbotInterface)
@@ -4059,6 +4830,11 @@
     // Initialize quick suggestions based on current state
     updateQuickSuggestions()
 
+    // profile card
+    new window.Lia_ProfileCard('lia-chat-sidebar')
+
+    // customization
+    new window.Lia_CustomizationModal()
   }
 
   async function toggleTemplateMode() {
@@ -4069,9 +4845,10 @@
     const newChatBtn = document.getElementById("lia-new-chat-btn")
     const messageInput = document.getElementById("lia-message-input")
     const modeIndicator = document.getElementById("lia-mode-indicator")
+    const loadMoreBtn = document.getElementById("lia-load-more-btn")
     //const templateBadge = document.getElementById("lia-template-badge")
     
-    modeIndicator.style.display = "flex"
+    try{modeIndicator.style.display = "flex"} catch{}
 
     if (chatbotState.templateMode) {
       // Turn off other modes
@@ -4080,6 +4857,10 @@
         document.getElementById("lia-notes-toggle").classList.remove("notes-active")
         document.getElementById("lia-notes-badge").style.display = "none"*/
         toggleNotesMode()
+
+        // reset pagination
+        numberOfConversationsToLoad = 10
+        numberOfNotesToLoad = 10
       }
 
       // Switch to Template Mode
@@ -4098,9 +4879,15 @@
       `
       messageInput.placeholder = "What would you like to write about?"
       
+      // Clear conversation list
+      const conversationList = document.getElementById("lia-conversation-list")
+      conversationList.innerHTML = ""
+      
       // Load templates in sidebar
       await loadTemplates()
       hideQuickSuggestions()
+
+      loadMoreBtn.style.display = "none"
       
     } else {
       // Switch back to normal mode
@@ -4109,7 +4896,7 @@
       //templateBadge.style.display = "none"
       
       if (!chatbotState.notesMode) {
-        modeIndicator.style.display = "none"
+        try{modeIndicator.style.display = "none"}catch{}
       }
 
       window.typeWriter("LIA", modeTitle)
@@ -4122,9 +4909,11 @@
         New Chat
       `
       messageInput.placeholder = "What do you want to post?"
-      
+
       // Load regular conversations
       loadChatHistory()
+
+      loadMoreBtn.style.display = "block"
     }
 
     await saveChatbotState()
@@ -4449,9 +5238,9 @@
     const newChatBtn = document.getElementById("lia-new-chat-btn")
     const messageInput = document.getElementById("lia-message-input")
     const inputActions = document.getElementById("lia-input-actions")
-    const modeIndicator = document.getElementById("lia-mode-indicator")
+    const modeIndicator = document.getElementById("lia-notes-mode-indicator")
     const liaSendBtn = document.getElementById("lia-send-btn")
-    modeIndicator.style.display = "flex"
+    try{modeIndicator.style.display = "flex"} catch{}
 
     const syncButton = document.createElement('button')
     syncButton.classList.add('sync-note-btn')
@@ -4497,7 +5286,7 @@
 
     if (chatbotState.templateMode) {
       //turn templatemode off
-      chatbotState.templateMode = false
+      chatbotState.templateMode = !chatbotState.templateMode
       document.getElementById("lia-template-toggle").classList.remove("template-active")
     }
 
@@ -4538,11 +5327,14 @@
         }
       }
 
-      await fetchNotes(numberofNotesToLoad)
-      numberofNotesToLoad += 10 // increment
+      await fetchNotes(numberOfNotesToLoad)
+      numberOfNotesToLoad += 10 // increment
         
       // Hide quick suggestions
       hideQuickSuggestions()
+
+      // reset number of conversations to load
+      numberOfConversationsToLoad = 10
 
       // Switch to Notes Mode
       notesToggle.classList.add("notes-active")
@@ -4584,10 +5376,20 @@
       showNotesWelcome()
       await loadNotes()
 
-      modeIndicator.querySelector('.lia-notes-info').appendChild(syncButton)
+      // Add sync button to mode indicator
+      try{
+        const notesInfoContainer = modeIndicator.querySelector('.lia-notes-info');
+        if (notesInfoContainer) {
+          notesInfoContainer.appendChild(syncButton)
+        }
+      } catch {}
+      
 
       showTemporaryNotification("📝 Notes Mode ON - Capture and organize your thoughts", "success")
     } else {
+      // reset number of notes to load
+      numberOfNotesToLoad = 10
+
       // Switch back to Chat Mode
       notesToggle.classList.remove("notes-active")
       notesToggle.title = "Notes Mode: OFF"
@@ -4605,7 +5407,7 @@
       messageInput.placeholder = "What do you want to post?"
       messageInput.setAttribute("rows", "1")
       inputActions.style.display = "none"
-      modeIndicator.style.display = "none"
+      try{modeIndicator.style.display = "none"}catch{}
 
       liaSendBtn.innerHTML = `
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -4615,15 +5417,13 @@
 
       // Load conversations
       showChatWelcome()
+
       await loadChatHistory()
 
-      modeIndicator.querySelector('.sync-note-btn').remove()
+      try {modeIndicator.querySelector('.sync-note-btn').remove()} catch{}
 
       showTemporaryNotification("💬 Chat Mode ON", "info")
     }
-
-    // Update conversation list
-    await updateConversationList()
 
     // save chatbot state
     await saveChatbotState()
@@ -5397,7 +6197,7 @@
     chatbotState.isOpen = false
     chatbotState.isMinimized = false
     numberOfConversationsToLoad = 10
-    numberofNotesToLoad = 10
+    numberOfNotesToLoad = 10
 
     // set the radius again
     chatbotInterface.classList.remove('right-radius-bottom-and-width')
@@ -5446,17 +6246,58 @@
   }
 
   async function loadMore() {
-    if (chatbotState.notesMode) {
-      // If in Notes Mode, load more notes
-      //await loadMoreNotes()
-    } else {
-      //increment first for the > than conditional in updateConversationList
-      numberOfConversationsToLoad += 10;
-    
-      await updateConversationList()
-
+    const loadMoreBtn = document.getElementById("lia-load-more-btn")
+  
+    // Prevent double-click while loading
+    if (loadMoreBtn.disabled) return
+  
+    // Add loading state
+    loadMoreBtn.disabled = true
+    const originalText = loadMoreBtn.innerHTML
+    loadMoreBtn.innerHTML = `
+      <svg class="spinner" width="20" height="20" viewBox="0 0 50 50">
+        <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+      </svg>
+    `
+  
+    // Add spinner CSS (you can place this in your stylesheet instead)
+    if (!document.getElementById("spinner-style")) {
+      const style = document.createElement("style")
+      style.id = "spinner-style"
+      style.innerHTML = `
+        .spinner {
+          animation: rotate 1s linear infinite;
+        }
+        .path {
+          stroke: #4f46e5;
+          stroke-linecap: round;
+          animation: dash 1.5s ease-in-out infinite;
+        }
+        @keyframes rotate {
+          100% { transform: rotate(360deg); }
+        }
+        @keyframes dash {
+          0% { stroke-dasharray: 1, 150; stroke-dashoffset: 0; }
+          50% { stroke-dasharray: 90, 150; stroke-dashoffset: -35; }
+          100% { stroke-dasharray: 90, 150; stroke-dashoffset: -124; }
+        }
+      `
+      document.head.appendChild(style)
     }
-  }
+  
+    try {
+      if (chatbotState.notesMode) {
+        // await loadMoreNotes()
+      } else {
+        numberOfConversationsToLoad += 10
+        await updateConversationList()
+      }
+    } finally {
+      // Remove loading state
+      loadMoreBtn.disabled = false
+      loadMoreBtn.innerHTML = originalText
+    }
+  }  
 
   async function loadMoreNotes() {
     //await fetch('https://')
@@ -5522,6 +6363,9 @@
       } catch (error) {
         console.error("Error generating chat response:", error)
       }
+
+      // hide quick suggestions
+      hideQuickSuggestions()
 
       // Remove typing indicator
       hideTypingIndicator()
@@ -5830,6 +6674,10 @@
       return
     }
 
+    // Clear conversation list
+    const conversationList = document.getElementById("lia-conversation-list")
+    conversationList.innerHTML = ""
+
     updateConversationList()
     
     if (conversations.length > 0) {
@@ -5847,7 +6695,7 @@
         // Load and display notes instead of conversations
         const notes = await getNotesFromStorage()
 
-        if (numberofNotesToLoad > notes.length || numberofNotesToLoad > 10) {
+        if (numberOfNotesToLoad > notes.length || numberOfNotesToLoad > 10) {
           // we're pagination append to conversationList
           conversationList.innerHTML += notes
           .map((note) => {

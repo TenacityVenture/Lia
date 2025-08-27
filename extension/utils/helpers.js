@@ -17,7 +17,12 @@ async function getLiaUserInfo () {
     }
   }
 
-  return me.json(); // Return the LIA user data as JSON
+  const data = await me.json()
+  if (!data.error) {
+    insertProfileInfo(data)
+  }
+
+  return data; // Return the LIA user data as JSON
 }
 
 async function getMe(token) {
@@ -216,6 +221,375 @@ async function lia_fetchWithAuth(url, options = {}) {
   }
 }
 
+// update profile details
+const insertProfileInfo = (liaUser) => {
+  let name = liaUser.username || liaUser.name
+  // truncate if it's grater than 10 characters
+  if (name.length > 10) {
+    name = name.slice(0, 10) + '...'
+  }
+
+  if (liaUser) {
+    try {
+      document.querySelector('.profile-avatar').setAttribute('src', liaUser.profile_picture_url)
+      document.querySelector('.profile-details').innerHTML = `
+      <span class="profile-name" id="profile-name">${name}</span>
+      <span class="profile-status">${liaUser.plan}</span>
+      `
+      // customization
+      /*const customizationModal = document.getElementById('customization-modal')
+      if (liaUser?.nickname) {
+        customizationModal.querySelector('#nickname').value = liaUser?.nickname
+      } if (liaUser?.occupation) {
+        customizationModal.querySelector('#occupation').value = liaUser?.occupation
+      } if (liaUser?.personality) {
+        customizationModal.querySelector('#personality').value = liaUser?.personality
+      } if (liaUser?.additionalInfo) {
+        customizationModal.querySelector('#additional-info').value = liaUser?.additionalInfo
+      }
+
+      
+      if (liaUser?.traits) {
+        liaUser.traits.forEach((trait) => {
+          document.querySelector(`#trait-${trait}`).checked = true
+        })
+
+        customizationModal.querySelector('#custom-traits') = liaUser.traits.map(() => {
+          return `${trait}, `
+        })
+      }*/
+      
+    } catch {}
+  }
+}
+
+// showing profile card
+class ProfileCard {
+  constructor(containerId) {
+    this.container = document.getElementById(containerId)
+    this.isMenuOpen = false
+    this.init()
+  }
+
+  init() {
+    this.bindEvents()
+  }
+
+  bindEvents() {
+    const profileCard = this.container.querySelector("#lia-profile-card")
+    const profileMenu = this.container.querySelector("#profile-menu")
+
+    // Toggle menu on profile card click
+    profileCard.addEventListener("click", (e) => {
+      e.stopPropagation()
+      this.toggleMenu()
+    })
+
+    // Handle menu item clicks
+    const menuItems = this.container.querySelectorAll(".menu-item[data-action]")
+    menuItems.forEach((item) => {
+      item.addEventListener("click", (e) => {
+        e.stopPropagation()
+        const action = item.getAttribute("data-action")
+        this.handleMenuAction(action)
+      })
+    })
+
+    // Close menu when clicking outside
+    document.addEventListener("click", () => {
+      this.closeMenu()
+    })
+  }
+
+  toggleMenu() {
+    const menu = this.container.querySelector("#profile-menu")
+    if (this.isMenuOpen) {
+      this.closeMenu()
+    } else {
+      this.openMenu()
+    }
+  }
+
+  openMenu() {
+    const menu = this.container.querySelector("#profile-menu")
+    menu.classList.remove("hidden")
+    setTimeout(() => {
+      menu.classList.add("show")
+    }, 10)
+    this.isMenuOpen = true
+  }
+
+  closeMenu() {
+    const menu = this.container.querySelector("#profile-menu")
+    menu.classList.remove("show")
+    setTimeout(() => {
+      menu.classList.add("hidden")
+    }, 200)
+    this.isMenuOpen = false
+  }
+
+  handleMenuAction(action) {
+    switch (action) {
+      case "customize":
+        this.openCustomizationModal()
+        break
+      case "upgrade":
+        console.log("Upgrade plan clicked")
+        break
+      case "settings":
+        console.log("Settings clicked")
+        break
+      case "logout":
+        console.log("Logout clicked")
+        break
+      default:
+        console.log(`${action} clicked`)
+    }
+    this.closeMenu()
+  }
+
+  openCustomizationModal() {
+    // This will trigger the customization modal
+    if (window.customizationModal) {
+      window.customizationModal.show()
+    }
+  }
+}
+
+// showing customization
+/*class CustomizationModal {
+  constructor() {
+    this.selectedTraits = []
+    this.init()
+  }
+
+  init() {
+    this.bindEvents()
+    window.customizationModal = this // Make globally accessible
+  }
+
+  bindEvents() {
+    const modal = document.getElementById("customization-modal")
+    const closeBtn = document.getElementById("close-modal")
+    const cancelBtn = document.getElementById("cancel-btn")
+    const saveBtn = document.getElementById("save-btn")
+    const traitTags = document.querySelectorAll(".trait-tag")
+
+    // Close modal events
+    closeBtn.addEventListener("click", () => this.hide())
+    cancelBtn.addEventListener("click", () => this.hide())
+
+    // Save button
+    saveBtn.addEventListener("click", async () => {await this.save()})
+
+    // Trait selection
+    traitTags.forEach((tag) => {
+      tag.addEventListener("click", () => this.toggleTrait(tag))
+    })
+
+    // Close on overlay click
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        this.hide()
+      }
+    })
+  }
+
+  show() {
+    const modal = document.getElementById("customization-modal")
+    modal.classList.remove("hidden")
+    setTimeout(() => {
+      modal.classList.add("show")
+    }, 10)
+  }
+
+  hide() {
+    const modal = document.getElementById("customization-modal")
+    modal.classList.remove("show")
+    setTimeout(() => {
+      modal.classList.add("hidden")
+    }, 300)
+  }
+
+  toggleTrait(tag) {
+    const trait = tag.getAttribute("data-trait")
+    if (tag.classList.contains("selected")) {
+      tag.classList.remove("selected")
+      this.selectedTraits = this.selectedTraits.filter((t) => t !== trait)
+    } else {
+      tag.classList.add("selected")
+      this.selectedTraits.push(trait)
+    }
+    this.updateTraitsTextarea()
+  }
+
+  updateTraitsTextarea() {
+    const textarea = document.getElementById("custom-traits")
+    textarea.value = this.selectedTraits.join(", ")
+  }
+
+  async save() {
+    const formData = {
+      nickname: document.getElementById("nickname").value,
+      occupation: document.getElementById("occupation").value,
+      personality: document.getElementById("personality").value,
+      traits: this.selectedTraits,
+      additionalInfo: document.getElementById("additional-info").value,
+    }
+
+    // Save to Chrome storage or your preferred method
+    if (window.chrome && window.chrome.storage) {
+      window.chrome.storage.sync.set({ customization: formData }, () => {
+        console.log("Customization saved")
+      })
+    }
+
+    console.log("Customization data:", formData)
+    this.hide()
+  }
+}*/
+
+class CustomizationModal {
+  constructor() {
+    this.selectedTraits = []
+    this.init()
+  }
+
+  async init() {
+    await this.loadSavedData()
+    this.bindEvents()
+    window.customizationModal = this // Make globally accessible
+  }
+
+  bindEvents() {
+    const modal = document.getElementById("customization-modal")
+    const closeBtn = document.getElementById("close-modal")
+    const cancelBtn = document.getElementById("cancel-btn")
+    const saveBtn = document.getElementById("save-btn")
+    const traitTags = document.querySelectorAll(".trait-tag")
+
+    // Close modal events
+    closeBtn.addEventListener("click", () => this.hide())
+    cancelBtn.addEventListener("click", () => this.hide())
+
+    // Save button
+    saveBtn.addEventListener("click", async () => { await this.save() })
+
+    // Trait selection
+    traitTags.forEach((tag) => {
+      tag.addEventListener("click", () => this.toggleTrait(tag))
+    })
+
+    // Close on overlay click
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) {
+        this.hide()
+      }
+    })
+  }
+
+  show() {
+    const modal = document.getElementById("customization-modal")
+    modal.classList.remove("hidden")
+    setTimeout(() => {
+      modal.classList.add("show")
+    }, 10)
+  }
+
+  hide() {
+    const modal = document.getElementById("customization-modal")
+    modal.classList.remove("show")
+    setTimeout(() => {
+      modal.classList.add("hidden")
+    }, 300)
+  }
+
+  toggleTrait(tag) {
+    const trait = tag.getAttribute("data-trait")
+    if (tag.classList.contains("selected")) {
+      tag.classList.remove("selected")
+      this.selectedTraits = this.selectedTraits.filter((t) => t !== trait)
+    } else {
+      tag.classList.add("selected")
+      this.selectedTraits.push(trait)
+    }
+    this.updateTraitsTextarea()
+  }
+
+  updateTraitsTextarea() {
+    const textarea = document.getElementById("custom-traits")
+    textarea.value = this.selectedTraits.join(", ")
+  }
+
+  async save() {
+    const formData = {
+      nickname: document.getElementById("nickname").value,
+      occupation: document.getElementById("occupation").value,
+      personality: document.getElementById("personality").value,
+      traits: this.selectedTraits,
+      additionalInfo: document.getElementById("additional-info").value,
+    }
+  
+    if (window.chrome && window.chrome.storage) {
+      window.chrome.storage.sync.set({ customization: formData }, () => {
+        console.log("Customization saved locally")
+      })
+    }
+  
+    // Send to API
+    try {
+      const response = await lia_fetchWithAuth("https://api.getlia.live/api/user/customizations", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      })
+  
+      if (!response.ok) {
+        throw new Error(`API request failed with status ${response.status}`)
+      }
+  
+      const result = await response.json()
+      console.log("Customization sent to API:", result)
+    } catch (error) {
+      console.error("Error sending customization to API:", error)
+    }
+  
+    this.hide()
+  }
+
+  async loadSavedData() {
+    if (window.chrome && window.chrome.storage) {
+      window.chrome.storage.sync.get("customization", (data) => {
+        if (data.customization) {
+          this.populateDOM(data.customization)
+        }
+      })
+    }
+  }
+
+  populateDOM(data) {
+    document.getElementById("nickname").value = data.nickname || ""
+    document.getElementById("occupation").value = data.occupation || ""
+    document.getElementById("personality").value = data.personality || ""
+    document.getElementById("additional-info").value = data.additionalInfo || ""
+    
+    this.selectedTraits = data.traits || []
+    
+    // Update trait tags visually
+    document.querySelectorAll(".trait-tag").forEach((tag) => {
+      const trait = tag.getAttribute("data-trait")
+      if (this.selectedTraits.includes(trait)) {
+        tag.classList.add("selected")
+      } else {
+        tag.classList.remove("selected")
+      }
+    })
+
+    this.updateTraitsTextarea()
+  }
+}
 
 window.getLiaUserInfo = getLiaUserInfo
 window.getMe = getMe
@@ -225,3 +599,5 @@ window.lia_getTokens = lia_getTokens
 window.lia_setTokens = lia_setTokens
 window.lia_clearTokens = lia_clearTokens
 window.lia_fetchWithAuth = lia_fetchWithAuth
+window.Lia_ProfileCard = ProfileCard
+window.Lia_CustomizationModal = CustomizationModal

@@ -539,7 +539,7 @@ class CustomizationModal {
     // Send to API
     try {
       const response = await lia_fetchWithAuth("https://api.getlia.live/api/user/customizations", {
-        method: "POST",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },

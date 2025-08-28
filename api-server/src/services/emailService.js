@@ -1,6 +1,15 @@
 require('dotenv').config();
 const { SESClient, CreateTemplateCommand, SendTemplatedEmailCommand } = require('@aws-sdk/client-ses');
+const nodemailer = require("nodemailer");
 const supabase = require('../utils/supabaseClient'); // your supabase client
+const { logger } = require('../utils/logger')
+const { 
+  welcomeEmailHtml,
+  welcomeEmailText,
+  passwordResetHtml,
+  passwordResetText
+} = require('./emailTemplates')
+const { substitutePlaceholdersForValues } = require('../utils/helpers')
 
 const ses = new SESClient({
   region: process.env.AWS_REGION || 'us-east-1',
@@ -38,7 +47,7 @@ async function createTemplateIfNotExists(templateName, html, text, subject) {
 }
 
 // Send templated welcome email
-async function sendWelcomeEmail(user) {
+/*async function sendWelcomeEmail(user) {
   // We respect marketing preference for marketing content only.
   // But welcome emails are transactional — send regardless.
   const templateData = {
@@ -57,13 +66,15 @@ async function sendWelcomeEmail(user) {
 
   try {
     const cmd = new SendTemplatedEmailCommand(params); // SendTemplatedEmailCommand is used to send templated emails
+    console.log(cmd, 'cmd')
     const res = await ses.send(cmd); // Send the email using SES
+    console.log(res)
 
     // Log to supabase
     await supabase.from('email_logs').insert({
       user_id: user.id,
       email_to: user.email,
-      template_name: 'welcome',
+      template_name: 'LIA_WELCOME_TEMPLATE',
       template_data: templateData,
       message_id: res.MessageId,
       status: 'sent',
@@ -83,9 +94,70 @@ async function sendWelcomeEmail(user) {
     });
     throw err;
   }
+}*/
+
+// Send password reset email with SMTP settings and nodemailer
+async function sendWelcomeEmail(user) {
+  const transporter = nodemailer.createTransport({
+    host: "email-smtp.eu-west-1.amazonaws.com", // SES region
+    port: 587,
+    secure: false, // not ssl
+    auth: {
+      user: process.env.SES_SMTP_USER,
+      pass: process.env.SES_SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false, // <--- THIS fixes self-signed cert error
+    }
+  })
+
+  const templateData = {
+    name: user.name || user.username || 'Friend',
+    dashboard_url: `${process.env.BASE_URL || 'https://getlia.live'}/dashboard`,
+    unsubscribe_url: `${process.env.BASE_URL || 'https://getlia.live'}/unsubscribe?uid=${user.id}`
+  }
+
+  const { html, text } = substitutePlaceholdersForValues(welcomeEmailHtml, welcomeEmailText, templateData)
+  const mailOptions = {
+    from: "welcome@getlia.live", // must be a verified identity
+    to: user.email,
+    subject: "Welcome to LIA!🚀",
+    text: text,
+    html: html,
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    logger.info({from: mailOptions.from, to: mailOptions, subject: mailOptions.subject}, msg=`SMTP Email sent: ${info.messageId}`)
+
+    // log to db
+    // Log to supabase
+    await supabase.from('email_logs').insert({
+      user_id: user.id,
+      email_to: user.email,
+      template_name: 'LIA_WELCOME_TEMPLATE',
+      template_data: mailOptions,
+      message_id: info.messageId,
+      status: 'sent',
+      response: info
+    });
+    return info;
+  } catch (err) {
+    logger.error({message: "SMTP send Error", error: err})
+
+    await supabase.from('email_logs').insert({
+      user_id: user.id,
+      email_to: user.email,
+      template_name: 'LIA_WELCOME_TEMPLATE',
+      template_data: mailOptions,
+      status: 'failed',
+      response: { message: err?.message }
+    });
+    throw err;
+  }
 }
 
-// Password reset email example using SES
+// Password reset email using SES
 /*async function sendPasswordResetEmail(user, token) {
   const templateData = {
     name: user.name || user.username || 'Friend',
@@ -129,61 +201,59 @@ async function sendWelcomeEmail(user) {
   // USING SMTP
 }*/
 
-const nodemailer = require("nodemailer");
-const passwordResetHtml = (user, resetUrl) => {
-  return `<!doctype html>
-<html>
-    <body>
-        <h1>Password Reset Request</h1>
-        <p>Hi ${user.name || "Friend"},</p>
-        <p>We received a request to reset your password. You can reset it by clicking the link below:</p>
-        <p><a href="${resetUrl}">Reset Password</a></p>
-        <p>If you did not request this, please ignore this email.</p>
-        <p>Best regards,<br/>The LIA Team</p>
-    </body>
-</html>`;
-}
-
-const passwordResetText = (user, resetUrl) => {
-  return `Hi ${user.name || "Friend"},
-We received a request to reset your password. You can reset it by clicking the link below:
-${resetUrl}
-If you did not request this, please ignore this email.
-Best regards,
-The LIA Team`
-};
-
 // This function sends a password reset email using SMTP
 async function sendPasswordResetEmail(user, token) {
   const transporter = nodemailer.createTransport({
-  host: "email-smtp.eu-west-1.amazonaws.com", // your SES region
-  port: 587,
-  secure: false, // use TLS (587) not SSL
-  auth: {
-    user: process.env.SES_SMTP_USER,
-    pass: process.env.SES_SMTP_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false, // <--- THIS fixes self-signed cert error
-  },
-});
+    host: "email-smtp.eu-west-1.amazonaws.com", // SES region
+    port: 587,
+    secure: false, // not ssl
+    auth: {
+      user: process.env.SES_SMTP_USER,
+      pass: process.env.SES_SMTP_PASS,
+    },
+    tls: {
+      rejectUnauthorized: false, // <--- THIS fixes self-signed cert error
+    },
+  });
 
   const resetUrl = `${process.env.BASE_URL || "https://getlia.live"}/reset-password?token=${token}`;
 
+  const {html, text} = substitutePlaceholdersForValues(passwordResetHtml, passwordResetText, {user, reset_url: resetUrl})
   const mailOptions = {
     from: "password-reset@getlia.live", // must be a verified identity
     to: user.email,
-    subject: "Password Reset",
-    text: passwordResetText(user, resetUrl),
-    html: passwordResetHtml(user, resetUrl),
+    subject: "Password Reset Request",
+    text,
+    html,
   };
 
   try {
     const info = await transporter.sendMail(mailOptions);
-    console.log("SMTP Email sent:", info.messageId);
+    logger.info({from: mailOptions.from, to: mailOptions, subject: mailOptions.subject}, msg=`SMTP Email sent: ${info.messageId}`)
+
+    // log to db
+    // Log to supabase
+    await supabase.from('email_logs').insert({
+      user_id: user.id,
+      email_to: user.email,
+      template_name: 'LIA_PASSWORD_RESET',
+      template_data: mailOptions,
+      message_id: info.messageId,
+      status: 'sent',
+      response: info
+    });
     return info;
   } catch (err) {
-    console.error("SMTP send error:", err);
+    logger.error({message: "SMTP send Error", error: err})
+
+    await supabase.from('email_logs').insert({
+      user_id: user.id,
+      email_to: user.email,
+      template_name: 'LIA_PASSWORD_RESET',
+      template_data: mailOptions,
+      status: 'failed',
+      response: { message: err?.message }
+    });
     throw err;
   }
 }

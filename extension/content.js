@@ -5244,6 +5244,8 @@
     const inputActions = document.getElementById("lia-input-actions")
     const modeIndicator = document.getElementById("lia-notes-mode-indicator")
     const liaSendBtn = document.getElementById("lia-send-btn")
+    const loadMoreBtn = document.getElementById("lia-load-more-btn")
+    try{loadMoreBtn.style.display = "none"} catch{}
     try{modeIndicator.style.display = "flex"} catch{}
 
     const syncButton = document.createElement('button')

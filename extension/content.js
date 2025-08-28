@@ -4846,6 +4846,8 @@
     const messageInput = document.getElementById("lia-message-input")
     const modeIndicator = document.getElementById("lia-mode-indicator")
     const loadMoreBtn = document.getElementById("lia-load-more-btn")
+    const notesToggle = document.getElementById("lia-notes-toggle")
+  
     //const templateBadge = document.getElementById("lia-template-badge")
     
     try{modeIndicator.style.display = "flex"} catch{}
@@ -4859,7 +4861,8 @@
         /*chatbotState.notesMode = false
         document.getElementById("lia-notes-toggle").classList.remove("notes-active")
         document.getElementById("lia-notes-badge").style.display = "none"*/
-        toggleNotesMode()
+        chatbotState.notesMode = !chatbotState.notesMode
+        notesToggle.classList.remove("notes-active")
       }
 
       // Switch to Template Mode

@@ -4852,15 +4852,14 @@
 
     if (chatbotState.templateMode) {
       // Turn off other modes
+      // reset pagination
+      numberOfConversationsToLoad = 10
+      numberOfNotesToLoad = 10
       if (chatbotState.notesMode) {
         /*chatbotState.notesMode = false
         document.getElementById("lia-notes-toggle").classList.remove("notes-active")
         document.getElementById("lia-notes-badge").style.display = "none"*/
         toggleNotesMode()
-
-        // reset pagination
-        numberOfConversationsToLoad = 10
-        numberOfNotesToLoad = 10
       }
 
       // Switch to Template Mode
@@ -4890,6 +4889,8 @@
       loadMoreBtn.style.display = "none"
       
     } else {
+      numberOfConversationsToLoad = 10
+      numberOfNotesToLoad = 10
       // Switch back to normal mode
       templateToggle.classList.remove("template-active")
       templateToggle.title = "Template Mode: OFF"
@@ -5327,6 +5328,12 @@
         }
       }
 
+      // Clear conversation list
+      const conversationList = document.getElementById("lia-conversation-list")
+      conversationList.innerHTML = ""
+
+      numberOfNotesToLoad = 10
+
       await fetchNotes(numberOfNotesToLoad)
       numberOfNotesToLoad += 10 // increment
         
@@ -5389,6 +5396,7 @@
     } else {
       // reset number of notes to load
       numberOfNotesToLoad = 10
+      numberOfConversationsToLoad = 10
 
       // Switch back to Chat Mode
       notesToggle.classList.remove("notes-active")
@@ -6658,14 +6666,9 @@
   }
 
   async function loadChatHistory() {
-    //let conversations = JSON.parse(localStorage.getItem("lia-conversations") || "[]")
-    let conversations = []
-
     // load conversations from API server
-    const chats = await loadConversations(numberOfConversationsToLoad)
+    const conversations = await updateConversationList()
     numberOfConversationsToLoad += 10;
-
-    conversations = chats
 
     chatbotState.conversations = conversations
     if (chatbotState.conversations.length === 0) {
@@ -6673,12 +6676,6 @@
       await startNewConversation()
       return
     }
-
-    // Clear conversation list
-    const conversationList = document.getElementById("lia-conversation-list")
-    conversationList.innerHTML = ""
-
-    updateConversationList()
     
     if (conversations.length > 0) {
       chatbotState.currentConversationId = conversations[0].id
@@ -6805,6 +6802,8 @@
               }
               )
               .join("")
+            
+            return conversations
           } else {
             conversationList.innerHTML = conversations
               .map(
@@ -6837,6 +6836,8 @@
                 }
               )
               .join("");
+            
+            return conversations
           }
 
           // Add hover effects for menu items

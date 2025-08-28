@@ -6,7 +6,11 @@
   "scripts": {
     "start": "nodemon src/server.js",
     "lint": "eslint",
-    "test": "jest"
+    "test": "jest",
+    "worker": "node src/jobs/worker.email.js",
+    "cron:daily": "node src/jobs/cron.daily.js",
+    "cron:weekly": "node src/jobs/cron.weekly.js",
+    "seed:email-templates": "node src/services/emailTemplates.js"
   },
   "keywords": [],
   "author": "Tenacity Venture",
@@ -15,6 +19,7 @@
     "@aws-crypto/sha256-js": "^5.2.0",
     "@aws-sdk/client-polly": "^3.846.0",
     "@aws-sdk/client-ses": "^3.864.0",
+    "@aws-sdk/client-sesv2": "^3.621.0",
     "@aws-sdk/credential-provider-node": "^3.859.0",
     "@aws-sdk/types": "^3.840.0",
     "@langchain/anthropic": "^0.3.25",
@@ -26,17 +31,21 @@
     "@smithy/signature-v4": "^2.3.0",
     "@smithy/util-utf8": "^2.3.0",
     "@supabase/supabase-js": "^2.49.4",
+    "bullmq": "^5.9.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "dayjs": "^1.11.11",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
+    "handlebars": "^4.7.8",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "langchain": "^0.3.30",
     "nodemailer": "^7.0.5",
     "nodemon": "^3.1.10",
     "openai": "^4.96.2",
+    "pino": "^9.2.0",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

@@ -127,3 +127,32 @@ exports.marketingUnsubscribe = async (req, res) => {
     return res.status(500).json({ error: 'Failed to unsubscribe' });
   }
 }
+
+exports.updateCustomizations = async (req, res) => {
+  const userId = req.user.sub;
+  try {
+    const { nickname, occupation, personality, traits, additionalInfo } = req.body
+
+    // Insert or update customization for the user
+    const { data, error } = await supabase
+      .from("customizations")
+      .upsert(
+        {
+          userId,
+          nickname,
+          occupation,
+          personality,
+          traits,
+          additional_info: additionalInfo,
+        },
+        { onConflict: ["user_id"] } // ensures update if already exists
+      )
+
+    if (error) throw error
+
+    res.json({ success: true, customization: data })
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: "Failed to save customization" })
+  }
+}

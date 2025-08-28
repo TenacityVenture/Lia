@@ -6,7 +6,8 @@ const {
     updateProfile,
     updateProfileLinkedinInfo,
     getSubscription,
-    marketingUnsubscribe 
+    marketingUnsubscribe,
+    updateCustomizations
 } = require('../controllers/userController');
 
 router.get('/me', authenticate, getCurrentUser);
@@ -20,6 +21,10 @@ router.get('/subscription', authenticate, getSubscription);
 // Marketing unsubscribe route
 // This allows users to opt out of marketing emails
 router.put('/unsubscribe', marketingUnsubscribe);
+
+// Customizations route for the user
+// This allows user to personalize lia for their needs
+router.put('/customizations', authenticate, updateCustomizations);
 
 
 module.exports = router;

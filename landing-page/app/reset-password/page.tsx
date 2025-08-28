@@ -123,7 +123,14 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <>
+    <motion.div className="absolute inset-0 z-0 h-full w-full">
+      <img src="/images/poster/using-lia-chatbot.jpg" className='w-full h-full object-cover'/>
+    </motion.div>
+    <motion.div className="w-full h-full absolute z-10 bg-gradient-to-tr from-blue-500 to-red-500 mix-blend-overlay backdrop-blur-sm">
+
+    </motion.div>
+    <div className="min-h-screen relative z-40 flex items-center justify-center bg-transparent">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -258,5 +265,6 @@ export default function ResetPasswordPage() {
         )}
       </motion.div>
     </div>
+    </>
   )
 }

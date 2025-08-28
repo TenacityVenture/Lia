@@ -31,7 +31,7 @@ const invokeAI = async ({
   messages,
   model = null,
   temperature = 0.7,
-  maxTokens = 1000
+  maxTokens = 2000
 }) => {
   const modelName = model || await getModelName(req);
   const provider = detectProvider(modelName);

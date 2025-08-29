@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowRight } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { HeroDemo } from '@/components/hero-demo'
@@ -73,6 +73,7 @@ export default function Home() {
     plan_started_at: '',
     plan_expires_at: '',
   })
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
     // Check if the user is logged in by checking if the access token is in localStorage
@@ -262,7 +263,7 @@ export default function Home() {
         </section>*/}
 
         {/* Pricing Section */}
-        <section id="pricing" className="container py-20 space-y-8">
+        {/*<section id="pricing" className="container py-20 space-y-8">
           <div className="mx-auto flex max-w-[58rem] flex-col items-center space-y-4 text-center">
             <h2 className="font-heading text-3xl font-bold sm:text-4xl">Simple, Transparent Pricing</h2>
             <p className="max-w-[42rem] leading-normal text-muted-foreground sm:text-xl sm:leading-8">
@@ -404,7 +405,7 @@ export default function Home() {
               14-day free trial • No credit card required • Cancel anytime
             </p>
           </div>
-        </section>
+        </section>*/}
 
         {/* FAQ Section */}
         <section id="faq" className="bg-slate-50 dark:bg-slate-900 py-20">

@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import Image from "next/image"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
@@ -14,6 +14,7 @@ export function DemoTabs() {
     commentReply: false,
     postImprovement: false,
   })
+  const videoRef = useRef<HTMLVideoElement>(null)
 
   const toggleSuggestions = (tab: keyof typeof showSuggestions) => {
     setShowSuggestions((prev) => ({
@@ -31,8 +32,8 @@ export function DemoTabs() {
       </TabsList>
 
       <TabsContent value="post-creation">
-        <Card className="p-6">
-          <div className="space-y-4">
+        <Card className="p-6 relative min-h-[350] md:min-h-[450px] overflow-hidden">
+          {/*<div className="space-y-4">
             <div className="flex items-start gap-3">
               <div className="h-10 w-10 rounded-full overflow-hidden flex-shrink-0">
                 <Image
@@ -96,6 +97,22 @@ export function DemoTabs() {
                 )}
               </div>
             </div>
+          </div>*/}
+          <div className="absolute inset-0 z-0 h-full w-full`">
+            <video
+              ref={videoRef}
+              className="h-full w-full object-cover object-right"
+              poster="/images/poster/using-lia-chatbot.jpg"
+              loop
+              playsInline
+              autoPlay
+              controls
+            >
+              <source src="/videos/using-lia-chatbot.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+            {/* Overlay */}
+            <div className="absolute inset-0 from-blue-600 to-blue-700 mix-blend-overlay"></div>
           </div>
         </Card>
       </TabsContent>

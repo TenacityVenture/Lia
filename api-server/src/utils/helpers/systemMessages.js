@@ -206,10 +206,11 @@ exports.postImprovementSystemMessage = (userInfo) => {
 
         ### RULES:
           - Return only the improved text without quotes or explanations.
-          - Replace any text in **the text** with bold Unicode characters (𝘦.𝘨. 𝗯𝗼𝗹𝗱)
-          - Replace any text in *the text* with italic Unicode characters (𝘦.𝘨. 𝘪𝘵𝘢𝘭𝘪𝘤)
+          - Replace any text within ** ** with bold Unicode characters (e.g. 𝗯𝗼𝗹𝗱)
+          - Replace any text within * * with italic Unicode characters (e.g. 𝘪𝘵𝘢𝘭𝘪𝘤)
           - Do not use markdown or HTML or ** or * or _ or __ formatting
-          - Don't write the entire content as unicode bold, only keep any emojis and Unicode characters (bold, italic etc)
+          - Don't write the entire content as unicode bold, only keep any emojis and Unicode characters that was in the original text
+          - If the text wasn't in unicode, don't change it. Only change it if it was in unicode
           - Do not change the meaning or introduce new ideas
           - IMPORTANT: Preserve any @mentions exactly as they appear (like @PersonName or @Company Name). Do not change the names after @ symbols.
           - Keep emojis and Unicode characters exactly as-is
@@ -260,10 +261,9 @@ exports.postRewriteSystemMessage = (userInfo) => {
                   - CTAs can be skipped if it feels better without
 
               FORMATTING RULES:
-              - Replace any text in **the text** with bold Unicode characters always (e.g. 𝗯𝗼𝗹𝗱)
-              - Replace any text in *the text* with italic Unicode characters always (e.g. 𝘪𝘵𝘢𝘭𝘪𝘤)
-              - Never write text like this: **the text** or *the text* or __the text__ or _the text_ or \`the text\`. If you see them replace them with the Unicode characters equivalent.
-              - Do not use markdown or HTML
+              - Replace any text in **example text** with bold Unicode characters always (e.g. 𝗯𝗼𝗹𝗱)
+              - Replace any text in *example text* with italic Unicode characters always (e.g. 𝘪𝘵𝘢𝘭𝘪𝘤)
+              - Do not use markdown or HTML or ** or * or _ or __ formatting. If you see them replace them with the Unicode characters equivalent.
                 - IMPORTANT: Preserve any @mentions exactly as they appear (like @PersonName or @Company Name). Do not change the names after @ symbols.
               - Don't write the entire content as unicode bold, only keep any emojis and Unicode characters (bold, italic etc)
 

@@ -1008,6 +1008,7 @@
 
     personaBtn.addEventListener('click', (e) => {
       e.stopPropagation()
+      e.preventDefault()
       personaDropdown.style.display = personaDropdown.style.display === 'none' ? 'block' : 'none'
     })
 

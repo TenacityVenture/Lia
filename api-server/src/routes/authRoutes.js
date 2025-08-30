@@ -69,10 +69,10 @@ router.get('/oauth/google-sync', authenticate, syncGoogleOAuthUser);
 
 // password reset routes
 // get email  --> generate uuid   ---> inset to db with expiration data  ---> send password reset email
-router.post('/password-reset/request', handlePasswordResetRequest);
+router.post('/reset-password/request', handlePasswordResetRequest);
 
 // confirm password reset with token
 // update user password with token
-router.put('/password-reset/confirm', handlePasswordResetConfirm);
+router.put('/reset-password/confirm', handlePasswordResetConfirm);
 
 module.exports = router;

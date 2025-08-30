@@ -31,7 +31,7 @@ const invokeAI = async ({
   messages,
   model = null,
   temperature = 0.7,
-  maxTokens = 1000
+  maxTokens = 10000
 }) => {
   const modelName = model || await getModelName(req);
   const provider = detectProvider(modelName);
@@ -98,7 +98,7 @@ const invokeAI = async ({
 function detectProvider(modelName) {
   console.log(modelName)
   if (modelName.startsWith('gpt')) return 'openai';
-  if (modelName.startsWith('anthropic.')) return 'bedrock'; // AWS Bedrock Anthropic models
+  if (modelName.startsWith('anthropic.') || modelName.startsWith('eu.anthropic.')) return 'bedrock'; // AWS Bedrock Anthropic models
   if (modelName.startsWith('claude-')) return 'claude'; // Anthropic direct API
   return 'unknown';
 }

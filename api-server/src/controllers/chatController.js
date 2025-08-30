@@ -3,43 +3,102 @@ const { openai } = require('../services/openaiService');
 const { getModelName } = require('../utils/helpers/modelSelector');
 const { chatSystemMessage } = require('../utils/helpers/systemMessages');
 const { invokeAI } = require('../services/invokeAI');
+const { invokeAIWithFallback } = require('../services/invokeAIWithFallback');
 const { getUserInfo } = require('../utils/helpers/getUserInfo');
+const { Threads } = require('openai/resources/beta/threads/threads');
 
 /** Create a new chat
 * @param {Object} req - Express request object
 * @param {Object} res - Express response object
 * @param {string} req.body.title - Title of the chat
 */
+const startChat = async (title, userId, res, type, template_id) => {
+
+  if (!type || type === 'normal') { // normal chats mode
+    const {data: template} = await supabase.from('chat_templates').select().eq('name', 'normal').single();
+    try {
+      const { data, error } = await supabase
+        .from('chats')
+        .insert(
+          { user_id: userId,
+            title: title || 'New Chat',
+            type: 'normal',
+            template_id: template.id
+          }
+        )
+        .select()
+        .single();
+  
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+  
+      // push one message in chat ie the ai message
+      await supabase.from('chat_messages').insert([
+        { 
+          chat_id: data.id, 
+          user_id: userId, 
+          role: 'assistant', 
+          content: "Hi! I'm Lia, your LinkedIn Intelligence Assistant. <br/><br/> I'm here to help you write posts, polish comments, and improve your content. <br/><br/>What can I assist you with today?" 
+        }
+      ]);
+  
+      res.status(201).json(data);
+    } catch (err) {
+      console.error('Error creating chat:', err);
+      res.status(500).json({ error: 'Failed to create chat' });
+    }
+  } else if (type === 'template') {
+    try {
+      const { data, error } = await supabase
+        .from('chats')
+        .insert({ user_id: userId, title: title || 'New Chat', type: 'template', template_id: template_id })
+        .select()
+        .single();
+  
+      if (error) {
+        return res.status(500).json({ error: error.message });
+      }
+
+      const {data: template, error: templateError} = await supabase.from('chat_templates').select().eq('id', template_id).single();
+
+      if (templateError) throw templateError;
+
+      // push one message in chat ie the ai message
+      await supabase.from('chat_messages').insert([
+        { 
+          chat_id: data.id, 
+          user_id: userId, 
+          role: 'assistant', 
+          content: `Hi! I'm LIA, your LinkedIn Intelligence Assistant. <br/><br/>
+          You're using ${template.name} <br/><br/> - posts will be written like the example below:<br/><br/>
+          ${template.example?.author || ''} <br/>
+          ${template.example?.content || ''}<br/><br/>
+          This style works great for:
+            - ${template.description}
+            - Building engagement through ${template.name} content
+          `
+        }
+      ]);
+  
+      res.status(201).json(data);
+    } catch (err) {
+      console.error('Error creating chat:', err);
+      res.status(500).json({ error: 'Failed to create chat' });
+    }
+  }
+}
 exports.createChat = async (req, res) => {
   const userId = req.user.sub;
   const { title } = req.body;
+  const { chat_type } = req.body;
 
-  try {
-    const { data, error } = await supabase
-      .from('chats')
-      .insert({ user_id: userId, title: title || 'New Chat' })
-      .select()
-      .single();
-
-    if (error) {
-      return res.status(500).json({ error: error.message });
-    }
-
-    // push one message in chat ie the ai message
-    await supabase.from('chat_messages').insert([
-      { 
-        chat_id: data.id, 
-        user_id: userId, 
-        role: 'assistant', 
-        content: "Hi! I'm Lia, your LinkedIn Intelligence Assistant. <br/><br/> I'm here to help you write posts, polish comments, and improve your content. <br/><br/>What can I assist you with today?" 
-      }
-    ]);
-
-    res.status(201).json(data);
-  } catch (err) {
-    console.error('Error creating chat:', err);
-    res.status(500).json({ error: 'Failed to create chat' });
+  let template_id = null;
+  if (chat_type === 'template') {
+    template_id = req.body?.template_id;
   }
+  
+  return await startChat(title, userId, res, chat_type, template_id)
 };
 
 /** Get chat history for a user
@@ -49,12 +108,18 @@ exports.createChat = async (req, res) => {
 exports.chats = async (req, res) => {
   const userId = req.user.sub;
 
+  // Read limit and start from query params
+  const limit = parseInt(req.query.limit) || 10;
+  const start = parseInt(req.query.start) || (limit < 10 ? 0 : limit - 10);
+  const end = limit - 1; // inclusive range for Supabase
+
   try {
     const { data, error } = await supabase
     .from('chats')
     .select('*')
     .eq('user_id', userId)
-    .order('updated_at', { ascending: false });
+    .order('updated_at', { ascending: false })
+    .range(start, end);
 
     if (error) {
         return res.status(500).json({ error: error.message });
@@ -77,18 +142,33 @@ exports.getChatMessages = async (req, res) => {
   const chatId = req.params.chatId;
 
   try {
-    const { data, error } = await supabase
+    const { data: messages, error } = await supabase
       .from('chat_messages')
       .select('*')
       .eq('chat_id', chatId)
+      .eq('user_id', userId) // Filter messages to ensure they belong to the user
       .order('created_at', { ascending: true });
 
     if (error) {
       return res.status(500).json({ error: error.message });
     }
 
-    // Filter messages to ensure they belong to the user
-    const messages = data.filter(message => message.user_id === userId);
+    // check if chat id is a template
+    const {data} = await supabase // get the chat
+      .from('chats')
+      .select('*')
+      .eq('id', chatId)
+      .single();
+
+    if (data.type === 'template') {
+      const {data: template} = await supabase // get particular template
+        .from('chat_templates')
+        .select('*')
+        .eq('id', data.template_id)
+        .single();
+
+      return res.json({messages, template});
+    }
 
     res.json({messages});
   } catch (err) {
@@ -107,6 +187,8 @@ exports.message = async (req, res) => {
   const userId = req.user.sub;
   const chatId = req.params.chatId;
   const { message, reference } = req.body;
+  const template_id = req.body?.template_id;
+  let chat_template = {}
   const userInfo = await getUserInfo(userId);
 
   if (!message) {
@@ -135,6 +217,11 @@ exports.message = async (req, res) => {
     if (!referenceData) {
       await supabase.from('chat_messages').insert([{ chat_id: chatId, user_id: userId, role: 'reference', content: JSON.stringify(reference) }]);
     }
+  }
+
+  if (template_id) {
+    // fetch the template
+    chat_template = await supabase.from('chat_templates').select('*').eq('id', template_id).single();
   }
 
   try {
@@ -202,7 +289,7 @@ exports.message = async (req, res) => {
 
       console.log('Generating chat title with prompt:', titlePrompt);
       // use bedrock invokeAI to generate the title
-      const result = await invokeAI({
+      const result = await invokeAIWithFallback({
         req,
         messages: [
           {
@@ -248,7 +335,8 @@ exports.message = async (req, res) => {
     });*/
 
     // for bedrock
-    const systemMsg = chatSystemMessage(userInfo).content;
+    const chatMeta = {template: chat_template, type: 'template'}
+    const systemMsg = chatSystemMessage(userInfo, chatMeta).content;
 
   // If there is history, prepend system to the FIRST user message
     const formatted = [
@@ -258,7 +346,7 @@ exports.message = async (req, res) => {
 
     console.log('Messages for AI:', messages, formatted);
 
-    const result = await invokeAI({
+    const result = await invokeAIWithFallback({
       req,
       messages: formatted,
       temperature: 0.7, // controlled creativity
@@ -431,5 +519,23 @@ exports.updateChatLastUsed = async (req, res) => {
   } catch (err) {
     console.error('Error updating chat last used:', err);
     res.status(500).json({ error: 'Failed to update chat last used' });
+  }
+}
+
+/**
+ * List templates
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+exports.listTemplates = async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('chat_templates').select('*');
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+    res.json({templates: data});
+  } catch (err) {
+    console.error('Error listing templates:', err);
+    res.status(400).json({ error: 'Failed to list templates' });
   }
 }

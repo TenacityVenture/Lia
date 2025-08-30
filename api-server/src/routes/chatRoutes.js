@@ -8,7 +8,8 @@ const {
     message, // add a message to a chat
     deleteChat, 
     updateChatTitle,
-    updateChatLastUsed
+    updateChatLastUsed,
+    listTemplates
 } = require('../controllers/chatController');
 const { authenticate, checkPlan } = require('../middlewares/authMiddleware');
 
@@ -16,13 +17,17 @@ const { authenticate, checkPlan } = require('../middlewares/authMiddleware');
 // POST /api/chat/start
 router.post('/start', authenticate, checkPlan('standard'), createChat);
 
-// POST /api/chat/:chatId/message
-// add a message to a chat
-router.post('/:chatId/message', authenticate, checkPlan('standard'), message);
-
 // list all chats for a user
 // GET /api/chat
 router.get('/history', authenticate, chats)
+
+// list all chat templates
+// GET /api/chat/templates
+router.get('/templates', authenticate, listTemplates)
+
+// POST /api/chat/:chatId/message
+// add a message to a chat
+router.post('/:chatId/message', authenticate, checkPlan('standard'), message);
 
 // list all chats history (messages) in a chats
 // GET /api/chat/:chatId/history

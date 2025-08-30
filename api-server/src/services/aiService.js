@@ -1,6 +1,7 @@
 require('dotenv').config();
 const { invokeAI } = require('./invokeAI'); // your abstraction layer
 const { getUserInfo } = require('../utils/helpers/getUserInfo');
+const { invokeAIWithFallback } = require('./invokeAIWithFallback');
 
 const { 
   commentSystemMessage,
@@ -27,8 +28,24 @@ exports.getCompletion = async (req, prompt) => {
 // 2. Suggest 3 smart comments
 exports.getCompletionSuggestComment = async (req, prompt, persona) => {
   const userInfo = await getUserInfo(req.user.sub);
-  try {
+  /*try {
     const result = await invokeAI({
+      req,
+      messages: [
+        commentSystemMessage(userInfo, persona),
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.8,
+      maxTokens: 500
+    });
+    console.log('AI Service - Suggest Comment Result:', result);
+    return result;
+  } catch (err) {
+    return fallbackResponse(err);
+  }*/
+
+  try {
+    const result = await invokeAIWithFallback({
       req,
       messages: [
         commentSystemMessage(userInfo, persona),
@@ -62,8 +79,22 @@ exports.getCompletionSuggestPost = async (req, messages) => {
 // 4. Post improvement
 exports.getCompletionPostImprovements = async (req, prompt) => {
   const userInfo = await getUserInfo(req.user.sub);
-  try {
+  /*try {
     const result = await invokeAI({
+      req,
+      messages: [
+        postImprovementSystemMessage(userInfo),
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.7
+    });
+    return result;
+  } catch (err) {
+    return fallbackResponse(err);
+  }*/
+
+  try {
+    const result = await invokeAIWithFallback({
       req,
       messages: [
         postImprovementSystemMessage(userInfo),
@@ -80,8 +111,24 @@ exports.getCompletionPostImprovements = async (req, prompt) => {
 // 5. Post rewrite
 exports.getCompletionPostRewrite = async (req, prompt) => {
   const userInfo = await getUserInfo(req.user.sub);
-  try {
+  // without fallback and retries
+  /*try {
     const result = await invokeAI({
+      req,
+      messages: [
+        postRewriteSystemMessage(userInfo),
+        { role: 'user', content: prompt }
+      ],
+      temperature: 0.7
+    });
+    return result;
+  } catch (err) {
+    return fallbackResponse(err);
+  }*/
+
+  // with fallback and retries
+  try {
+    const result = await invokeAIWithFallback({
       req,
       messages: [
         postRewriteSystemMessage(userInfo),
@@ -104,6 +151,7 @@ exports.getCompletionCheckImprovements = async (req, prompt) => {
         postChangeSummarySystemMessage(),
         { role: 'user', content: `Check the following improvements made to the post:\n\nOriginal Post: ${prompt.originalPost}\n\nImproved Post: ${prompt.improvedPost}` }
       ],
+      model: 'anthropic.claude-3-haiku-20240307-v1:0',
       temperature: 0.7,
       maxTokens: 500
     });
@@ -155,6 +203,7 @@ exports.getCompletionEnhanceNote = async (req, prompt, content, context) => {
           content: `${prompt}\n\nContent: ${content}\nType: ${context?.type || 'general'}`
         }
       ],
+      model: 'anthropic.claude-3-haiku-20240307-v1:0',
       temperature: 0.7,
       maxTokens: 500
     });

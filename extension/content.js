@@ -4697,6 +4697,7 @@
           saveChatbotState()
 
           showTemporaryNotification('Notes fetched successfully', 'success')
+          return notes
         }
 
         if (!notes) {
@@ -4711,7 +4712,7 @@
 
       numberOfNotesToLoad = 10
 
-      await fetchNotes(numberOfNotesToLoad)
+      const notes = await fetchNotes(numberOfNotesToLoad)
       numberOfNotesToLoad += 10 // increment
         
       // Hide quick suggestions
@@ -4770,6 +4771,42 @@
       
 
       showTemporaryNotification("📝 Notes Mode ON - Capture and organize your thoughts", "success")
+
+      console.log('this is the notes', notes)
+      // load note list
+      conversationList.innerHTML = notes
+      .map((note) => {
+        const truncatedTitle = note.title.slice(0, 15) + (note.title.length > 15 ? "..." : "")
+        const contextIcon = getContextIcon(note.context?.type)
+
+        return `
+          <div class="lia-conversation-item-wrapper" style="position: relative;">
+            <div class="lia-conversation-item ${note.id === chatbotState.currentNoteId ? "active" : ""}"
+                data-id="${note.id}" title="${note.title}" style="cursor: pointer; padding: 8px 12px; border-radius: 6px; display: flex; align-items: center; justify-content: space-between;">
+              <div style="flex: 1; overflow: hidden;">
+                <div class="truncatedTitle" style="font-size: 12px; font-weight: 500;">${contextIcon} ${truncatedTitle}</div>
+                <div style="font-size: 10px; color: #a9d2f3ff; margin-top: 2px;">${formatTimestamp(note.lastModified)}</div>
+              </div>
+              <span class="lia-menu-trigger" style="cursor: pointer; padding: 4px; border-radius: 4px; opacity: 0.7; transition: opacity 0.2s;">⋯</span>
+            </div>
+            <div class="lia-menu" style="display: none; position: absolute; right: 0; top: 100%; background: white; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 1000; min-width: 120px; overflow: hidden;">
+              <button class="lia-edit-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                <span style="margin-right: 8px;">✏️</span>Edit
+              </button>
+              <button class="lia-duplicate-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #333; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                <span style="margin-right: 8px;">📋</span>Duplicate
+              </button>
+              <div style="height: 1px; background: #e0e0e0; margin: 4px 0;"></div>
+              <button class="lia-delete-note-btn" data-id="${note.id}" style="padding: 10px 16px; width: 100%; border: none; background: white; color: #dc3545; cursor: pointer; text-align: left; font-size: 10px; display: flex; align-items: center; transition: background-color 0.2s;">
+                <span style="margin-right: 8px;">🗑️</span>Delete
+              </button>
+            </div>
+          </div>
+        `
+      })
+      .join("")
+
+      setupNoteEventListeners()
     } else {
       // reset number of notes to load
       numberOfNotesToLoad = 10
@@ -5288,7 +5325,16 @@
     messageInput.style.height = "auto"
     messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + "px"
 
-    updateConversationList()
+    // add active state to the current note that was clicked
+    // and remove active state from other notes
+    const conversations = document.querySelectorAll(".lia-conversation-item")
+    conversations.forEach((conversation) => {
+      if (conversation.getAttribute("data-id") === conversationId) {
+        conversation.classList.add("active")
+      } else {
+        conversation.classList.remove("active")
+      }
+    })
   }
 
   // Storage Functions
@@ -6139,14 +6185,14 @@
 
         // Add note-specific event listeners
         setupNoteEventListeners()
+        return notes
       } else {
           // Original chat functionality
           let conversations = []
           // load conversations from API server
           conversations = await loadConversations(numberOfConversationsToLoad)
 
-
-          if (numberOfConversationsToLoad > conversationList.lengt || numberOfConversationsToLoad > 10) {
+          if (numberOfConversationsToLoad > conversationList.length || numberOfConversationsToLoad > 10) {
             // then we are paginating so just append to lia-conversation-list
             conversationList.innerHTML += conversations
               .map(
@@ -6179,8 +6225,7 @@
               }
               )
               .join("")
-            
-            return conversations
+
           } else {
             conversationList.innerHTML = conversations
               .map(
@@ -6213,8 +6258,6 @@
                 }
               )
               .join("");
-            
-            return conversations
           }
 
           // Add hover effects for menu items
@@ -6243,7 +6286,8 @@
           });
 
           // chat specific event listeners
-          setupChatEventListeners(); 
+          setupChatEventListeners();
+          return conversations;
       }
       
   }
@@ -6629,7 +6673,17 @@
       .join("")
 
     messagesContainer.scrollTop = messagesContainer.scrollHeight
-    updateConversationList()
+    
+    // add active state to the current conversation that was clicked
+    // and remove active state from other conversations
+    const conversations = document.querySelectorAll(".lia-conversation-item")
+    conversations.forEach((conversation) => {
+      if (conversation.getAttribute("data-id") === conversationId) {
+        conversation.classList.add("active")
+      } else {
+        conversation.classList.remove("active")
+      }
+    })
   }
 
   // ===== RERERENCE MODE SYSTEM =====

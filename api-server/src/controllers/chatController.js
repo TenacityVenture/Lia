@@ -3,6 +3,7 @@ const { openai } = require('../services/openaiService');
 const { getModelName } = require('../utils/helpers/modelSelector');
 const { chatSystemMessage } = require('../utils/helpers/systemMessages');
 const { invokeAI } = require('../services/invokeAI');
+const { invokeAIWithFallback } = require('../services/invokeAIWithFallback');
 const { getUserInfo } = require('../utils/helpers/getUserInfo');
 const { Threads } = require('openai/resources/beta/threads/threads');
 
@@ -288,7 +289,7 @@ exports.message = async (req, res) => {
 
       console.log('Generating chat title with prompt:', titlePrompt);
       // use bedrock invokeAI to generate the title
-      const result = await invokeAI({
+      const result = await invokeAIWithFallback({
         req,
         messages: [
           {
@@ -345,7 +346,7 @@ exports.message = async (req, res) => {
 
     console.log('Messages for AI:', messages, formatted);
 
-    const result = await invokeAI({
+    const result = await invokeAIWithFallback({
       req,
       messages: formatted,
       temperature: 0.7, // controlled creativity

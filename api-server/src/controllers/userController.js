@@ -138,7 +138,7 @@ exports.updateCustomizations = async (req, res) => {
       .from("customizations")
       .upsert(
         {
-          userId,
+          user_id: userId,
           nickname,
           occupation,
           personality,

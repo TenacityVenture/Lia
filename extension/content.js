@@ -3788,10 +3788,10 @@
               <span class="menu-icon">🎨</span>
               <span>Customize LIA</span>
             </div>
-            <div class="menu-item" data-action="settings">
+            <!--<div class="menu-item" data-action="settings">
               <span class="menu-icon">⚙️</span>
               <span>Settings</span>
-            </div>
+            </div>-->
             <div class="menu-item submenu-parent" data-action="help">
               <span class="menu-icon">❓</span>
               <span>Help</span>
@@ -4712,7 +4712,7 @@
 
       numberOfNotesToLoad = 10
 
-      const notes = await fetchNotes(numberOfNotesToLoad)
+      let notes = await fetchNotes(numberOfNotesToLoad)
       numberOfNotesToLoad += 10 // increment
         
       // Hide quick suggestions
@@ -4759,7 +4759,7 @@
 
       // Load notes
       showNotesWelcome()
-      await loadNotes()
+      notes = await loadNotes()
 
       // Add sync button to mode indicator
       try{
@@ -5268,6 +5268,7 @@
         chatbotState.currentNoteId = notes[0].id
         await loadNote(chatbotState.currentNoteId)
       }
+      return notes;
     } catch (error) {
       console.error("Error loading notes:", error)
     }

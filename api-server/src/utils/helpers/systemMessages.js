@@ -285,6 +285,7 @@ GUIDELINES:
 - Keep it short (max 5 bullet points numbered list, minimum 1 bullet points numbered list, medium 3 bullet points numbered list)
 - Use plain, clear language
 - No fluff — only mention real changes you made
+- Keep it real, smart, and relevant to the post
 - Examples: "1. Added a stronger hook 2. Improved clarity 3. Shortened sentences 4. Kept emojis 5. Added a call-to-action"
 - Numbered list format is required separated by space just like the example above.
 

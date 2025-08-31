@@ -18,14 +18,8 @@ const invokeAIWithFallback = async ({
       try {
         console.log(`Trying model: ${model}`);
         const result = await invokeAI({ req, messages, model, temperature, maxTokens });
-        const usage = await result.response_metadata?.usage || {};
-        usage.total_tokens = usage.input_tokens + usage.output_tokens;
-
-        return {
-            Content: result.content.trim(),
-            Usage: usage,
-            Model: modelName
-        }; // success, return immediately
+        
+        return result; // success, return immediately
       } catch (err) {
         lastError = err;
         // Retry only on 429 (rate limit) errors

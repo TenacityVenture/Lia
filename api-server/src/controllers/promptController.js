@@ -19,6 +19,10 @@ exports.rewritePost = async (req, res) => {
   try {
     const {Content: rewritten, Usage: usage} = await aiService.getCompletionPostRewrite(req, prompt);
 
+    if (!rewritten || rewritten.includes('Something went wrong')) {
+      return res.status(400).json({ error: 'AI rewrite failed' });
+    }
+
     // log usage to usage table in supabase
     await usageLogger.log({ 
         userId, 

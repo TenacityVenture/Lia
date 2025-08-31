@@ -104,6 +104,30 @@ exports.getSubscription = async (req, res) => {
   res.json({...data, isPro})
 }
 
+exports.listNotifications = async (req, res) => {
+  const { data, error } = await supabase
+  .from("notifications")
+  .select("*")
+  .eq("user_id", req.user.sub)
+  .order("created_at", { ascending: false })
+  .limit(100);
+
+  if (error) {
+    return res.status(500).json({ error: error.message });
+  }
+  res.json(data);
+}
+
+exports.markAsRead = async (req, res) => {
+  await supabase
+    .from("notifications")
+    .update({ read: true })
+    .eq("id", req.params.id)
+    .eq("user_id", req.user.sub);
+
+  res.json({ ok: true });
+}
+
 exports.marketingUnsubscribe = async (req, res) => {
   const uid = req.body?.uid || req.query?.uid;
   if (!uid) {

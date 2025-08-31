@@ -9,6 +9,7 @@ const {
     marketingUnsubscribe,
     updateCustomizations
 } = require('../controllers/userController');
+const { listNotifications, markAsRead } = require("../controllers/userController.js");
 
 router.get('/me', authenticate, getCurrentUser);
 
@@ -17,6 +18,10 @@ router.put('/update-profile', authenticate, updateProfile);
 router.put('/update-profile/linkedin-info', authenticate, updateProfileLinkedinInfo);
 
 router.get('/subscription', authenticate, getSubscription);
+
+router.get('/notifications', authenticate, listNotifications)
+
+router.post("/:id/read", authenticate, markAsRead);
 
 // Marketing unsubscribe route
 // This allows users to opt out of marketing emails

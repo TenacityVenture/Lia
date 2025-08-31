@@ -1,6 +1,8 @@
 const aiService = require('../services/aiService');
 const usageLogger = require('../services/usageLogger');
 const { getUserInfo } = require('../utils/helpers/getUserInfo');
+const { trackRewrite } = require('../services/statsService')
+const { logger } = require('../utils/logger');
 
 exports.rewritePost = async (req, res) => {
   const userId = req.user.sub; // Extract user ID from the request object
@@ -31,6 +33,15 @@ exports.rewritePost = async (req, res) => {
         suggested_text: rewritten, 
         token_used: usage.total_tokens || 0 // Fallback to 0 if not available
     })
+
+    try {
+      // track the rewrite for user stats
+      await trackRewrite(userId);
+    } catch (err) {
+      console.error('Failed to track rewrite:', err.message);
+      // Not critical, so we don't return an error response here
+      logger.error({ msg: 'Failed to track rewrite', error: err, userId });
+    }
 
     // get the improvements that was made to the post
     const response = await aiService.getCompletionCheckImprovements(req, { originalPost: originalText, improvedPost: rewritten });

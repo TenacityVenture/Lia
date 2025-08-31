@@ -1,3 +1,4 @@
+const { text } = require('express');
 const supabase = require('../utils/supabaseClient');
 
 /**
@@ -177,4 +178,22 @@ exports.generateNoteTitle = async (req, content) => {
     return title.slice(1, -1).trim(); // Remove quotes and trim whitespace
   }
   return title.trim(); // Just trim whitespace if no quotes
+}
+
+exports.substitutePlaceholdersForValues = async (html, text, data) => {
+  const handlebars = require('handlebars')
+  let compiledHtml = html;
+  let compiledText = text;
+
+  if (html && data) {
+    const template = handlebars.compile(html);
+    compiledHtml = template(data);
+  }
+
+  if (text && data) {
+    const template = handlebars.compile(text);
+    compiledText = template(data);
+  }
+
+  return {html: compiledHtml, text: compiledText}
 }

@@ -78,4 +78,4 @@ async function run() {
   });
 }
 
-run().then(() => process.exit(0));
+run().then();

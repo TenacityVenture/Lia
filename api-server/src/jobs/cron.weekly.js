@@ -178,4 +178,4 @@ async function runWeeklyDigest() {
   logger.info({ msg: "Weekly digest job completed", count: digestUsers.length });
 }
 
-runWeeklyDigest().then(() => process.exit(0));
+runWeeklyDigest().then();

@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "nodemon src/server.js",
+    "start:prod": "node src/server.js",
     "lint": "eslint",
     "test": "jest",
     "worker": "node src/jobs/worker.email.js",

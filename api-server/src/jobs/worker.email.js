@@ -8,9 +8,9 @@ const { weeklyDigestText, trialEndingEmailText, reengageEmailText } = require(".
 
 // Redis connection config for BullMQ worker
 const connection = {
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-  //tls: process.env.AWS_REDIS_TLS === "true" ? {} : undefined,
+  host: process.env.AWS_REDIS_HOST,
+  port: process.env.AWS_REDIS_PORT,
+  tls: process.env.AWS_REDIS_TLS === "true" ? {} : undefined,
 };
 
 // Email worker: processes jobs from "emailQueue"

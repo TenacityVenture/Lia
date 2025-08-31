@@ -15,8 +15,8 @@ const { Queue } = require("bullmq");
  * Adjust the TLS configuration as needed for your deployment environment.
  */
 const connection = {
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
+  host: process.env.AWS_REDIS_HOST,
+  port: process.env.AWS_REDIS_PORT,
   //tls: process.env.AWS_REDIS_TLS === "true" ? {} : undefined,
 };
 

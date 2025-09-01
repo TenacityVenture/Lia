@@ -29,11 +29,11 @@ export const metadata: Metadata = {
 const plans = [
   {
     name: "Starter",
-    price: "$5",
+    price: "$9",
     period: "per month",
     description: "Perfect for professionals getting started with LinkedIn Intelligence Assistant",
     features: [
-      "Unlimited AI post suggestions",
+      "Unlimited use of LIA Chat",
       "Smart comment assistance",
       "Content improvement analysis",
       "Multiple tone options",
@@ -47,16 +47,15 @@ const plans = [
   },
   {
     name: "Professional",
-    price: "$20",
+    price: "$29",
     period: "per month",
     description: "Advanced AI features for serious LinkedIn growth and engagement",
     features: [
       "Everything in Starter",
-      "Advanced AI models (GPT-4)",
+      "Advanced AI models",
       "Content analytics dashboard",
       "Priority support",
       "Custom tone training",
-      "Bulk content generation",
       "Reference mode"
     ],
     planKey: "professional" as const,

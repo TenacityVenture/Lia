@@ -18,7 +18,7 @@ import Link from "next/link"
 import Image from "next/image"
 
 const linkedinFormSchema = z.object({
-  linkedin_profile_url: z.string().min(3, "Required"),
+  linkedin_handle: z.string().min(3, "Required"),
   linkedin_name: z.string().min(3, "Required"),
   linkedin_headline: z.string().min(10, "Too short"),
   linkedin_about: z.string().min(50, "Too short"),
@@ -35,7 +35,7 @@ export default function OnboardingPage() {
   const form = useForm<LinkedinFormData>({
     resolver: zodResolver(linkedinFormSchema),
     defaultValues: {
-      linkedin_profile_url: "",
+      linkedin_handle: "",
       linkedin_name: "",
       linkedin_headline: "",
       linkedin_about: "",
@@ -230,7 +230,7 @@ export default function OnboardingPage() {
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="linkedin_profile_url" className="text-sm font-medium">
+                    <Label htmlFor="linkedin_handle" className="text-sm font-medium">
                       LinkedIn URL
                     </Label>
                     <div className="flex">
@@ -238,14 +238,14 @@ export default function OnboardingPage() {
                         linkedin.com/in/
                       </span>
                       <Input
-                        id="linkedin_profile_url"
+                        id="linkedin_handle"
                         placeholder="yourname"
                         className="rounded-l-none border-gray-300 dark:border-gray-600 focus:border-primary dark:focus:border-white"
-                        {...form.register("linkedin_profile_url")}
+                        {...form.register("linkedin_handle")}
                       />
                     </div>
-                    {form.formState.errors.linkedin_profile_url && (
-                      <p className="text-sm text-red-600">{form.formState.errors.linkedin_profile_url.message}</p>
+                    {form.formState.errors.linkedin_handle && (
+                      <p className="text-sm text-red-600">{form.formState.errors.linkedin_handle.message}</p>
                     )}
                   </div>
                   <div className="space-y-2">
@@ -276,7 +276,7 @@ export default function OnboardingPage() {
                     </Button>
                     <Button
                       onClick={nextStep}
-                      disabled={!form.watch("linkedin_profile_url")}
+                      disabled={!form.watch("linkedin_handle")}
                       className="bg-primary hover:bg-gray-800 text-white dark:bg-white dark:text-primary dark:hover:bg-gray-100"
                     >
                       Continue

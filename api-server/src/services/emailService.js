@@ -117,7 +117,11 @@ async function sendWelcomeEmail(user) {
     unsubscribe_url: `${process.env.BASE_URL || 'https://getlia.live'}/unsubscribe?uid=${user.id}`
   }
 
-  const { html, text } = substitutePlaceholdersForValues(welcomeEmailHtml, welcomeEmailText, templateData)
+  const result = await substitutePlaceholdersForValues(welcomeEmailHtml, welcomeEmailText, templateData)
+
+  const text = result.text;
+  const html = result.html;
+
   const mailOptions = {
     from: "welcome@getlia.live", // must be a verified identity
     to: user.email,

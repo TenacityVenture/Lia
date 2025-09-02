@@ -222,7 +222,8 @@ async function sendPasswordResetEmail(user, token) {
 
   const resetUrl = `${process.env.BASE_URL || "https://getlia.live"}/reset-password?token=${token}`;
 
-  const {html, text} = substitutePlaceholdersForValues(passwordResetHtml, passwordResetText, {user, reset_url: resetUrl})
+  const result = await substitutePlaceholdersForValues(passwordResetHtml, passwordResetText, {user, reset_url: resetUrl})
+  const {html, text} = result;
   const mailOptions = {
     from: "password-reset@getlia.live", // must be a verified identity
     to: user.email,

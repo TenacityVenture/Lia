@@ -164,6 +164,8 @@ export default function Home() {
                 </Link>
               </Button>
             </div>
+
+            <a href="https://www.producthunt.com/products/lia-linkedin-intelligent-assistant?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-lia&#0045;2" target="_blank"><img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1011830&theme=light&t=1756844554071" alt="LIA - Linkedin&#0032;intelligent&#0032;assistant | Product Hunt" style={{width: "250px", height: "54px;"}} /></a>
           </div>
 
           <HeroDemo />

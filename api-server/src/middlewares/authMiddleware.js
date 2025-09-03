@@ -54,7 +54,7 @@ const checkPlan = (requiredPlan = 'free') => {
     const isTrialValid = (
       userData.plan === 'free' &&
       !isExpired &&
-      requiredPlan === 'pro' // try full pro plan for 1 month free
+      (requiredPlan === 'pro' || requiredPlan == 'standard') // try full pro plan for 1 month free
     );
 
     // 3. If trial is valid, allow

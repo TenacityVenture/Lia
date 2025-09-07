@@ -217,42 +217,48 @@ const refreshAccessToken = async (req, res) => {
 
 /**
  * Syncs the OAuth user with the Supabase instance. 
- * Requires 'access_token' in the request body.
- * Returns a JSON response with the user and their session token.
+ * Since we have a DB trigger that auto-inserts OAuth users, this serves as a fallback
+ * and ensures all custom fields are properly set.
  * 
  * Status Codes:
  *  - 200: Successful sync
  *  - 400: Sync failed
  */
 const syncOAuthUser = async (req, res) => {
-  const supabaseUser = req.user; // this comes from the JWT decoded by our middleware
+  const authUser = req.user; // this comes from the JWT decoded by our middleware
 
-  // optional: check if already exists
+  // Get existing user data to check if recently created
   const { data: existingUser } = await supabase
     .from('users')
-    .select('id')
-    .eq('id', supabaseUser.sub)
+    .select('*')
+    .eq('id', authUser.sub)
     .single();
 
-  if (!existingUser) {
-    const { email, name, picture } = supabaseUser;
-    
-    await supabase.from('users').insert({
-      id: supabaseUser.sub,
-      email,
-      name: name || '',
-      username: null,
-      linkedin_handle: null,
-      profile_picture_url: picture || null,
-      social_provider: 'linkedin',
-      plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-    });
+  const { email, name, picture } = authUser;
+  const isNewUser = !existingUser || (existingUser.created_at && (Date.now() - new Date(existingUser.created_at).getTime() < 60 * 1000));
 
+  // Upsert user data as fallback and to ensure all fields are set
+  await supabase.from('users').upsert({
+    id: authUser.sub,
+    email,
+    name: name || '',
+    username: null,
+    linkedin_handle: null,
+    profile_picture_url: picture || null,
+    social_provider: 'linkedin',
+    plan: existingUser?.plan || 'free', // Keep existing plan if already set
+    plan_started_at: existingUser?.plan_started_at || new Date(),
+    plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+    marketing_emails: existingUser?.marketing_emails || false
+  }, { onConflict: 'id' });
+
+  // Send welcome email only for new users
+  if (isNewUser) {
     try {
       const { data: userData } = await supabase
         .from('users')
         .select('*')
-        .eq('id', supabaseUser.sub)
+        .eq('id', authUser.sub)
         .single();
 
       await sendWelcomeEmail(userData);
@@ -263,9 +269,7 @@ const syncOAuthUser = async (req, res) => {
     }
   }
 
-  // send refresh token in a secure cookie
-  // first we need to get the new refresh token from Supabase
-  // this is needed because the user might have logged in with a different provider
+  // Set refresh token in secure cookie
   const newRefreshToken = req.query.refresh_token;
   
   if (!newRefreshToken) {
@@ -275,17 +279,17 @@ const syncOAuthUser = async (req, res) => {
   res.cookie('refresh_token', newRefreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'None', // <== allow cross-site cookie
-    domain: '.getlia.live',  // <== apply to all subdomains
+    sameSite: 'None',
+    domain: '.getlia.live',
     maxAge: 30 * 24 * 60 * 60 * 1000
   });
 
   res.status(200).json({
     message: 'OAuth user synced successfully',
     user: {
-      id: supabaseUser.sub,
-      email: supabaseUser.email,
-      name: supabaseUser.name
+      id: authUser.sub,
+      email: authUser.email,
+      name: authUser.name
     }
   });
 };
@@ -300,34 +304,40 @@ const syncOAuthUser = async (req, res) => {
  *  - 400: Sync failed
  */
 const syncGoogleOAuthUser = async (req, res) => {
-  const supabaseUser = req.user; // this comes from the JWT decoded by our middleware
+  const authUser = req.user; // this comes from the JWT decoded by our middleware
 
-  // optional: check if already exists
+  // Get existing user data to check if recently created
   const { data: existingUser } = await supabase
     .from('users')
     .select('*')
-    .eq('id', supabaseUser.sub)
+    .eq('id', authUser.sub)
     .single();
 
-  if (!existingUser) {
-    const { email, name, picture } = supabaseUser;
-    
-    await supabase.from('users').insert({
-      id: supabaseUser.sub,
-      email,
-      name: name || '',
-      username: null,
-      linkedin_handle: null,
-      profile_picture_url: picture || null,
-      social_provider: 'google',
-      plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-    });
+  const { email, name, picture } = authUser;
+  const isNewUser = !existingUser || (existingUser.created_at && (Date.now() - new Date(existingUser.created_at).getTime() < 60 * 1000));
 
+  // Upsert user data as fallback and to ensure all fields are set
+  await supabase.from('users').upsert({
+    id: authUser.sub,
+    email,
+    name: name || '',
+    username: null,
+    linkedin_handle: null,
+    profile_picture_url: picture || null,
+    social_provider: 'google',
+    plan: existingUser?.plan || 'free', // Keep existing plan if already set
+    plan_started_at: existingUser?.plan_started_at || new Date(),
+    plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+    marketing_emails: existingUser?.marketing_emails || false
+  }, { onConflict: 'id' });
+
+  // Send welcome email only for new users
+  if (isNewUser) {
     try {
       const { data: userData } = await supabase
         .from('users')
         .select('*')
-        .eq('id', supabaseUser.sub)
+        .eq('id', authUser.sub)
         .single();
 
       await sendWelcomeEmail(userData);
@@ -338,9 +348,7 @@ const syncGoogleOAuthUser = async (req, res) => {
     }
   }
 
-  // send refresh token in a secure cookie
-  // first we need to get the new refresh token from query
-  // this is needed because the user might have logged in with a different provider
+  // Set refresh token in secure cookie
   const newRefreshToken = req.query.refresh_token;
   
   if (!newRefreshToken) {
@@ -350,17 +358,17 @@ const syncGoogleOAuthUser = async (req, res) => {
   res.cookie('refresh_token', newRefreshToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'None', // <== allow cross-site cookie
-    domain: '.getlia.live',  // <== apply to all subdomains
+    sameSite: 'None',
+    domain: '.getlia.live',
     maxAge: 30 * 24 * 60 * 60 * 1000
   });
 
   res.status(200).json({
     message: 'OAuth user synced successfully',
     user: {
-      id: supabaseUser.sub,
-      email: supabaseUser.email,
-      name: supabaseUser.name
+      id: authUser.sub,
+      email: authUser.email,
+      name: authUser.name
     }
   });
 };

@@ -295,6 +295,74 @@ const reengageEmailHtml = `<!doctype html>
     </html>`
 const reengageEmailText = `We miss you, {{name}}! Try a rewrite today and keep your LinkedIn presence active.`
 
+const influencerPromotionEmailHtml = `<!doctype html>
+<html>
+  <body style="font-family:Arial, sans-serif; background:#f9f9f9; margin:0; padding:0;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="padding:20px 0;">
+      <tr>
+        <td align="center">
+          <table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff; border-radius:8px; padding:30px; text-align:left;">
+            <tr><td>
+              <h1 style="color:#4f46e5;">Welcome to LIA Pro, {{name}}! 🌟</h1>
+              <p style="color:#555; font-size:15px; line-height:1.6;">
+                Thank you for partnering with us! As a valued collaborator, you now have <strong>complimentary Pro access to LIA</strong> for the next three months.
+              </p>
+              <p style="color:#555; font-size:15px; line-height:1.6;">
+                We’re excited for you to experience all the advanced features LIA offers. Use it to supercharge your LinkedIn presence, streamline your workflow, and unlock new opportunities.
+              </p>
+              <p style="color:#555; font-size:15px; line-height:1.6;">
+                <strong>How you can help:</strong>
+                <ul style="color:#555; font-size:15px; line-height:1.6;">
+                  <li>Explore LIA Pro and discover your favorite features</li>
+                  <li>Share your experience and results with your network</li>
+                  <li>Tag <a href="https://www.linkedin.com/company/getlia" style="color:#4f46e5;">@getlia</a> in your posts</li>
+                  <li>Send us feedback to help us improve</li>
+                </ul>
+              </p>
+              <p style="text-align:center; margin:30px 0;">
+                <a href="{{dashboard_url}}" style="background:#4f46e5; color:#fff; text-decoration:none; padding:12px 24px; border-radius:6px; font-weight:bold; display:inline-block;">
+                  Access Your LIA Pro Dashboard
+                </a>
+              </p>
+              <p style="color:#555; font-size:15px; line-height:1.6;">
+                We’re grateful to have you on board and can’t wait to see how you use LIA to inspire others!
+              </p>
+              <p style="color:#555; font-size:15px; line-height:1.6;">
+                — David & the LIA Team
+              </p>
+              <hr style="margin:30px 0; border:none; border-top:1px solid #eee;" />
+              <p style="font-size:12px; color:#888888; text-align:center;">
+                If you have any questions or need support, send a reply to this <a href="mailto:support@getlia.com" style="color:#888888;">email</a> or reach out via <a href="https://www.getlia.live/support" style="color:#888888;">support</a>.<br/>
+                <a href="{{unsubscribe_url}}" style="color:#888888;">Unsubscribe</a>
+              </p>
+            </td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+const influencerPromotionEmailText = `Welcome to LIA Pro, {{name}}! 🌟
+
+Thank you for partnering with us! You now have complimentary Pro access to LIA for the next three months.
+
+How you can help:
+- Explore LIA Pro and discover your favorite features
+- Share your experience and results with your network
+- Tag @getlia in your posts
+- Send us feedback to help us improve
+
+Access your dashboard: {{dashboard_url}}
+
+We’re grateful to have you on board and can’t wait to see how you use LIA to inspire others!
+
+— David & the LIA Team
+
+Questions or need support? Email support@getlia.com or visit https://www.getlia.live/support
+
+Unsubscribe: {{unsubscribe_url}}
+`;
+
 async function seedEmailTemplates() {
   // MILESTONE 10
   await createSesTemplateIfMissing(
@@ -360,5 +428,7 @@ module.exports = {
   welcomeEmailHtml,
   welcomeEmailText,
   passwordResetHtml,
-  passwordResetText 
+  passwordResetText,
+  influencerPromotionEmailHtml,
+  influencerPromotionEmailText 
 };

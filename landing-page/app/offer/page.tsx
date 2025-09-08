@@ -57,11 +57,10 @@ export default function ResetPasswordPage() {
         .then((data) => {
           if (data.error) {
             setIsAuthenticated(false)
-            setUser({
-              ...data
-            })
-            setEmail(data.email)
+            setIsAuthenticated(false)
           } else {
+            setUser(data)
+            setEmail(data.email)
             setIsAuthenticated(true)
           }
         })
@@ -84,6 +83,7 @@ export default function ResetPasswordPage() {
         method: "POST",
         headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ userId: user?.id, promotionCode: 'INFLUENCER', email }),
       })
@@ -217,7 +217,7 @@ export default function ResetPasswordPage() {
                   className="pr-10"
                 />
               </div>
-              <p className="text-xs text-gray-500">Must be at least 8 characters</p>
+              <p className="text-xs text-gray-500">Must include a valid email address</p>
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
@@ -227,7 +227,7 @@ export default function ResetPasswordPage() {
                   Setting things up password...
                 </>
               ) : (
-                "Confirm Offer"
+                "Claim Offer"
               )}
             </Button>
           </motion.form>

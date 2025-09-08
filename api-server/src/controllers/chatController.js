@@ -5,7 +5,6 @@ const { chatSystemMessage } = require('../utils/helpers/systemMessages');
 const { invokeAI } = require('../services/invokeAI');
 const { invokeAIWithFallback } = require('../services/invokeAIWithFallback');
 const { getUserInfo } = require('../utils/helpers/getUserInfo');
-const { Threads } = require('openai/resources/beta/threads/threads');
 
 /** Create a new chat
 * @param {Object} req - Express request object

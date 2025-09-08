@@ -81,7 +81,7 @@ export default function ResetPasswordPage() {
 
       // call an api to reset the password
       await fetch(`${process.env.NEXT_PUBLIC_API_HOST}/api/promotions/influencer-offer/confirm`, {
-        method: "PUT",
+        method: "POST",
         headers: {
         "Content-Type": "application/json",
         },

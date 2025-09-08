@@ -11,8 +11,8 @@ const { influencerPromotionEmailHtml, influencerPromotionEmailText } = require('
 async function influencerPromotion(req, res) {
     const { userId, promotionCode, email } = req.body;
 
-    if (!userId || !promotionCode || !email || emailConfirm === undefined) {
-        return res.status(400).json({ error: 'userId, promotionCode, email, and emailConfirmed are required' });
+    if (!userId || !promotionCode || !email) {
+        return res.status(400).json({ error: 'userId, promotionCode, and email are required' });
     }
 
     try {

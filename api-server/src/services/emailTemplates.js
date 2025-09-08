@@ -35,7 +35,7 @@ const welcomeEmailHtml = `<!doctype html>
                   Here are some quick ways to get started:
                 </p>
                 <ul style="color:#555555; font-size:15px; line-height:1.6;">
-                  <li>📺 Watch this <a href="https://www.youtube.com/watch?v=example" style="color:#4f46e5;">1-Minute Video</a></li>
+                  <li>📺 Watch this <a href="https://www.youtube.com/watch?v=example" style="color:#4f46e5;">Playlist</a></li>
                   <li>💡 Try <strong>AI Rewrite</strong> on your next post</li>
                   <li>💬 Use <strong>AI Reply</strong> to respond thoughtfully to comments</li>
                 </ul>
@@ -44,12 +44,12 @@ const welcomeEmailHtml = `<!doctype html>
                   More resources to help you get the most out of LIA:
                 </p>
                 <ul style="color:#555555; font-size:15px; line-height:1.6;">
-                  <li><a href="https://docs.getlia.live" style="color:#4f46e5;">Documentation</a></li>
+                  <!--<li><a href="https://docs.getlia.live" style="color:#4f46e5;">Documentation</a></li>-->
                   <li><a href="https://www.linkedin.com/company/getlia" style="color:#4f46e5;">LinkedIn</a></li>
                   <li><a href="https://discord.gg/getlia" style="color:#4f46e5;">Discord Community</a></li>
                   <li><a href="https://twitter.com/getlia" style="color:#4f46e5;">Twitter</a></li>
                   <li><a href="https://www.youtube.com/@getlia" style="color:#4f46e5;">YouTube</a></li>
-                  <li><a href="https://www.getlia.live/blog" style="color:#4f46e5;">Blog</a></li>
+                  <!--<li><a href="https://www.getlia.live/blog" style="color:#4f46e5;">Blog</a></li>-->
                 </ul>
 
                 <p style="color:#555555; font-size:15px; line-height:1.6;">

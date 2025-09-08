@@ -35,7 +35,7 @@ const welcomeEmailHtml = `<!doctype html>
                   Here are some quick ways to get started:
                 </p>
                 <ul style="color:#555555; font-size:15px; line-height:1.6;">
-                  <li>📺 Watch this <a href="https://www.youtube.com/watch?v=example" style="color:#4f46e5;">Playlist</a></li>
+                  <li>📺 Watch this <a href="https://www.youtube.com/watch?v=nn2Sk2zneyQ&list=PLq7IeS2pQggNLpoPFm5VJVwjWsLpsX4Ge" style="color:#4f46e5;">Playlist</a></li>
                   <li>💡 Try <strong>AI Rewrite</strong> on your next post</li>
                   <li>💬 Use <strong>AI Reply</strong> to respond thoughtfully to comments</li>
                 </ul>
@@ -79,17 +79,15 @@ We're excited to help you enhance your LinkedIn experience with AI 🚀.
 👉 Get started here: {{dashboard_url}}
 
 Quick Start:
-- Watch a 1-Minute Video: https://www.youtube.com/watch?v=example
+- Watch a 1-Minute Video: https://www.youtube.com/watch?v=nn2Sk2zneyQ&list=PLq7IeS2pQggNLpoPFm5VJVwjWsLpsX4Ge
 - Try "AI Rewrite" on your next post
 - Use "AI Reply" to respond thoughtfully to comments
 
 More Resources:
-- Docs: https://docs.getlia.live
 - LinkedIn: https://www.linkedin.com/company/getlia
 - Discord: https://discord.gg/getlia
 - Twitter: https://twitter.com/getlia
 - YouTube: https://www.youtube.com/@getlia
-- Blog: https://www.getlia.live/blog
 
 — David & the LIA Team
 

@@ -57,11 +57,12 @@ async function influencerPromotion(req, res) {
         // Send confirmation email
         await sendEmail({
             to: email,
+            from: 'promotions@getlia.live',
             subject: 'Offer Confirmed',
             html: influencerPromotionEmailHtml,
             text: influencerPromotionEmailText,
             templateData: { 
-                name: user.name || 'there', 
+                name: user.name || user.username || user.email || 'there', 
                 dashboard_url: 'https://www.getlia.live/dashboard',
                 unsubscribe_url: `${process.env.BASE_URL || 'https://getlia.live'}/unsubscribe?uid=${userId}`
              },

@@ -19,7 +19,7 @@ const welcomeEmailHtml = `<!doctype html>
                 <h1 style="color:#333333;">Welcome to LIA, {{name}} 👋</h1>
                 <p style="color:#555555; font-size:15px; line-height:1.6;">
                   Thanks for joining <strong>LIA</strong> — your LinkedIn Intelligent Assistant.
-                  We're excited to help you enhance your LinkedIn experience with AI 🚀.
+                  We're excited to help you enhance your LinkedIn experience with AI that understands you 🚀.
                 </p>
 
                 <!-- CTA BUTTON -->
@@ -46,9 +46,9 @@ const welcomeEmailHtml = `<!doctype html>
                 <ul style="color:#555555; font-size:15px; line-height:1.6;">
                   <!--<li><a href="https://docs.getlia.live" style="color:#4f46e5;">Documentation</a></li>-->
                   <li><a href="https://www.linkedin.com/company/getlia" style="color:#4f46e5;">LinkedIn</a></li>
+                  <li><a href="https://www.youtube.com/@getlia" style="color:#4f46e5;">YouTube</a></li>
                   <li><a href="https://discord.gg/getlia" style="color:#4f46e5;">Discord Community</a></li>
                   <li><a href="https://twitter.com/getlia" style="color:#4f46e5;">Twitter</a></li>
-                  <li><a href="https://www.youtube.com/@getlia" style="color:#4f46e5;">YouTube</a></li>
                   <!--<li><a href="https://www.getlia.live/blog" style="color:#4f46e5;">Blog</a></li>-->
                 </ul>
 
@@ -74,7 +74,7 @@ const welcomeEmailHtml = `<!doctype html>
 const welcomeEmailText = `Welcome to LIA, {{name}} 👋
 
 Thanks for joining LIA — your LinkedIn Intelligent Assistant.
-We're excited to help you enhance your LinkedIn experience with AI 🚀.
+We're excited to help you enhance your LinkedIn experience with AI that understands you 🚀.
 
 👉 Get started here: {{dashboard_url}}
 

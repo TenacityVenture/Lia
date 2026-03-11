@@ -1,0 +1,247 @@
+"use client"
+
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import { z } from "zod"
+import { Loader2 } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
+
+import { supabase } from "@/lib/supabaseClient"
+import { signInDirectlyWithSupabase } from "@/lib/supabaseHelpers"
+
+const formSchema = z.object({
+  name: z.string().min(2, {
+    message: "Name must be at least 2 characters.",
+  }),
+  email: z.string().email({
+    message: "Please enter a valid email address.",
+  }),
+  password: z.string().min(8, {
+    message: "Password must be at least 8 characters.",
+  }),
+  marketingEmails: z.boolean().default(false).optional(),
+})
+
+export function SignupForm() {
+  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      marketingEmails: false,
+    },
+  })
+
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsLoading(true)
+
+    // This would be where you'd call your API to create the user account
+    console.log(values)
+
+    // Simulate API call
+    //await new Promise((resolve) => setTimeout(resolve, 1500))
+    /*const apiUrl:string = `${process.env.NEXT_PUBLIC_API_HOST}/api/auth/register`
+    await fetch(apiUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(values),
+    })
+      .then((res) => {
+        console.log(res)
+        return res.json()})
+      .then((data) => {
+        console.log(data)
+        if (data.error) {
+          throw new Error(data.error)
+        }
+
+        // send token to the chrome extension
+        if (data.access_token && data.refresh_token) {
+          
+          window.postMessage({ type: "SEND_JWTs", 
+            access_token: data.access_token, 
+            refresh_token: data.refresh_token}, "*") // * means all domains (shoule be restricted to lia extension id)
+
+          // Save tokens to localStorage
+          localStorage.setItem("lia_access_token", data.access_token)
+
+          // Redirect to dashboard or onboarding
+          router.push("/login?success=account_created")
+        }
+
+        else {
+          // Redirect to dashboard or onboarding
+          router.push("/login?success=account_created")
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error)
+        form.setError("root", { message: error.message || "An error occurred. Please try again." })
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })*/
+      signInDirectlyWithSupabase(values.email, values.password)
+      .then((data) => {
+        // Handle successful login
+        console.log(data)
+
+        // send token to the chrome extension
+        if (data.access_token && data.refresh_token) {
+          
+          window.postMessage({ type: "SEND_JWTs", 
+            access_token: data.access_token, 
+            refresh_token: data.refresh_token}, "*") // * means all domains (shoule be restricted to lia extension id)
+
+          // Save tokens to localStorage
+          localStorage.setItem("lia_access_token", data.access_token)
+
+          // Redirect to the dashboard
+          router.push("/dashboard")
+        }
+      })
+      .catch((error) => {
+        console.error("Error:", error)
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+
+    setIsLoading(false)
+  }
+
+  const handleSignInWithLinkedin = async () => {
+    setIsLoading(true)
+
+    // This would be where you'd call your API to sign in with LinkedIn
+    // const { data, error } = 
+
+    await supabase.auth.signInWithOAuth({
+      provider: 'linkedin_oidc',
+      options: {
+        redirectTo: 'https://www.getlia.live/oauth/callback?provider=linkedin_oidc'
+      }
+    });
+
+  }
+  ///oauth/linkedIn-sync
+  const handleSignInWithGoogle = async () => {
+    setIsLoading(true)
+
+    // This would be where you'd call your API to sign in with LinkedIn
+    // const { data, error } = 
+
+    supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: 'https://www.getlia.live/oauth/callback?provider=google'
+      }
+    });
+
+  }
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Full Name</FormLabel>
+              <FormControl>
+                <Input placeholder="John Doe" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="john.doe@example.com" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="••••••••" {...field} />
+              </FormControl>
+              <FormDescription>Must be at least 8 characters</FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="marketingEmails"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+              <FormControl>
+                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <FormLabel>Send me emails with tips, updates, and offers</FormLabel>
+              </div>
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Getting Started...
+            </>
+          ) : (
+            "Get Started"
+          )}
+        </Button>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Button onClick={handleSignInWithGoogle} variant="outline" type="button" disabled={isLoading}>
+            Google
+          </Button>
+          <Button onClick={handleSignInWithLinkedin} variant="outline" type="button" disabled={isLoading}>
+            LinkedIn
+          </Button>
+        </div>
+      </form>
+    </Form>
+  )
+}

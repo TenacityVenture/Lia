@@ -1,0 +1,47 @@
+{
+  "../../../../../@crx/manifest": {
+    "file": "assets/crx-manifest.js-D4WBW5PO.js",
+    "name": "crx-manifest.js",
+    "src": "../../../../../@crx/manifest",
+    "isEntry": true
+  },
+  "popup/popup.html": {
+    "file": "assets/popup-CPUZuESB.js",
+    "name": "popup",
+    "src": "popup/popup.html",
+    "isEntry": true,
+    "css": [
+      "assets/popup-Dot7JVmx.css"
+    ]
+  },
+  "src/background.ts": {
+    "file": "assets/background.ts-DW0UDqYl.js",
+    "name": "background.ts",
+    "src": "src/background.ts",
+    "isEntry": true
+  },
+  "src/content.tsx": {
+    "file": "assets/content.tsx-DGoFTMCb.js",
+    "name": "content.tsx",
+    "src": "src/content.tsx",
+    "isEntry": true
+  },
+  "src/linkedin-mention-handler.ts": {
+    "file": "assets/linkedin-mention-handler.ts-BwbfaPfM.js",
+    "name": "linkedin-mention-handler.ts",
+    "src": "src/linkedin-mention-handler.ts",
+    "isEntry": true
+  },
+  "src/utils/helpers.ts": {
+    "file": "assets/helpers.ts-lYTBQLLG.js",
+    "name": "helpers.ts",
+    "src": "src/utils/helpers.ts",
+    "isEntry": true
+  },
+  "src/utils/utility.ts": {
+    "file": "assets/utility.ts-CW8RXrhm.js",
+    "name": "utility.ts",
+    "src": "src/utils/utility.ts",
+    "isEntry": true
+  }
+}

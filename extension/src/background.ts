@@ -1,8 +1,16 @@
+interface Settings {
+  tone?: string;
+  industry?: string;
+  rewrite_enabled?: boolean;
+  reply_enabled?: boolean;
+  chatbot_enabled?: boolean;
+}
+
 chrome.runtime.onInstalled.addListener(() => {
   // Initialize default settings
   chrome.storage.sync.get(
     ["tone", "industry", "rewrite_enabled", "reply_enabled", "chatbot_enabled"],
-    (data) => {
+    (data: Settings) => {
       // Only set defaults for values that don't exist
       const defaults = {
         tone: data.tone || "professional",

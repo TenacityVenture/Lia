@@ -7,7 +7,7 @@ import { generateImprovedText } from "./generateText";
 export function showTemporaryMessage(
   editor: HTMLElement,
   message: string,
-  type = "info"
+  type = "info",
 ) {
   // Check if there's already a message, remove it
   const existingMessage =
@@ -106,7 +106,7 @@ export async function handleRewriteAssistant(editor: HTMLElement) {
           node.nodeType === Node.TEXT_NODE ||
           node.nodeType === Node.ELEMENT_NODE
         ) {
-          result += (node.textContent ?? "");
+          result += node.textContent ?? "";
         }
       });
       return result.trim();
@@ -124,14 +124,18 @@ export async function handleRewriteAssistant(editor: HTMLElement) {
   showTemporaryMessage(editor, "LIA is rewriting..");
 
   try {
-    const response = await generateImprovedText(currentText, tone as string, industry as string);
+    const response = await generateImprovedText(
+      currentText,
+      tone as string,
+      industry as string,
+    );
 
     if (response.error && response.error.includes("missing plan")) {
       loadingOverlay.remove();
       showTemporaryMessage(
         editor,
         "Please upgrade your plan to use this feature. <a href='https://www.getlia.live/pricing' target='_blank'>Upgrade Now</a>",
-        "error"
+        "error",
       );
       return;
     } else if (response.error && response.error.includes("Plan expired")) {
@@ -139,15 +143,18 @@ export async function handleRewriteAssistant(editor: HTMLElement) {
       showTemporaryMessage(
         editor,
         "Your plan has expired. Please renew your subscription to continue using this feature. <a href='https://www.getlia.live/pricing' target='_blank'>Renew Now</a>",
-        "error"
+        "error",
       );
       return;
-    } else if (response.error && response.error.includes("Invalid or expired token")) {
+    } else if (
+      response.error &&
+      response.error.includes("Invalid or expired token")
+    ) {
       loadingOverlay.remove();
       showTemporaryMessage(
         editor,
         "Your session has expired. Please sign in again to continue using this feature.",
-        "error"
+        "error",
       );
       return;
     }
@@ -166,7 +173,7 @@ export async function handleRewriteAssistant(editor: HTMLElement) {
           editor,
           currentText,
           improvedText,
-          improvements
+          improvements,
         );
       } else {
         editor.textContent = improvedText;
@@ -178,7 +185,7 @@ export async function handleRewriteAssistant(editor: HTMLElement) {
     } else {
       showTemporaryMessage(
         editor,
-        "No improvements were made to the text because the extension encountered an error"
+        "No improvements were made to the text because the extension encountered an error",
       );
     }
   } catch (error: any) {
@@ -187,7 +194,7 @@ export async function handleRewriteAssistant(editor: HTMLElement) {
     if (error.message === "Failed to generate improved text") {
       showTemporaryMessage(
         editor,
-        "Failed to generate improved text. Maybe your session has expired. Please try signing in again."
+        "Failed to generate improved text. Maybe your session has expired. Please try signing in again.",
       );
     } else {
       showTemporaryMessage(editor, `Error: ${error.message}`);
@@ -203,7 +210,7 @@ export function setuprewrite_enabledment() {
     if (!settings.rewrite_enabled) return;
 
     const createPostButton = document.querySelector(
-      ".share-box-feed-entry__top-bar button.artdeco-button--tertiary"
+      ".share-box-feed-entry__top-bar button.artdeco-button--tertiary",
     );
 
     if (!createPostButton) return;
@@ -230,7 +237,9 @@ export function setuprewrite_enabledment() {
           AI Rewrite
         `;
 
-        const qlEditor = document.querySelector(".share-box .ql-editor") as HTMLElement;
+        const qlEditor = document.querySelector(
+          ".share-box .ql-editor",
+        ) as HTMLElement;
 
         let isRewriting = false;
 
@@ -238,7 +247,7 @@ export function setuprewrite_enabledment() {
           if (isRewriting) {
             showTemporaryMessage(
               qlEditor,
-              "LIA is rewriting text. Please wait for the process is complete."
+              "LIA is rewriting text. Please wait for the process is complete.",
             );
           } else {
             isRewriting = true;
@@ -247,7 +256,10 @@ export function setuprewrite_enabledment() {
           }
         });
 
-        if (shareBoxAction && !shareBoxAction.querySelector(".linkedin-ai-button")) {
+        if (
+          shareBoxAction &&
+          !shareBoxAction.querySelector(".linkedin-ai-button")
+        ) {
           shareBoxAction.prepend(aiButton);
         }
       });

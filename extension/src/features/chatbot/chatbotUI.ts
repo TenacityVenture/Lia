@@ -4,13 +4,13 @@ import { chatbotState } from "./chatbotState";
 import { addChatbotStyles } from "./chatbotStyles";
 
 export function createChatbotButton() {
-    // Remove existing button if it exists
-    const existingButton = document.getElementById("lia-chatbot-button");
-    if (existingButton) existingButton.remove();
+  // Remove existing button if it exists
+  const existingButton = document.getElementById("lia-chatbot-button");
+  if (existingButton) existingButton.remove();
 
-    const chatbotButton = document.createElement("div");
-    chatbotButton.id = "lia-chatbot-button";
-    chatbotButton.innerHTML = `
+  const chatbotButton = document.createElement("div");
+  chatbotButton.id = "lia-chatbot-button";
+  chatbotButton.innerHTML = `
     <div class="lia-logo-container">
       <svg class="lia-logo" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
@@ -25,7 +25,7 @@ export function createChatbotButton() {
     </div>
   `;
 
-    chatbotButton.style.cssText = `
+  chatbotButton.style.cssText = `
     position: fixed;
     bottom: 20px;
     right: 20px;
@@ -44,36 +44,35 @@ export function createChatbotButton() {
     overflow: hidden;
   `;
 
-    // Add hover effects
-    chatbotButton.addEventListener("mouseenter", () => {
-      chatbotButton.style.transform = "scale(1.1) rotate(5deg)";
-      chatbotButton.style.boxShadow = "0 6px 25px rgba(10, 102, 194, 0.4)";
-    });
+  // Add hover effects
+  chatbotButton.addEventListener("mouseenter", () => {
+    chatbotButton.style.transform = "scale(1.1) rotate(5deg)";
+    chatbotButton.style.boxShadow = "0 6px 25px rgba(10, 102, 194, 0.4)";
+  });
 
-    chatbotButton.addEventListener("mouseleave", () => {
-      chatbotButton.style.transform = "scale(1) rotate(0deg)";
-      chatbotButton.style.boxShadow = "0 4px 20px rgba(10, 102, 194, 0.3)";
-    });
+  chatbotButton.addEventListener("mouseleave", () => {
+    chatbotButton.style.transform = "scale(1) rotate(0deg)";
+    chatbotButton.style.boxShadow = "0 4px 20px rgba(10, 102, 194, 0.3)";
+  });
 
-    chatbotButton.addEventListener("click", toggleChatbot);
+  chatbotButton.addEventListener("click", toggleChatbot);
 
-    document.body.appendChild(chatbotButton);
+  document.body.appendChild(chatbotButton);
 
-    // Add CSS animations
-    addChatbotStyles();
-  }
-
+  // Add CSS animations
+  addChatbotStyles();
+}
 
 export function createChatbotInterface() {
-    // Remove existing interface if it exists
-    const existingInterface = document.getElementById("lia-chatbot-interface");
-    if (existingInterface) existingInterface.remove();
+  // Remove existing interface if it exists
+  const existingInterface = document.getElementById("lia-chatbot-interface");
+  if (existingInterface) existingInterface.remove();
 
-    const chatbotInterface = document.createElement("div");
-    chatbotInterface.id = "lia-chatbot-interface";
-    chatbotInterface.className = `lia-chatbot-interface ${chatbotState.isOpen ? "open" : ""}`;
+  const chatbotInterface = document.createElement("div");
+  chatbotInterface.id = "lia-chatbot-interface";
+  chatbotInterface.className = `lia-chatbot-interface ${chatbotState.isOpen ? "open" : ""}`;
 
-    chatbotInterface.innerHTML = `
+  chatbotInterface.innerHTML = `
     <div class="lia-chatbot-header">
       <div class="lia-chatbot-title">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -383,9 +382,8 @@ export function createChatbotInterface() {
 
   `;
 
-    document.body.appendChild(chatbotInterface);
+  document.body.appendChild(chatbotInterface);
 
-    // Setup event listeners
-    setupChatbotEventListeners();
-  }
-
+  // Setup event listeners
+  setupChatbotEventListeners();
+}

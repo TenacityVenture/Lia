@@ -10,7 +10,9 @@ export interface CommentContext {
   replyingToContent?: string;
 }
 
-export function getCommentContext(commentInput: Element): CommentContext | null {
+export function getCommentContext(
+  commentInput: Element,
+): CommentContext | null {
   const context: Partial<CommentContext> = {
     isReplyingToComment: false,
   };
@@ -26,10 +28,18 @@ export function getCommentContext(commentInput: Element): CommentContext | null 
   const commentItem = commentInput.closest(".comments-comment-item");
   if (commentItem) {
     context.isReplyingToComment = true;
-    const authorEl = commentItem.querySelector(".comments-post-meta__name-text");
-    const contentEl = commentItem.querySelector(".comments-comment-item-content-body");
-    context.replyingToAuthor = authorEl ? (authorEl.textContent || "").trim() : "";
-    context.replyingToContent = contentEl ? (contentEl.textContent || "").trim() : "";
+    const authorEl = commentItem.querySelector(
+      ".comments-post-meta__name-text",
+    );
+    const contentEl = commentItem.querySelector(
+      ".comments-comment-item-content-body",
+    );
+    context.replyingToAuthor = authorEl
+      ? (authorEl.textContent || "").trim()
+      : "";
+    context.replyingToContent = contentEl
+      ? (contentEl.textContent || "").trim()
+      : "";
   }
 
   if (context.postAuthor && context.postContent) {
@@ -39,8 +49,12 @@ export function getCommentContext(commentInput: Element): CommentContext | null 
   return null;
 }
 
-export async function generateCommentSuggestions(context: CommentContext): Promise<any> {
-  const { selectedPersona } = await chrome.storage.sync.get(["selectedPersona"]);
+export async function generateCommentSuggestions(
+  context: CommentContext,
+): Promise<any> {
+  const { selectedPersona } = await chrome.storage.sync.get([
+    "selectedPersona",
+  ]);
   const personaKey = (selectedPersona as string) || "professional";
   const persona = PERSONAS[personaKey as keyof typeof PERSONAS];
 
@@ -49,8 +63,12 @@ export async function generateCommentSuggestions(context: CommentContext): Promi
   return fetchSuggestions(prompt);
 }
 
-export async function generateReplyToCommentSuggestions(context: CommentContext): Promise<any> {
-  const { selectedPersona } = await chrome.storage.sync.get(["selectedPersona"]);
+export async function generateReplyToCommentSuggestions(
+  context: CommentContext,
+): Promise<any> {
+  const { selectedPersona } = await chrome.storage.sync.get([
+    "selectedPersona",
+  ]);
   const personaKey = (selectedPersona as string) || "professional";
   const persona = PERSONAS[personaKey as keyof typeof PERSONAS];
 
@@ -71,7 +89,7 @@ async function fetchSuggestions(prompt: string): Promise<any> {
       },
       credentials: "include",
       body: JSON.stringify({ prompt }),
-    }
+    },
   );
 
   return response.json();
@@ -80,7 +98,7 @@ async function fetchSuggestions(prompt: string): Promise<any> {
 export function displayCommentSuggestions(
   container: HTMLElement,
   suggestionsResponse: any,
-  commentInput: Element
+  commentInput: Element,
 ) {
   if (!suggestionsResponse || !suggestionsResponse.suggestions) {
     container.innerHTML = `<div style="color: red; padding: 10px;">Failed to parse suggestions</div>`;
@@ -92,12 +110,12 @@ export function displayCommentSuggestions(
     : [suggestionsResponse.suggestions];
 
   container.innerHTML = "";
-  
+
   suggestions.forEach((suggestionText: string) => {
     const item = document.createElement("div");
     item.className = "linkedin-ai-suggestion-item";
     item.textContent = suggestionText;
-    
+
     item.addEventListener("click", () => {
       const qlEditor = commentInput.querySelector(".ql-editor");
       if (qlEditor) {
@@ -106,20 +124,21 @@ export function displayCommentSuggestions(
       }
       container.remove();
     });
-    
+
     container.appendChild(item);
   });
 
   const closeBtn = document.createElement("button");
   closeBtn.textContent = "✕";
-  closeBtn.style.cssText = "position: absolute; top: 5px; right: 5px; background: none; border: none; cursor: pointer; color: #666; font-size: 12px;";
+  closeBtn.style.cssText =
+    "position: absolute; top: 5px; right: 5px; background: none; border: none; cursor: pointer; color: #666; font-size: 12px;";
   closeBtn.onclick = () => container.remove();
   container.appendChild(closeBtn);
 }
 
 export function selectPersona(personaKey: string, container: Element) {
   chrome.storage.sync.set({ selectedPersona: personaKey });
-  
+
   const persona = PERSONAS[personaKey];
   const personaBtn = container.querySelector(".lia-persona-btn");
   if (personaBtn) {
@@ -134,7 +153,7 @@ export function selectPersona(personaKey: string, container: Element) {
   container.querySelectorAll(".lia-persona-option").forEach((option) => {
     option.classList.remove("active");
   });
-  
+
   const newActive = container.querySelector(`[data-persona="${personaKey}"]`);
   if (newActive) newActive.classList.add("active");
 }
@@ -142,13 +161,16 @@ export function selectPersona(personaKey: string, container: Element) {
 export function addReplyAssistant(commentInput: Element) {
   if (commentInput.querySelector(".lia-reply-assistant")) return;
 
-  const actionsArea = commentInput.querySelector(".comments-comment-box-comment__text-editor");
+  const actionsArea = commentInput.querySelector(
+    ".comments-comment-box-comment__text-editor",
+  );
   if (!actionsArea) return;
 
   chrome.storage.sync.get(["linkedinTheme", "selectedPersona"], (settings) => {
     const themeClass = settings.linkedinTheme === "dark" ? "dark" : "";
-    const currentPersona = (settings.selectedPersona as string) || "professional";
-    
+    const currentPersona =
+      (settings.selectedPersona as string) || "professional";
+
     const assistantContainer = document.createElement("div");
     assistantContainer.className = `lia-reply-assistant ${themeClass}`;
     assistantContainer.innerHTML = `
@@ -176,7 +198,7 @@ export function addReplyAssistant(commentInput: Element) {
                 <div class="lia-persona-desc">${persona.description}</div>
               </div>
             </div>
-          `
+          `,
             )
             .join("")}
         </div>
@@ -185,29 +207,39 @@ export function addReplyAssistant(commentInput: Element) {
 
     actionsArea.prepend(assistantContainer);
 
-    const personaBtn = assistantContainer.querySelector(".lia-persona-btn") as HTMLElement;
-    const personaDropdown = assistantContainer.querySelector(".lia-persona-dropdown") as HTMLElement;
-    const replyBtn = assistantContainer.querySelector(".linkedin-ai-button") as HTMLElement;
+    const personaBtn = assistantContainer.querySelector(
+      ".lia-persona-btn",
+    ) as HTMLElement;
+    const personaDropdown = assistantContainer.querySelector(
+      ".lia-persona-dropdown",
+    ) as HTMLElement;
+    const replyBtn = assistantContainer.querySelector(
+      ".linkedin-ai-button",
+    ) as HTMLElement;
 
     if (personaBtn && personaDropdown) {
       personaBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         e.preventDefault();
-        personaDropdown.style.display = personaDropdown.style.display === "none" ? "block" : "none";
+        personaDropdown.style.display =
+          personaDropdown.style.display === "none" ? "block" : "none";
       });
 
       document.addEventListener("click", () => {
         personaDropdown.style.display = "none";
       });
 
-      assistantContainer.querySelectorAll(".lia-persona-option").forEach((option) => {
-        option.addEventListener("click", (e) => {
-          e.stopPropagation();
-          const personaKey = (option as HTMLElement).dataset.persona || "professional";
-          selectPersona(personaKey, assistantContainer);
-          personaDropdown.style.display = "none";
+      assistantContainer
+        .querySelectorAll(".lia-persona-option")
+        .forEach((option) => {
+          option.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const personaKey =
+              (option as HTMLElement).dataset.persona || "professional";
+            selectPersona(personaKey, assistantContainer);
+            personaDropdown.style.display = "none";
+          });
         });
-      });
     }
 
     if (replyBtn) {
@@ -222,10 +254,12 @@ export function addReplyAssistant(commentInput: Element) {
 export async function handlereply_enabledant(commentInput: Element) {
   const commentBox = commentInput.querySelector(".ql-container");
   const commentInputEditor = commentInput.querySelector(".ql-editor");
-  
+
   if (!commentBox || !commentInputEditor) return;
 
-  let suggestionsContainer = commentBox.querySelector(".linkedin-ai-suggestions") as HTMLElement;
+  let suggestionsContainer = commentBox.querySelector(
+    ".linkedin-ai-suggestions",
+  ) as HTMLElement;
 
   if (!suggestionsContainer) {
     suggestionsContainer = document.createElement("div");
@@ -234,7 +268,7 @@ export async function handlereply_enabledant(commentInput: Element) {
   }
 
   const { linkedinTheme } = await chrome.storage.sync.get(["linkedinTheme"]);
-  
+
   if (linkedinTheme === "dark") {
     suggestionsContainer.style.backgroundColor = "#293139";
     suggestionsContainer.style.border = "0";
@@ -293,7 +327,9 @@ export function setupCommentReplyAssistant() {
   chrome.storage.sync.get(["reply_enabled"], (settings) => {
     if (!settings.reply_enabled) return;
 
-    const commentInputs = document.querySelectorAll(".comments-comment-texteditor");
+    const commentInputs = document.querySelectorAll(
+      ".comments-comment-texteditor",
+    );
     commentInputs.forEach((input) => {
       addReplyAssistant(input);
     });

@@ -7,15 +7,17 @@
 
 class LinkedInMentionHandler {
   constructor() {
-    this.mentionCache = new Map()
+    this.mentionCache = new Map();
   }
 
   /**
    * Extract mention data from editor before rewriting
    */
   extractMentions(editor) {
-    const mentions = new Map()
-    const mentionElements = editor.querySelectorAll('a.ql-mention[data-test-ql-mention="true"]')
+    const mentions = new Map();
+    const mentionElements = editor.querySelectorAll(
+      'a.ql-mention[data-test-ql-mention="true"]',
+    );
 
     mentionElements.forEach((element, index) => {
       const mentionData = {
@@ -25,17 +27,20 @@ class LinkedInMentionHandler {
         objectUrn: element.getAttribute("data-object-urn"),
         guid: element.getAttribute("data-guid") || index.toString(),
         href: element.getAttribute("href") || "#",
-      }
+      };
 
       // Store by both original text and display text for flexible matching
-      mentions.set(mentionData.text.toLowerCase(), mentionData)
-      if (mentionData.originalText && mentionData.originalText !== mentionData.text) {
-        mentions.set(mentionData.originalText.toLowerCase(), mentionData)
+      mentions.set(mentionData.text.toLowerCase(), mentionData);
+      if (
+        mentionData.originalText &&
+        mentionData.originalText !== mentionData.text
+      ) {
+        mentions.set(mentionData.originalText.toLowerCase(), mentionData);
       }
-    })
+    });
 
-    this.mentionCache = mentions
-    return mentions
+    this.mentionCache = mentions;
+    return mentions;
   }
 
   /**
@@ -43,10 +48,10 @@ class LinkedInMentionHandler {
    */
   restoreMentions(newText, editor) {
     if (this.mentionCache.size === 0) {
-      return newText
+      return newText;
     }
 
-    let processedText = newText
+    let processedText = newText;
 
     // Step 1: Handle @mentions (existing functionality)
     /*const mentionRegex = /@([^@\n.,!?;:]+?)(?=\n|$|[.,!?;:]|@|\s+@)/g
@@ -62,25 +67,27 @@ class LinkedInMentionHandler {
       return match
     })*/
 
-    const trimmedMentionText = newText.trim()
-    const mentionData = this.findMentionData(trimmedMentionText)
+    const trimmedMentionText = newText.trim();
+    const mentionData = this.findMentionData(trimmedMentionText);
 
     if (mentionData && mentionData.length > 0) {
       mentionData.forEach((mention) => {
-        const textToReplace = '@' + (mention.originalText || mention.text)
-        const textToReplaceWith = this.createMentionElement(mention)
-        processedText = processedText.replaceAll(textToReplace, textToReplaceWith)
-        console.log(processedText, 'processedText after replacement')
-      })
+        const textToReplace = "@" + (mention.originalText || mention.text);
+        const textToReplaceWith = this.createMentionElement(mention);
+        processedText = processedText.replaceAll(
+          textToReplace,
+          textToReplaceWith,
+        );
+        console.log(processedText, "processedText after replacement");
+      });
     } else {
       // If no mention data found, just return the original text
-      const mentionRegex = /@([^@\n.,!?;:]+?)(?=\n|$|[.,!?;:]|@|\s+@)/g
+      const mentionRegex = /@([^@\n.,!?;:]+?)(?=\n|$|[.,!?;:]|@|\s+@)/g;
       processedText = processedText.replaceAll(mentionRegex, (match) => {
-        return match // No replacement, keep original text
-      })
-      return processedText
+        return match; // No replacement, keep original text
+      });
+      return processedText;
     }
-
 
     // Step 2: Handle standalone names (without @) that match cached mentions
     // Create a regex for each cached mention to find standalone occurrences
@@ -95,92 +102,95 @@ class LinkedInMentionHandler {
       })
     }*/
 
-    return processedText
+    return processedText;
   }
 
   /**
    * Escape special regex characters in a string
    */
   escapeRegex(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
   /**
    * Find mention data by text (case-insensitive, flexible matching)
    */
   findMentionData(mentionText) {
-    const lowerText = mentionText.toLowerCase()
+    const lowerText = mentionText.toLowerCase();
 
     // Direct match
     if (this.mentionCache.has(lowerText)) {
       // If direct match, return all matching mention data (could be multiple for same text)
-      const matches = []
+      const matches = [];
       for (const [key, mentionData] of this.mentionCache) {
         if (key === lowerText) {
-          matches.push(mentionData)
+          matches.push(mentionData);
         }
       }
       // Return array of matches if more than one, else single object
-      return matches.length > 1 ? matches : matches[0]
+      return matches.length > 1 ? matches : matches[0];
     }
 
     // Fuzzy match - find mentions that contain or are contained in the text
-    let fuzzyMatches = []
+    let fuzzyMatches = [];
     for (const [cachedText, mentionData] of this.mentionCache) {
       if (cachedText.includes(lowerText) || lowerText.includes(cachedText)) {
         // Collect all fuzzy matches in an array
-        fuzzyMatches.push(mentionData)
+        fuzzyMatches.push(mentionData);
       }
     }
 
     if (fuzzyMatches.length > 0) {
       // If fuzzy matches found, return them
-      return fuzzyMatches.length > 1 ? fuzzyMatches : fuzzyMatches[0]
+      return fuzzyMatches.length > 1 ? fuzzyMatches : fuzzyMatches[0];
     }
 
     // Try matching by first/last name parts
-    const allMatches = []
-    const textParts = lowerText.split(/\s+/)
+    const allMatches = [];
+    const textParts = lowerText.split(/\s+/);
     for (const [cachedText, mentionData] of this.mentionCache) {
-      const cachedParts = cachedText.split(/\s+/)
+      const cachedParts = cachedText.split(/\s+/);
       if (
         textParts.some((part) =>
-          cachedParts.some((cachedPart) => cachedPart.includes(part) || part.includes(cachedPart)),
+          cachedParts.some(
+            (cachedPart) =>
+              cachedPart.includes(part) || part.includes(cachedPart),
+          ),
         )
       ) {
         // Collect all matches in an array
-        allMatches.push(mentionData)
+        allMatches.push(mentionData);
       }
     }
 
     if (allMatches.length > 0) {
       // If all matches found return them
-      return allMatches
+      return allMatches;
     }
 
-    return null
+    return null;
   }
 
   /**
    * Create LinkedIn mention element
    */
   createMentionElement(mentionData) {
-    return `<a class="ql-mention" href="${mentionData.href}" data-entity-urn="${mentionData.entityUrn}" data-guid="${mentionData.guid}" data-object-urn="${mentionData.objectUrn}" data-original-text="${mentionData.originalText || mentionData.text}" spellcheck="false" data-test-ql-mention="true">${mentionData.text}</a>`
+    return `<a class="ql-mention" href="${mentionData.href}" data-entity-urn="${mentionData.entityUrn}" data-guid="${mentionData.guid}" data-object-urn="${mentionData.objectUrn}" data-original-text="${mentionData.originalText || mentionData.text}" spellcheck="false" data-test-ql-mention="true">${mentionData.text}</a>`;
   }
 
   /**
    * Clean up mention cache
    */
   clearCache() {
-    this.mentionCache.clear()
+    this.mentionCache.clear();
   }
 }
 
 // Create global instance
-const linkedInMentionHandler = new LinkedInMentionHandler()
+const linkedInMentionHandler = new LinkedInMentionHandler();
 
 function showTemporaryMessage(editor, message, type = "info") {
-  const container = document.createElement("div")
+  const container = document.createElement("div");
   container.style.cssText = `
     position: absolute;
     top: 80px;
@@ -191,20 +201,40 @@ function showTemporaryMessage(editor, message, type = "info") {
     gap: 12px;
     z-index: 10001;
     pointer-events: none;
-  `
+  `;
 
   // Color schemes
   const colors = {
-    success: { avatar: "#10b981", bubble: "#f0fdf4", text: "#166534", border: "#bbf7d0" },
-    error: { avatar: "#ef4444", bubble: "#fef2f2", text: "#991b1b", border: "#fecaca" },
-    info: { avatar: "#0a66c2", bubble: "#eff6ff", text: "#1e40af", border: "#bfdbfe" },
-    warning: { avatar: "#f59e0b", bubble: "#fffbeb", text: "#92400e", border: "#fed7aa" },
-  }
+    success: {
+      avatar: "#10b981",
+      bubble: "#f0fdf4",
+      text: "#166534",
+      border: "#bbf7d0",
+    },
+    error: {
+      avatar: "#ef4444",
+      bubble: "#fef2f2",
+      text: "#991b1b",
+      border: "#fecaca",
+    },
+    info: {
+      avatar: "#0a66c2",
+      bubble: "#eff6ff",
+      text: "#1e40af",
+      border: "#bfdbfe",
+    },
+    warning: {
+      avatar: "#f59e0b",
+      bubble: "#fffbeb",
+      text: "#92400e",
+      border: "#fed7aa",
+    },
+  };
 
-  const colorScheme = colors[type] || colors.info
+  const colorScheme = colors[type] || colors.info;
 
   // Avatar with pulsing effect
-  const avatarContainer = document.createElement("div")
+  const avatarContainer = document.createElement("div");
   avatarContainer.style.cssText = `
     width: 44px;
     height: 44px;
@@ -219,10 +249,10 @@ function showTemporaryMessage(editor, message, type = "info") {
     transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
     flex-shrink: 0;
     position: relative;
-  `
+  `;
 
   // Add pulsing ring
-  const pulseRing = document.createElement("div")
+  const pulseRing = document.createElement("div");
   pulseRing.style.cssText = `
     position: absolute;
     top: -4px;
@@ -233,18 +263,18 @@ function showTemporaryMessage(editor, message, type = "info") {
     border-radius: 50%;
     opacity: 0;
     animation: pulse 2s infinite;
-  `
+  `;
 
-  const pulseStyle = document.createElement("style")
+  const pulseStyle = document.createElement("style");
   pulseStyle.textContent = `
     @keyframes pulse {
       0% { transform: scale(1); opacity: 0.7; }
       100% { transform: scale(1.2); opacity: 0; }
     }
-  `
-  document.head.appendChild(pulseStyle)
+  `;
+  document.head.appendChild(pulseStyle);
 
-  avatarContainer.appendChild(pulseRing)
+  avatarContainer.appendChild(pulseRing);
   avatarContainer.innerHTML += `
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
@@ -253,10 +283,10 @@ function showTemporaryMessage(editor, message, type = "info") {
       <circle cx="16" cy="4" r="2" fill="white"/>
       <path d="M12 8a4 4 0 0 1 4-4" stroke="white"/>
     </svg>
-  `
+  `;
 
   // Modern speech bubble
-  const speechBubble = document.createElement("div")
+  const speechBubble = document.createElement("div");
   speechBubble.style.cssText = `
     position: relative;
     background: ${colorScheme.bubble};
@@ -273,10 +303,10 @@ function showTemporaryMessage(editor, message, type = "info") {
     transform: scale(0.7) translateY(15px);
     transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     backdrop-filter: blur(10px);
-  `
+  `;
 
   // Curved tail for modern look
-  const bubbleTail = document.createElement("div")
+  const bubbleTail = document.createElement("div");
   bubbleTail.style.cssText = `
     position: absolute;
     left: -8px;
@@ -289,144 +319,158 @@ function showTemporaryMessage(editor, message, type = "info") {
     border-bottom: none;
     transform: rotate(-45deg);
     border-radius: 4px 0 0 0;
-  `
+  `;
 
-  const messageText = document.createElement("span")
-  speechBubble.appendChild(bubbleTail)
-  speechBubble.appendChild(messageText)
+  const messageText = document.createElement("span");
+  speechBubble.appendChild(bubbleTail);
+  speechBubble.appendChild(messageText);
 
-  container.appendChild(avatarContainer)
-  container.appendChild(speechBubble)
+  container.appendChild(avatarContainer);
+  container.appendChild(speechBubble);
 
-  const editorParent = editor.closest('.share-box')
-  editorParent.style.position = "relative"
-  editorParent.appendChild(container)
+  const editorParent = editor.closest(".share-box");
+  editorParent.style.position = "relative";
+  editorParent.appendChild(container);
 
   // Animation sequence
   setTimeout(() => {
-    avatarContainer.style.opacity = "1"
-    avatarContainer.style.transform = "scale(1)"
-  }, 100)
+    avatarContainer.style.opacity = "1";
+    avatarContainer.style.transform = "scale(1)";
+  }, 100);
 
   setTimeout(() => {
-    speechBubble.style.opacity = "1"
-    speechBubble.style.transform = "scale(1) translateY(0)"
-  }, 400)
+    speechBubble.style.opacity = "1";
+    speechBubble.style.transform = "scale(1) translateY(0)";
+  }, 400);
 
   setTimeout(() => {
-    let i = 0
+    let i = 0;
     const typeMessage = () => {
       if (i <= message.length) {
-        messageText.textContent = message.substring(0, i) + (i < message.length ? "▋" : "")
-        i++
-        setTimeout(typeMessage, 40)
+        messageText.textContent =
+          message.substring(0, i) + (i < message.length ? "▋" : "");
+        i++;
+        setTimeout(typeMessage, 40);
       }
-    }
-    typeMessage()
-  }, 700)
+    };
+    typeMessage();
+  }, 700);
 
   // Cleanup
   setTimeout(() => {
-    container.style.transform = "translateX(-50%) scale(0.8)"
-    container.style.opacity = "0"
+    container.style.transform = "translateX(-50%) scale(0.8)";
+    container.style.opacity = "0";
     setTimeout(() => {
-      container.remove()
-      pulseStyle.remove()
-    }, 1500)
-  }, 4500)
+      container.remove();
+      pulseStyle.remove();
+    }, 1500);
+  }, 4500);
 }
 
 /**
  * Enhanced animate text rewrite function with mention support
  */
-async function animateTextRewriteWithMentions(editor, originalText, newText, improvements) {
+async function animateTextRewriteWithMentions(
+  editor,
+  originalText,
+  newText,
+  improvements,
+) {
   return new Promise((resolve) => {
     // Extract mentions before starting animation
-    const mentions = linkedInMentionHandler.extractMentions(editor)
+    const mentions = linkedInMentionHandler.extractMentions(editor);
 
     // Create a temporary container for the animation
-    const animationContainer = document.createElement("div")
+    const animationContainer = document.createElement("div");
     animationContainer.style.cssText = `
       position: relative;
       min-height: ${editor.offsetHeight}px;
-    `
+    `;
 
     // Store original editor styles
     const originalStyles = {
       opacity: editor.style.opacity,
       transition: editor.style.transition,
-    }
+    };
 
     // Add smooth transition
-    editor.style.transition = "opacity 0.3s ease"
+    editor.style.transition = "opacity 0.3s ease";
 
     // Phase 1: Fade out original text
-    editor.style.opacity = "0.3"
+    editor.style.opacity = "0.3";
 
     setTimeout(() => {
       // Phase 2: Character-by-character rewrite simulation
-      let currentIndex = 0
-      const maxLength = Math.max(originalText.length, newText.length)
+      let currentIndex = 0;
+      const maxLength = Math.max(originalText.length, newText.length);
 
       const typewriterInterval = setInterval(() => {
         if (currentIndex <= newText.length) {
-          const partialText = newText.substring(0, currentIndex)
+          const partialText = newText.substring(0, currentIndex);
 
           // For the animation, show plain text with cursor
-          editor.textContent = partialText + (currentIndex < newText.length ? "|" : "")
+          editor.textContent =
+            partialText + (currentIndex < newText.length ? "|" : "");
 
-          currentIndex++
+          currentIndex++;
 
           // scroll to the bottom of the editor
-          editor.closest('.share-box').scrollTo({
+          editor.closest(".share-box").scrollTo({
             top: editor.scrollHeight,
-            behavior: 'smooth'
-          })
+            behavior: "smooth",
+          });
         } else {
           // Animation complete
-          clearInterval(typewriterInterval)
+          clearInterval(typewriterInterval);
 
           // Phase 3: Restore mentions and fade back in
-          const textWithMentions = linkedInMentionHandler.restoreMentions(newText, editor)
+          const textWithMentions = linkedInMentionHandler.restoreMentions(
+            newText,
+            editor,
+          );
           // convert to HTML
           // every new line should be a p
-          const paragraphs = textWithMentions.split(/\n/).map(line => `<p>${line}</p>`).join('')
+          const paragraphs = textWithMentions
+            .split(/\n/)
+            .map((line) => `<p>${line}</p>`)
+            .join("");
           // Set the editor's innerHTML to the paragraphs
-          editor.innerHTML = paragraphs
+          editor.innerHTML = paragraphs;
 
           // Fade back in with final text
-          editor.style.opacity = "1"
+          editor.style.opacity = "1";
 
           // Restore original styles
           setTimeout(() => {
-            editor.style.opacity = originalStyles.opacity
-            editor.style.transition = originalStyles.transition
+            editor.style.opacity = originalStyles.opacity;
+            editor.style.transition = originalStyles.transition;
 
             // Dispatch input event to trigger LinkedIn's handlers
-            const inputEvent = new Event("input", { bubbles: true })
-            editor.dispatchEvent(inputEvent)
+            const inputEvent = new Event("input", { bubbles: true });
+            editor.dispatchEvent(inputEvent);
 
             // Trigger LinkedIn's mention detection
-            const keyupEvent = new KeyboardEvent("keyup", { bubbles: true })
-            editor.dispatchEvent(keyupEvent)
+            const keyupEvent = new KeyboardEvent("keyup", { bubbles: true });
+            editor.dispatchEvent(keyupEvent);
 
             // Show success indicator
-            showTemporaryMessage(editor, "✨ Text improved!", "success")
+            showTemporaryMessage(editor, "✨ Text improved!", "success");
 
             // Clean up
-            linkedInMentionHandler.clearCache()
+            linkedInMentionHandler.clearCache();
 
-            resolve()
-          }, 300)
+            resolve();
+          }, 300);
         }
+      }, 15); // Adjust speed here (lower = faster)
 
-      }, 15) // Adjust speed here (lower = faster)
-      
       // Show improvements as queued notifications, one after another
       if (improvements && improvements.length > 0) {
         // Calculate typewriter duration (ms)
         const typewriterDuration = Math.max(newText.length * 15, 800); // fallback min duration
-        const improvementDisplayTime = Math.floor(typewriterDuration / improvements.length);
+        const improvementDisplayTime = Math.floor(
+          typewriterDuration / improvements.length,
+        );
 
         //let improvementIndex = 0;
         //const showNextImprovement = () => {
@@ -434,17 +478,21 @@ async function animateTextRewriteWithMentions(editor, originalText, newText, imp
         //showTemporaryMessage(editor, improvements[improvementIndex], "info");
         //improvementIndex++;
         setTimeout(() => {
-          window.lia_showTemporaryImprovements(editor, improvements, improvementDisplayTime);
+          window.lia_showTemporaryImprovements(
+            editor,
+            improvements,
+            improvementDisplayTime,
+          );
         }, improvementDisplayTime);
         //  }
         //};
         //showNextImprovement();
       }
-    }, 300)
-  })
+    }, 300);
+  });
 }
 
 // Export for use in your existing code
-window.linkedInMentionHandler = linkedInMentionHandler
-window.animateTextRewriteWithMentions = animateTextRewriteWithMentions
-window.LinkedInMentionHandler = LinkedInMentionHandler
+window.linkedInMentionHandler = linkedInMentionHandler;
+window.animateTextRewriteWithMentions = animateTextRewriteWithMentions;
+window.LinkedInMentionHandler = LinkedInMentionHandler;

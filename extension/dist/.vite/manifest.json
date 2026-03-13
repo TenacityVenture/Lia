@@ -1,17 +1,28 @@
 {
   "../../../../../@crx/manifest": {
-    "file": "assets/crx-manifest.js-D4WBW5PO.js",
+    "file": "assets/crx-manifest.js-DEQjxLGU.js",
     "name": "crx-manifest.js",
     "src": "../../../../../@crx/manifest",
     "isEntry": true
   },
+  "_client-Cq2TKhAs.js": {
+    "file": "assets/client-Cq2TKhAs.js",
+    "name": "client"
+  },
+  "_content.tsx-loader-BSG6MCXe.js": {
+    "file": "assets/content.tsx-loader-BSG6MCXe.js",
+    "src": "_content.tsx-loader-BSG6MCXe.js"
+  },
   "popup/popup.html": {
-    "file": "assets/popup-CPUZuESB.js",
+    "file": "assets/popup-pmSy9WO9.js",
     "name": "popup",
     "src": "popup/popup.html",
     "isEntry": true,
+    "imports": [
+      "_client-Cq2TKhAs.js"
+    ],
     "css": [
-      "assets/popup-Dot7JVmx.css"
+      "assets/popup-DQtF1Y-9.css"
     ]
   },
   "src/background.ts": {
@@ -21,10 +32,13 @@
     "isEntry": true
   },
   "src/content.tsx": {
-    "file": "assets/content.tsx-DGoFTMCb.js",
+    "file": "assets/content.tsx-CM8e1UJn.js",
     "name": "content.tsx",
     "src": "src/content.tsx",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_client-Cq2TKhAs.js"
+    ]
   },
   "src/linkedin-mention-handler.ts": {
     "file": "assets/linkedin-mention-handler.ts-BwbfaPfM.js",

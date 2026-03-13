@@ -20,7 +20,7 @@ import { addChatbotStyles } from "./features/chatbot/chatbotStyles";
   async function initializeExtension() {
     if (isSetupRef.current) return;
     isSetupRef.current = true;
-    
+
     // detect theme
     const theme = await (window as any).detectLinkedInTheme?.();
     settings.linkedinTheme = theme || "light";
@@ -47,7 +47,7 @@ import { addChatbotStyles } from "./features/chatbot/chatbotStyles";
     (data) => {
       settings = { ...settings, ...data };
       initializeExtension();
-    }
+    },
   );
 
   // Listen for auth tokens after sign-in or signup on the website
@@ -79,8 +79,8 @@ import { addChatbotStyles } from "./features/chatbot/chatbotStyles";
   const observer = new MutationObserver((mutations) => {
     // Check if extension context is still valid
     if (!chrome.runtime?.id) {
-       observer.disconnect();
-       return;
+      observer.disconnect();
+      return;
     }
     mutations.forEach((mutation) => {
       clearTimeout(mutationTimeout);

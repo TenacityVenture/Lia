@@ -1,13 +1,23 @@
 // @ts-nocheck
 import { chatbotState, loadChatbotState } from "./chatbotState";
 import { createChatbotButton, createChatbotInterface } from "./chatbotUI";
-import { setupChatbotEventListeners, toggleNotesMode, toggleTemplateMode, loadChatHistory } from "./chatbotCore";
+import {
+  setupChatbotEventListeners,
+  toggleNotesMode,
+  toggleTemplateMode,
+  loadChatHistory,
+} from "./chatbotCore";
 
 // Any missing references like hideQuickSuggestions, fetchTemplates can also be imported from chatbotCore.
-import { hideQuickSuggestions, loadTemplates as fetchTemplates } from "./chatbotCore";
+import {
+  hideQuickSuggestions,
+  loadTemplates as fetchTemplates,
+} from "./chatbotCore";
 
 export async function initializeChatbot() {
-  const { chatbot_enabled } = await chrome.storage.sync.get(["chatbot_enabled"]);
+  const { chatbot_enabled } = await chrome.storage.sync.get([
+    "chatbot_enabled",
+  ]);
   if (!chatbot_enabled) return;
 
   if (window.location.href.includes("linkedin.com")) {

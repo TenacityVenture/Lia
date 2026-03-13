@@ -5,7 +5,10 @@ export const chatbotState = {
   sidebarCollapsed: false,
   conversations: [] as any[],
   currentConversationId: null as string | null,
-  position: { x: typeof window !== 'undefined' ? window.innerWidth - 80 : 0, y: typeof window !== 'undefined' ? window.innerHeight - 80 : 0 },
+  position: {
+    x: typeof window !== "undefined" ? window.innerWidth - 80 : 0,
+    y: typeof window !== "undefined" ? window.innerHeight - 80 : 0,
+  },
   referenceMode: false,
   referencedContent: null as any | null,
 

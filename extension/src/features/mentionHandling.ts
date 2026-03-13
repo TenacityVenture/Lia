@@ -13,7 +13,9 @@ export interface MentionData {
 }
 
 /** Extract all @mention elements from a paragraph */
-export function extractMentionsFromParagraph(paragraph: Element): MentionData[] {
+export function extractMentionsFromParagraph(
+  paragraph: Element,
+): MentionData[] {
   const mentions: MentionData[] = [];
   const mentionElements = paragraph.querySelectorAll(".ql-mention");
 
@@ -48,7 +50,10 @@ export function convertMentionsToAtFormat(paragraph: Element): string {
 }
 
 /** Replace @Name placeholders back with proper LinkedIn mention anchor elements */
-export function restoreMentionsInText(text: string, mentions: MentionData[]): string {
+export function restoreMentionsInText(
+  text: string,
+  mentions: MentionData[],
+): string {
   if (!mentions || mentions.length === 0) return text;
   let restoredText = text;
 
@@ -64,7 +69,7 @@ export function restoreMentionsInText(text: string, mentions: MentionData[]): st
     if (restoredText.includes(placeholder)) {
       restoredText = restoredText.replace(
         placeholder,
-        createLinkedInMention(mention)
+        createLinkedInMention(mention),
       );
     }
   });
@@ -99,7 +104,8 @@ export function getFullSentence(selection: Selection): string {
 
   // Fallback: find sentence boundaries within the text node
   const container = range.commonAncestorContainer;
-  const text = (container as any).textContent ?? (container as any).innerText ?? "";
+  const text =
+    (container as any).textContent ?? (container as any).innerText ?? "";
   const startOffset = range.startOffset;
   let sentenceStart = text.lastIndexOf(".", startOffset - 1) + 1;
   let sentenceEnd = text.indexOf(".", startOffset);

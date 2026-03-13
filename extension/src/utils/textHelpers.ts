@@ -4,7 +4,7 @@
 export function waitForElement(
   selector: string,
   maxAttempts = 100,
-  interval = 1000
+  interval = 1000,
 ): Promise<Element> {
   return new Promise((resolve, reject) => {
     let attempts = 0;
@@ -13,7 +13,9 @@ export function waitForElement(
       if (el) return resolve(el);
       attempts++;
       if (attempts >= maxAttempts) {
-        return reject(`Element ${selector} not found after ${maxAttempts} attempts`);
+        return reject(
+          `Element ${selector} not found after ${maxAttempts} attempts`,
+        );
       }
       setTimeout(check, interval);
     };
@@ -36,7 +38,9 @@ export function insertTextIntoEditor(editor: HTMLElement, text: string): void {
 
 /** Retrieve the current access token from chrome.storage.local */
 export async function accessToken(): Promise<string> {
-  const { access_token } = (await chrome.storage.local.get(["access_token"])) as {
+  const { access_token } = (await chrome.storage.local.get([
+    "access_token",
+  ])) as {
     access_token?: string;
   };
   if (!access_token) throw new Error("Please Sign in to continue");
@@ -58,7 +62,7 @@ export function formatLinks(text: string): string {
   text = text.replace(
     /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g,
     (_match, linkText, url) =>
-      `<a href="${url}" target="_blank" rel="noopener noreferrer" class="lia-link">${linkText} <span class="lia-link-icon">🔗</span></a>`
+      `<a href="${url}" target="_blank" rel="noopener noreferrer" class="lia-link">${linkText} <span class="lia-link-icon">🔗</span></a>`,
   );
 
   // Convert bare URLs but leave existing anchor tags untouched
@@ -70,7 +74,7 @@ export function formatLinks(text: string): string {
         return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="lia-link">${url} <span class="lia-link-icon">🔗</span></a>`;
       }
       return match;
-    }
+    },
   );
 }
 
@@ -88,7 +92,8 @@ export function formatMarkdown(text: string): string {
   // Code blocks
   text = text.replace(
     /```([\s\S]*?)```/g,
-    (_m, code) => `<pre class="lia-code-block" style="position:relative"><code>${code}</code></pre>`
+    (_m, code) =>
+      `<pre class="lia-code-block" style="position:relative"><code>${code}</code></pre>`,
   );
 
   // Inline code
@@ -98,14 +103,14 @@ export function formatMarkdown(text: string): string {
   text = text.replace(/^\* (.*$)/gm, '<li class="lia-list-item">$1</li>');
   text = text.replace(
     /(<li class="lia-list-item">.*<\/li>)/s,
-    '<ul class="lia-list">$1</ul>'
+    '<ul class="lia-list">$1</ul>',
   );
 
   // Ordered lists
   text = text.replace(/^\d+\. (.*$)/gm, '<li class="lia-ordered-item">$1</li>');
   text = text.replace(
     /(<li class="lia-ordered-item">.*<\/li>)/s,
-    '<ol class="lia-ordered-list">$1</ol>'
+    '<ol class="lia-ordered-list">$1</ol>',
   );
 
   // Paragraphs and line breaks

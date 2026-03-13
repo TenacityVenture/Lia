@@ -10,12 +10,17 @@ export type TransformType =
   | "grammar";
 
 const PROMPT_MAP: Record<TransformType, (text: string) => string> = {
-  rewrite: (t) => `Rewrite this sentence to be more engaging and professional: "${t}"`,
-  shorten: (t) => `Make this text shorter while keeping the main message: "${t}"`,
+  rewrite: (t) =>
+    `Rewrite this sentence to be more engaging and professional: "${t}"`,
+  shorten: (t) =>
+    `Make this text shorter while keeping the main message: "${t}"`,
   expand: (t) => `Expand this text with more detail and context: "${t}"`,
-  professional: (t) => `Make this text more professional and business-appropriate: "${t}"`,
-  emoji: (t) => `Add relevant emojis to this text to make it more engaging: "${t}"`,
-  grammar: (t) => `Fix any grammar, spelling, or punctuation errors in this text: "${t}"`,
+  professional: (t) =>
+    `Make this text more professional and business-appropriate: "${t}"`,
+  emoji: (t) =>
+    `Add relevant emojis to this text to make it more engaging: "${t}"`,
+  grammar: (t) =>
+    `Fix any grammar, spelling, or punctuation errors in this text: "${t}"`,
 };
 
 /**
@@ -24,12 +29,10 @@ const PROMPT_MAP: Record<TransformType, (text: string) => string> = {
  */
 export async function generateRewrittenText(
   text: string,
-  type: TransformType | string
+  type: TransformType | string,
 ): Promise<string> {
   const promptFn = PROMPT_MAP[type as TransformType];
-  let prompt = promptFn
-    ? promptFn(text)
-    : `Improve this text: "${text}"`;
+  let prompt = promptFn ? promptFn(text) : `Improve this text: "${text}"`;
 
   prompt += " Return only the improved text without quotes or explanations.";
 
@@ -44,7 +47,7 @@ export async function generateRewrittenText(
       },
       credentials: "include",
       body: JSON.stringify({ prompt, type }),
-    }
+    },
   );
 
   if (!response.ok) {
@@ -63,7 +66,7 @@ export async function generateRewrittenText(
 export async function generateImprovedText(
   originalText: string,
   tone: string,
-  industry: string
+  industry: string,
 ): Promise<{ response?: string; improvements?: string[]; error?: string }> {
   const prompt = `Improve and rewrite the following LinkedIn post to make it more engaging, professional, and impactful. Keep the core message but enhance clarity, flow, and engagement. Maintain the same tone (${tone}) and make it suitable for the ${industry} industry:
 
@@ -82,7 +85,7 @@ export async function generateImprovedText(
       },
       credentials: "include",
       body: JSON.stringify({ prompt, originalText }),
-    }
+    },
   );
 
   return response.json() as Promise<{

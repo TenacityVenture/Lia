@@ -1,4 +1,3 @@
-import React from "react";
 import { createRoot } from "react-dom/client";
 import { TextSelectionToolbar } from "../components/TextSelectionToolbar";
 import { generateRewrittenText } from "./generateText";
@@ -28,7 +27,7 @@ export function setupTextSelectionToolbar() {
       onFormat={handleTextFormatting}
       onTransform={handleTextTransform}
       onRewrite={handleAIRewrite}
-    />
+    />,
   );
 }
 
@@ -102,7 +101,11 @@ async function handleAIRewrite() {
   if (!selectedText) return;
 
   let fullSentence = selectedText;
-  if (!selectedText.endsWith(".") && !selectedText.endsWith("?") && !selectedText.endsWith("!")) {
+  if (
+    !selectedText.endsWith(".") &&
+    !selectedText.endsWith("?") &&
+    !selectedText.endsWith("!")
+  ) {
     fullSentence = getFullSentence(selection);
   }
 
@@ -157,7 +160,7 @@ function replaceSelectedText(newText: string) {
 async function replaceTextInSentence(
   selection: Selection,
   originalSentence: string,
-  newSentence: string
+  newSentence: string,
 ) {
   const range = selection.getRangeAt(0);
   let paragraph: Element | null = range.commonAncestorContainer as Element;
@@ -177,7 +180,8 @@ async function replaceTextInSentence(
     restoredSentence = restoreMentionsInText(newSentence, mentions);
   }
 
-  const originalText = paragraph.textContent || (paragraph as HTMLElement).innerText || "";
+  const originalText =
+    paragraph.textContent || (paragraph as HTMLElement).innerText || "";
   const tempSpan = document.createElement("span");
   tempSpan.style.cssText = `
     background: linear-gradient(90deg, #e7f3ff, #f0f9ff);
@@ -205,7 +209,11 @@ async function replaceTextInSentence(
   }
 }
 
-async function animateTextReplacement(element: HTMLElement, originalText: string, newText: string): Promise<void> {
+async function animateTextReplacement(
+  element: HTMLElement,
+  originalText: string,
+  newText: string,
+): Promise<void> {
   return new Promise((resolve) => {
     element.style.background = "linear-gradient(90deg, #fef3c7, #fde68a)";
     element.style.transform = "scale(1.02)";
@@ -219,7 +227,9 @@ async function animateTextReplacement(element: HTMLElement, originalText: string
         if (currentIndex <= newText.length) {
           const partialText = newText.substring(0, currentIndex);
           if (currentIndex < newText.length) {
-            element.innerHTML = partialText + '<span style="animation: blink 1s infinite; color: #0a66c2;">|</span>';
+            element.innerHTML =
+              partialText +
+              '<span style="animation: blink 1s infinite; color: #0a66c2;">|</span>';
           } else {
             element.textContent = newText;
           }

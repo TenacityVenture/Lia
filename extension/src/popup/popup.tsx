@@ -245,10 +245,12 @@ const Popup = () => {
       // Notify content script that settings have changed
       chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs[0]?.id && tabs[0].url?.includes("linkedin.com")) {
-          chrome.tabs.sendMessage(tabs[0].id, { action: "settingsUpdated" }).catch(err => {
-            // Ignore errors when receiving end doesn't exist (e.g. page not refreshed)
-            console.debug("Could not notify content script:", err);
-          });
+          chrome.tabs
+            .sendMessage(tabs[0].id, { action: "settingsUpdated" })
+            .catch((err) => {
+              // Ignore errors when receiving end doesn't exist (e.g. page not refreshed)
+              console.debug("Could not notify content script:", err);
+            });
         }
       });
     });

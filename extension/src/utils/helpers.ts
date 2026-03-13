@@ -1,7 +1,7 @@
 // @ts-nocheck
 
 async function getLiaUserInfo () {
-  const { access_token } = await chrome.storage.local.get(['access_token']);
+  const { access_token } = (await chrome.storage.local.get(['access_token'])) as { access_token?: string };
   if (!access_token) {
     return null; // No tokens available, user is not authenticated
   }
@@ -93,7 +93,7 @@ const liaRefreshToken = async () => {
 }
 
 const getAccessToken = async () => {
-  const { access_token } = await chrome.storage.local.get(['access_token']);
+  const { access_token } = (await chrome.storage.local.get(['access_token'])) as { access_token?: string };
   if (!access_token) {
     throw new Error("Please Sign in to continue")
   }
@@ -152,7 +152,10 @@ function typeWriter(plainContent, element) {
 }
 
 async function lia_getTokens() {
-  const { access_token, refresh_token } = await chrome.storage.local.get(['access_token', 'refresh_token']);
+  const { access_token, refresh_token } = (await chrome.storage.local.get([
+    "access_token",
+    "refresh_token",
+  ])) as { access_token?: string; refresh_token?: string };
   return { access_token, refresh_token };
 }
 

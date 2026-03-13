@@ -1,11 +1,11 @@
 // @ts-nocheck
 import { chatbotState } from "./chatbotState";
 export function addChatbotStyles() {
-    if (document.getElementById("lia-chatbot-styles")) return;
+  if (document.getElementById("lia-chatbot-styles")) return;
 
-    const styles = document.createElement("style");
-    styles.id = "lia-chatbot-styles";
-    styles.textContent = `
+  const styles = document.createElement("style");
+  styles.id = "lia-chatbot-styles";
+  styles.textContent = `
     .lia-logo-container {
       position: relative;
       display: flex;
@@ -1341,6 +1341,5 @@ export function addChatbotStyles() {
     }
   `;
 
-    document.head.appendChild(styles);
-  }
-
+  document.head.appendChild(styles);
+}

@@ -7,7 +7,8 @@
     "storage"
   ],
   "host_permissions": [
-    "https://www.linkedin.com/*"
+    "https://www.linkedin.com/*",
+    "https://api.getlia.live/*"
   ],
   "action": {
     "default_popup": "popup/popup.html",
@@ -29,7 +30,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/content.tsx-DGoFTMCb.js",
+        "assets/content.tsx-loader-BSG6MCXe.js",
         "assets/linkedin-mention-handler.ts-BwbfaPfM.js",
         "assets/helpers.ts-lYTBQLLG.js",
         "assets/utility.ts-CW8RXrhm.js"
@@ -87,7 +88,8 @@
         "https://www.linkedin.com/*"
       ],
       "resources": [
-        "assets/content.tsx-DGoFTMCb.js",
+        "assets/client-Cq2TKhAs.js",
+        "assets/content.tsx-CM8e1UJn.js",
         "assets/linkedin-mention-handler.ts-BwbfaPfM.js",
         "assets/helpers.ts-lYTBQLLG.js",
         "assets/utility.ts-CW8RXrhm.js"

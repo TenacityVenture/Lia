@@ -205,17 +205,27 @@ export async function handleRewriteAssistant(editor: HTMLElement) {
 /**
  * Initializes the Post Rewrite button inside LinkedIn's post creation modal
  */
+export function removeRewriteAssistant() {
+  document.querySelectorAll(".share-box_actions .linkedin-ai-button").forEach((el) => el.remove());
+}
+
+/**
+ * Initializes the Post Rewrite button inside LinkedIn's post creation modal
+ */
 export function setuprewrite_enabledment() {
-  chrome.storage.sync.get(["rewrite_enabled", "linkedinTheme"], (settings) => {
-    if (!settings.rewrite_enabled) return;
+  const createPostButton = document.querySelector(
+    ".share-box-feed-entry__top-bar button.artdeco-button--tertiary",
+  );
 
-    const createPostButton = document.querySelector(
-      ".share-box-feed-entry__top-bar button.artdeco-button--tertiary",
-    );
+  if (!createPostButton) return;
+  // Make sure we don't add multiple listeners
+  if (createPostButton.hasAttribute("data-lia-rewrite-setup")) return;
+  createPostButton.setAttribute("data-lia-rewrite-setup", "true");
 
-    if (!createPostButton) return;
+  createPostButton.addEventListener("click", () => {
+    chrome.storage.sync.get(["rewrite_enabled", "linkedinTheme"], (settings) => {
+      if (!settings.rewrite_enabled) return;
 
-    createPostButton.addEventListener("click", () => {
       waitForElement(".share-box_actions").then((shareBoxActionElement) => {
         const shareBoxAction = shareBoxActionElement as HTMLElement;
         if (shareBoxAction) {

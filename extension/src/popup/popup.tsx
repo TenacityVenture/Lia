@@ -112,7 +112,7 @@ const FEATURES_CONFIG = [
   },
   {
     id: "chatbot_enabled",
-    label: "Chatbot Assistant",
+    label: "Floating Assistant",
     icon: Icons.Zap,
   },
 ];

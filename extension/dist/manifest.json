@@ -4,7 +4,8 @@
   "version": "2.4.0",
   "description": "AI-powered assistant for LinkedIn posts and comments. Generate, edit, improve and enhance your LinkedIn presence with ease.",
   "permissions": [
-    "storage"
+    "storage",
+    "sidePanel"
   ],
   "host_permissions": [
     "https://www.linkedin.com/*",
@@ -27,10 +28,13 @@
     "service_worker": "service-worker-loader.js",
     "type": "module"
   },
+  "side_panel": {
+    "default_path": "sidepanel/sidepanel.html"
+  },
   "content_scripts": [
     {
       "js": [
-        "assets/content.tsx-loader-BSG6MCXe.js",
+        "assets/content.tsx-loader-Bu0a0Vhf.js",
         "assets/linkedin-mention-handler.ts-BwbfaPfM.js",
         "assets/helpers.ts-lYTBQLLG.js",
         "assets/utility.ts-CW8RXrhm.js"
@@ -89,7 +93,7 @@
       ],
       "resources": [
         "assets/client-Cq2TKhAs.js",
-        "assets/content.tsx-CM8e1UJn.js",
+        "assets/content.tsx-B_q5rmvV.js",
         "assets/linkedin-mention-handler.ts-BwbfaPfM.js",
         "assets/helpers.ts-lYTBQLLG.js",
         "assets/utility.ts-CW8RXrhm.js"

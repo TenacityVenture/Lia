@@ -18,7 +18,13 @@ export async function initializeChatbot() {
   const { chatbot_enabled } = await chrome.storage.sync.get([
     "chatbot_enabled",
   ]);
-  if (!chatbot_enabled) return;
+  if (!chatbot_enabled) {
+     const existingContainer = document.getElementById("lia-fab-container");
+     if (existingContainer) existingContainer.remove();
+     const chatbotInterface = document.getElementById("lia-chatbot-interface");
+     if (chatbotInterface) chatbotInterface.remove();
+     return;
+  }
 
   if (window.location.href.includes("linkedin.com")) {
     await loadChatbotState();

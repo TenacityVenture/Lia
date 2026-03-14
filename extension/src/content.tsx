@@ -1,6 +1,6 @@
 import { setupTextSelectionToolbar } from "./features/unicodeTextToolbar";
-import { setupCommentReplyAssistant } from "./features/commentReply";
-import { setuprewrite_enabledment } from "./features/postRewrite";
+import { setupCommentReplyAssistant, removeCommentReplyAssistant } from "./features/commentReply";
+import { setuprewrite_enabledment, removeRewriteAssistant } from "./features/postRewrite";
 import { initializeChatbot } from "./features/chatbot/index";
 import { addChatbotStyles } from "./features/chatbot/chatbotStyles";
 
@@ -72,6 +72,28 @@ import { addChatbotStyles } from "./features/chatbot/chatbotStyles";
 
   // Initialize chatbot when extension loads
   initializeChatbot();
+
+  // Listen for messages from background/popup
+  chrome.runtime?.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === "settingsUpdated") {
+      // Re-initialize chatbot to reflect new settings
+      initializeChatbot();
+
+      chrome.storage.sync.get(["reply_enabled", "rewrite_enabled"], (settings) => {
+        if (!settings.reply_enabled) {
+          removeCommentReplyAssistant();
+        } else {
+          setupCommentReplyAssistant();
+        }
+
+        if (!settings.rewrite_enabled) {
+          removeRewriteAssistant();
+        } else {
+          setuprewrite_enabledment();
+        }
+      });
+    }
+  });
 
   let mutationTimeout: ReturnType<typeof setTimeout>;
 

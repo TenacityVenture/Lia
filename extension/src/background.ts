@@ -28,11 +28,37 @@ chrome.runtime.onInstalled.addListener(() => {
   );
 });
 
+let isSidePanelOpen = false;
+
+chrome.runtime.onConnect.addListener((port) => {
+  if (port.name === "lia-sidepanel") {
+    // When side panel opens, ensure state is perfectly synced
+    isSidePanelOpen = true;
+    chrome.storage.local.set({ isSidePanelOpen: true });
+    
+    // When side panel closes (either via window.close or native X), this perfectly fires
+    port.onDisconnect.addListener(() => {
+      isSidePanelOpen = false;
+      chrome.storage.local.set({ isSidePanelOpen: false });
+    });
+  }
+});
+
 // Handle messages from content script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === "generateAIContent") {
     // This would handle any background processing if needed
     // For now, we're doing API calls directly from the content script
+    sendResponse({ success: true });
+  } else if (request.action === "toggleSidePanel") {
+    if (isSidePanelOpen) {
+      chrome.runtime.sendMessage({ action: "closeSidePanel" });
+    } else {
+      if (sender.tab && sender.tab.windowId) {
+        // Must be called synchronously to preserve user gesture!
+        chrome.sidePanel.open({ windowId: sender.tab.windowId }).catch(console.error);
+      }
+    }
     sendResponse({ success: true });
   }
 

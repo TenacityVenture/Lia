@@ -1339,6 +1339,149 @@ export function addChatbotStyles() {
       font-size: 12px;
       margin-left: auto;
     }
+
+    /* Floating Action Button (FAB) Styles */
+    .lia-fab-container {
+      position: fixed;
+      bottom: 72px;
+      right: 20px;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 12px;
+    }
+
+    .lia-fab-small {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #495057;
+      border: 1px solid rgba(222, 226, 230, 0.5);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(20px) scale(0.8);
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      padding: 0;
+      margin: 0;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .lia-fab-small {
+        background: rgba(33, 37, 41, 0.85);
+        color: #e9ecef;
+        border-color: rgba(73, 80, 87, 0.5);
+      }
+    }
+    
+    .lia-fab-container:hover .lia-fab-small {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+    }
+    
+    .lia-fab-small:hover {
+      background: #f8f9fa;
+      color: #0a66c2;
+      border-color: #0a66c2;
+      transform: translateY(0) scale(1.1) !important;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .lia-fab-small:hover {
+        background: #343a40;
+        color: #70b5f9;
+        border-color: #70b5f9;
+      }
+    }
+
+    .lia-fab-settings:hover svg {
+      animation: lia-spin 2s linear infinite;
+    }
+
+    .lia-fab-close:hover svg {
+      animation: lia-close-hover 0.3s ease-in-out;
+    }
+
+    @keyframes lia-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes lia-close-hover {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.2) rotate(90deg); }
+    }
+
+    .lia-fab-close {
+      transition-delay: 0.1s;
+    }
+    .lia-fab-settings {
+      transition-delay: 0.05s;
+    }
+    
+    .lia-fab-container:hover .lia-fab-close {
+      transition-delay: 0s;
+    }
+    .lia-fab-container:hover .lia-fab-settings {
+      transition-delay: 0.05s;
+    }
+
+    .lia-fab-main {
+      height: 60px;
+      background: linear-gradient(135deg, #0a66c2, #004182);
+      border-radius: 30px; 
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(10, 102, 194, 0.3);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      overflow: hidden;
+      width: 60px;
+      box-sizing: border-box;
+      justify-content: center;
+      position: relative;
+    }
+
+    .lia-fab-main .lia-logo-container {
+      position: absolute;
+      left: 16px;
+      min-width: 28px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .lia-fab-text {
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+      white-space: nowrap;
+      opacity: 0;
+      margin-left: 28px;
+      transform: translateX(10px);
+      transition: all 0.4s ease;
+      display: inline-block;
+    }
+
+    .lia-fab-container:hover .lia-fab-main {
+      width: 220px;
+      box-shadow: 0 6px 25px rgba(10, 102, 194, 0.4);
+    }
+
+    .lia-fab-container:hover .lia-fab-text {
+      opacity: 1;
+      transform: translateX(0);
+    }
   `;
 
   document.head.appendChild(styles);

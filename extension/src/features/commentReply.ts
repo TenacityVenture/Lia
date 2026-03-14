@@ -335,3 +335,7 @@ export function setupCommentReplyAssistant() {
     });
   });
 }
+
+export function removeCommentReplyAssistant() {
+  document.querySelectorAll(".lia-reply-assistant").forEach((el) => el.remove());
+}
